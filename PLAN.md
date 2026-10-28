@@ -73,7 +73,7 @@ form asks for email and phone).
 
 - [x] Tech choices accepted: ADRs 1 to 7 moved from proposed to accepted;
       CLAUDE.md "Tech invariants" filled in
-- [ ] Scaffold: extension skeleton with service worker, side panel and one
+- [x] Scaffold: extension skeleton with service worker, side panel and one
       content script; tokens pipeline from the design system's
       `tokens.json`; bundled Plus Jakarta Sans; lint, format, typecheck,
       unit tests, build; CI on every push and PR
