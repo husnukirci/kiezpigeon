@@ -19,6 +19,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P0 | The tokens staleness test crashed with "The URL must be of scheme file": under happy-dom, `new URL(..., import.meta.url)` uses the DOM's `URL`, not Node's. | The test runs in Vitest's `node` environment via a file docblock; checked that it fails after editing `tokens.json` and passes after `npm run tokens`.
 - P0 | Probe: throwaway files in `src/rules/`, `src/adapters/`, `src/storage/` and `src/claude/` broke each ADR 6 boundary once; ESLint reported all ten violations and nothing in the allowed files. The first type-aware lint run also flagged every CSS module class as `string | undefined` (noUncheckedIndexedAccess). | Probe files deleted; class names go through a small `cx()` helper instead of template strings.
 - P0 | CI went green on its first run, so the gate had not yet been seen failing. | Pushed a throwaway branch with one changed colour in `tokens.json` and no regeneration; CI failed in `npm test` on the staleness test, as intended. Branch deleted; nothing of it is in this PR's history.
+- P0 | Self-review found that the generated token test hardcoded `#12175a`, so it would fail on any real design system update even after `npm run tokens`, mixing up "stale" with "changed". | The shape test now matches patterns; only the staleness test compares the committed file, and it was re-checked to fail on a change and pass after regeneration.
 
 ## Per-phase narrative
 
