@@ -12,6 +12,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Planning | The product brief's fit check needs a budget and a WBS flag, and every contact form asks for email and phone, but the profile scope listed none of them. | Added budget, WBS flag and contact details to the profile in PLAN.md, marked "to confirm" rather than silently assumed.
 - Planning | A first draft of the letter validator promised to reject "names not in the facts", which no simple rule can check without false positives on ordinary German nouns. | Narrowed it to numbers and the salutation; the rest is the user's review, written into PLAN.md's risks.
 - Planning | The brief's "Sent" status cannot be detected without watching the page's submit, which the never-submit rule makes undesirable to touch. | The tracker saves an application when the user confirms "Yes, I sent it" (Phase 7).
+- Planning | The first drafts copied passform's heading style (title, em dash, subtitle), which broke this project's own "no em dashes in docs" checklist item; found by grepping the drafts against that item before showing them. | Headings use a colon; the em dash grep is part of the global checklist.
 
 ## Per-phase narrative
 
