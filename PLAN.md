@@ -77,20 +77,20 @@ form asks for email and phone).
       content script; tokens pipeline from the design system's
       `tokens.json`; bundled Plus Jakarta Sans; lint, format, typecheck,
       unit tests, build; CI on every push and PR
-- [ ] Rules core (strict TDD, no browser APIs):
-  - [ ] types: `Profile`, `Applicant`, `Household`, `Listing`, `FitLine`,
+- [x] Rules core (strict TDD, no browser APIs):
+  - [x] types: `Profile`, `Applicant`, `Household`, `Listing`, `FitLine`,
         `LetterRequest`, `LetterProblem`, `FormField`, `FieldMapping`,
         `Application`
-  - [ ] `profile`: validation, defaults, export/import with schema version
-  - [ ] `money` and `format`: cents arithmetic, German number, money and
+  - [x] `profile`: validation, defaults, export/import with schema version
+  - [x] `money` and `format`: cents arithmetic, German number, money and
         date formatting helpers for the UI
-  - [ ] `fit`: budget, income vs 3 × Kaltmiete, pets, WBS, with exact reasons
-  - [ ] `letterPrompt`: build the prompt from a `LetterRequest`, facts only
-  - [ ] `letterValidate`: word count, em dashes, numbers not in the facts,
+  - [x] `fit`: budget, income vs 3 × Kaltmiete, pets, WBS, with exact reasons
+  - [x] `letterPrompt`: build the prompt from a `LetterRequest`, facts only
+  - [x] `letterValidate`: word count, em dashes, numbers not in the facts,
         pets mentioned when present (and not when absent), chosen features
         present, salutation matches the contact person
-  - [ ] `fieldMatch`: classify form fields, map to profile values, score
-  - [ ] `tracker`: status transitions, stats, filters
+  - [x] `fieldMatch`: classify form fields, map to profile values, score
+  - [x] `tracker`: status transitions, stats, filters
 - [ ] Profile and onboarding: step flow (applicants, household, move-in and
       budget, documents checklist, letter defaults), settings with export,
       import and delete all data
