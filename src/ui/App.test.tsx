@@ -7,10 +7,7 @@ afterEach(cleanup);
 describe("App placeholder", () => {
   it("shows the header with the wordmark and a labelled settings button", () => {
     render(<App />);
-    expect(screen.getByRole("banner")).toHaveProperty(
-      "textContent",
-      "Kiezpigeon",
-    );
+    expect(screen.getByRole("banner").textContent).toBe("Kiezpigeon");
     expect(screen.getByRole("button", { name: "Settings" })).toBeDefined();
   });
 
