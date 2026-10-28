@@ -6,12 +6,14 @@ import { defineContentScript } from "wxt/utils/define-content-script";
 export default defineContentScript({
   matches: ["https://www.immobilienscout24.de/expose/*"],
   main() {
-    browser.runtime.onMessage.addListener((message: unknown) => {
-      if (isPing(message)) {
-        return Promise.resolve({ type: "pong" });
-      }
-      return undefined;
-    });
+    browser.runtime.onMessage.addListener(
+      (message: unknown, _sender, sendResponse) => {
+        if (isPing(message)) {
+          sendResponse({ type: "pong" });
+        }
+        return false;
+      },
+    );
   },
 });
 

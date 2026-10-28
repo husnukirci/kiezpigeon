@@ -17,6 +17,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P0 | `npm view typescript` returned 7.0.2, but typescript-eslint 8.72 peers on `<6.1.0`; installing latest would have broken the lint gate. | Pinned `typescript@~6.0.3`; the TS 7 move waits for typescript-eslint.
 - P0 | `chrome.*` did not typecheck (WXT ships `browser` from `wxt/browser`, no global `chrome` types), and the fake browser in tests only replaces the `wxt/browser` import. | Code imports `browser` from `wxt/browser`; auto-imports are off (`imports: false`) so every file shows its imports.
 - P0 | The tokens staleness test crashed with "The URL must be of scheme file": under happy-dom, `new URL(..., import.meta.url)` uses the DOM's `URL`, not Node's. | The test runs in Vitest's `node` environment via a file docblock; checked that it fails after editing `tokens.json` and passes after `npm run tokens`.
+- P0 | Probe: throwaway files in `src/rules/`, `src/adapters/`, `src/storage/` and `src/claude/` broke each ADR 6 boundary once; ESLint reported all ten violations and nothing in the allowed files. The first type-aware lint run also flagged every CSS module class as `string | undefined` (noUncheckedIndexedAccess). | Probe files deleted; class names go through a small `cx()` helper instead of template strings.
 
 ## Per-phase narrative
 

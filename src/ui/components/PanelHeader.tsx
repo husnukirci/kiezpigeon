@@ -1,3 +1,4 @@
+import { cx } from "../cx";
 import styles from "./PanelHeader.module.css";
 
 const ICON_URL = "/icon/48.png";
@@ -5,12 +6,12 @@ const ICON_URL = "/icon/48.png";
 export function PanelHeader() {
   return (
     <>
-      <div className={`${styles.sky} ${styles.planet}`} aria-hidden="true" />
-      <div className={`${styles.sky} ${styles.ring}`} aria-hidden="true" />
-      <div className={`${styles.sky} ${styles.sunDot}`} aria-hidden="true" />
-      <div className={`${styles.sky} ${styles.tealDot}`} aria-hidden="true" />
+      <div className={cx(styles.sky, styles.planet)} aria-hidden="true" />
+      <div className={cx(styles.sky, styles.ring)} aria-hidden="true" />
+      <div className={cx(styles.sky, styles.sunDot)} aria-hidden="true" />
+      <div className={cx(styles.sky, styles.tealDot)} aria-hidden="true" />
       <header className={styles.header}>
-        <p className={`${styles.brand} type-wordmark`}>
+        <p className={cx(styles.brand, "type-wordmark")}>
           <img className={styles.icon} src={ICON_URL} alt="" />
           Kiezpigeon
         </p>
