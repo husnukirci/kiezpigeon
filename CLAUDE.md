@@ -98,10 +98,37 @@ Optimize for legibility over cleverness.
 
 ## Tech invariants
 
-**Open until ADRs 1 to 7 in `docs/decisions.md` are accepted.** When they
-are, this section lists the chosen framework, language settings, storage
-layout, Claude access path, test tooling and repo layout as hard rules, in
-the same commit that marks the ADRs accepted. Until then, no scaffolding.
+From ADRs 1 to 7 in `docs/decisions.md`.
+
+- WXT (Vite-based) builds the extension, `srcDir: "src"`, entrypoints under
+  `src/entrypoints/`; the manifest is generated from `wxt.config.ts`. npm,
+  Node 24 LTS (`.nvmrc`), lockfile committed. TypeScript strict everywhere
+  (`"strict": true`, `"noUncheckedIndexedAccess": true`). No `any`, no
+  non-null assertions without a comment.
+- One package, folder boundaries enforced by ESLint `no-restricted-imports`:
+  `src/rules/` imports only from itself; `src/adapters/` and `src/fill/` may
+  import `src/rules/` but nothing from `src/ui/`, `src/storage/` or
+  `src/claude/`. The folder map is in ADR 6.
+- The side panel is React 19 function components. No component library:
+  design system components are rebuilt in `src/ui/components/`.
+- `src/storage/` is the only code that touches `chrome.storage`. All data is
+  in `chrome.storage.local` (`schemaVersion`, `profile`, `settings`,
+  `applications`, `apiKey`), validated on read by the rules core's
+  hand-written validators. No `chrome.storage.sync`, no IndexedDB, no schema
+  library, no global state library.
+- `src/claude/` is the only code that talks to `https://api.anthropic.com`,
+  and only from the service worker. The user's own key never enters a
+  content script, a log, an error message or an export. Default model
+  `claude-sonnet-5-5`, `claude-haiku-5-5` as the cheaper setting.
+- Tests: Vitest with WXT's Vitest plugin and fake browser, happy-dom,
+  `@testing-library/react`; Playwright in `e2e/` for the never-submit run.
+  `npm test` typechecks before it runs Vitest.
+- Styling: CSS Modules referencing only `var(--…)` from the generated
+  `src/styles/tokens.css` and its type classes; stylelint enforces it. Never
+  edit `tokens.css` by hand: change `design/tokens.json` and run
+  `npm run tokens`. Plus Jakarta Sans is bundled; no remote fonts.
+- Fixtures live in `fixtures/<site>/`; invented sample profiles in
+  `test-support/sample-profiles.ts`, used by every test and screenshot.
 
 ## Definition of done for any task
 

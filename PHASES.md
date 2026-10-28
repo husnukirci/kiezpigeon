@@ -5,11 +5,8 @@ one PR.** Each spec is self-contained: a fresh session reading only
 `CLAUDE.md`, `PLAN.md`, and its own phase section has everything it needs.
 No phase depends on chat history.
 
-**Status of this file:** drafted before the tech choices. Rules, behaviour,
-acceptance and checklists are final. Lines marked **[stack]** name what the
-phase needs from the stack; when ADRs 1 to 7 are accepted, each **[stack]**
-line is replaced by concrete paths, packages and commands in the same
-commit, before Phase 0 starts.
+Drafted before the tech choices; the stack-specific lines were filled in
+when ADRs 1 to 7 were accepted. Paths follow the folder map in ADR 6.
 
 ## How a phase runs
 
@@ -35,7 +32,8 @@ commit, before Phase 0 starts.
 
 ### Global self-review checklist (every phase)
 
-- [ ] Lint, typecheck, unit tests and production build all green **[stack]**
+- [ ] `npm run lint && npm run typecheck && npm test && npm run build` all
+      green; `npm run test:e2e` green from Phase 5 on
 - [ ] User-visible or content-script change: built extension loaded
       unpacked in Chrome, verified, no console errors in service worker,
       side panel or content script
@@ -64,12 +62,19 @@ commit, before Phase 0 starts.
 - Ids are strings: applications `app_<random>`, applicants `a1`, `a2`.
 - Money is integer cents; sizes in m² are numbers with up to one decimal;
   dates are ISO `YYYY-MM-DD` strings in data, German `DD.MM.YYYY` in the UI.
-- Fixtures: saved listing HTML lives under a `fixtures/<site>/` folder
-  **[stack: exact path]**, one file per case, each starting with a comment
+- Fixtures: saved listing HTML lives in `fixtures/immoscout24/` and
+  `fixtures/generic/`, one file per case, each starting with a comment
   `<!-- scrubbed: names, phones, emails, addresses, ids replaced -->`.
-- Sample profiles: invented names from a single file **[stack: exact
-  path]** that every test and screenshot uses.
+- Sample profiles: invented people from `test-support/sample-profiles.ts`,
+  used by every test and screenshot.
 - UI copy in English; generated letters in German by default.
+- npm scripts (added as phases need them): `dev` (`wxt`), `build`
+  (`wxt build`), `zip` (`wxt zip`), `tokens` (regenerate
+  `src/styles/tokens.css`), `lint` (ESLint + stylelint), `format`,
+  `typecheck` (`tsc --noEmit`), `test` (typecheck, then `vitest run`),
+  `test:e2e` (build, then Playwright).
+- Tests sit next to their code as `*.test.ts(x)`; Playwright tests in
+  `e2e/*.spec.ts`.
 
 ---
 
@@ -85,33 +90,49 @@ and tests it.
 
 **In scope**
 
-1. Project skeleton per ADRs 1, 2 and 6 **[stack]**: TypeScript with
-   strict settings, the package manager and Node version pinned.
+1. Project skeleton per ADRs 1, 2 and 6: WXT with the React module and
+   `srcDir: "src"`, React 19, TypeScript strict (`strict`,
+   `noUncheckedIndexedAccess`) in a `tsconfig.json` extending WXT's
+   generated one, npm with the lockfile committed, `.nvmrc` = `24` and
+   `"engines": { "node": ">=24" }`. Probe first: WXT's current major and its
+   React module install and build an empty side panel; log the versions.
+   Empty folders from the ADR 6 map are not created until a phase needs
+   them.
 2. Manifest V3 with exactly the permissions in PLAN.md section 7 that this
    phase needs (`sidePanel`, `storage`), name, description, icons from the
    design system's Brand group (16, 32, 48, 128). The toolbar action opens
    the side panel.
-3. Service worker with a single startup log line removed before merge (or a
-   no-op); one content script registered for the ImmoScout24 host that does
-   nothing yet but answer a `ping` message.
-4. Tokens pipeline (ADR 7): a script copies the design system's
-   `tokens.json` into the repo and generates CSS custom properties from it
-   (`--night-800`, `--space-4`, `--radius-xl`, type styles as classes or
-   variable groups **[stack]**). The generated file carries a header
-   "generated from tokens.json, do not edit". A test fails if the generated
-   file is stale.
-5. Plus Jakarta Sans bundled as woff2 (400, 600, 700, 800) with its OFL
-   licence file; no remote font loading.
+3. `src/entrypoints/background.ts` as a no-op service worker that opens
+   the side panel on action click; `src/entrypoints/sidepanel/` (`index.html`,
+   `main.tsx`); `src/entrypoints/immoscout24.content.ts` matching
+   `https://www.immobilienscout24.de/expose/*` that does nothing yet but
+   answer a `ping` message.
+4. Tokens pipeline (ADR 7): `design/tokens.json` copied verbatim from the
+   design system's `project/tokens.json`; `scripts/build-tokens.ts`
+   (`npm run tokens`) generates `src/styles/tokens.css` with one custom
+   property per colour, spacing, radius and size token (`--night-800`,
+   `--space-4`, `--radius-xl`, `--tap-min`) and one class per type style
+   (`.type-title-xl`, `.type-body`, ...), headed `/* generated from
+   design/tokens.json, do not edit */`. `scripts/build-tokens.test.ts`
+   regenerates in memory and fails if the committed file differs.
+5. Plus Jakarta Sans 400, 600, 700, 800 as woff2 in `public/fonts/` with its
+   OFL licence, declared in `src/styles/fonts.css`; no remote font loading.
+   Icons from the design system's Brand group in `public/icon/` (16, 32, 48,
+   128).
 6. Side panel placeholder: PanelHeader (icon, wordmark, settings icon
    button, sky decoration) and one line of body text, styled with tokens
    only, at 320px and 400px width.
-7. Lint (including a rule or check that forbids raw colour values in style
-   files), format, typecheck, unit test runner with one passing test, build.
-   **[stack]**
-8. Git hygiene: pre-commit formatting and lint on staged files, commitlint
-   with conventional config. **[stack]**
-9. CI: on push and PR: install, lint, typecheck, test, build; upload the
-   built extension as a workflow artifact.
+7. Lint and test gates: ESLint flat config (typescript-eslint, React hooks)
+   with the ADR 6 `no-restricted-imports` boundaries already in place;
+   stylelint with `stylelint-declaration-strict-value` per ADR 7 (the
+   generated `tokens.css` ignored); Prettier; `tsc --noEmit`; Vitest with
+   WXT's Vitest plugin and happy-dom, and the tokens staleness test as the
+   first real test; `wxt build`.
+8. Git hygiene: husky + lint-staged (Prettier, ESLint, stylelint on staged
+   files), commitlint with `@commitlint/config-conventional`.
+9. CI in `.github/workflows/ci.yml`: on push and PR, Node 24, `npm ci`,
+   `lint`, `typecheck`, `test`, `build`; upload `.output/chrome-mv3/` as a
+   workflow artifact. The Playwright job is added in Phase 5.
 10. `README.md` stub: one-liner, "build and load unpacked" steps, links to
     PLAN.md and PHASES.md, the "never submits" and "data stays on your
     device" promises.
@@ -140,7 +161,7 @@ after regeneration; the header's contrast pairs match the design system's.
 **Context for a fresh session:** scaffold exists (Phase 0). This phase
 builds every product rule as plain TypeScript. **No imports from browser
 APIs (`chrome.*`), the DOM, the UI framework, storage or network anywhere in
-the rules folder [stack: exact path].** Strict red-green-refactor: every
+`src/rules/`.** Strict red-green-refactor: every
 behaviour gets a failing test first. The current date is passed in, never
 read.
 
@@ -268,9 +289,12 @@ profile survives a browser restart; settings export, import and delete.
 
 **In scope**
 
-1. Storage layer per ADR 3 **[stack]**: typed read/write of `profile`,
-   `settings`, `applications` with a `schemaVersion` and a migration hook
-   (no migrations yet). Pragmatic tests with the browser storage stubbed.
+1. `src/storage/` per ADR 3: typed `read`/`write` of `profile`,
+   `settings`, `applications` in `chrome.storage.local` with a
+   `schemaVersion` and a migration hook (no migrations yet), validation on
+   read through the Phase 1 validators, a `clearAll()`, and a
+   `useStored(key)` React hook in `src/ui/hooks/` driven by
+   `chrome.storage.onChanged`. Pragmatic tests against WXT's fake browser.
 2. Onboarding flow (design system screen 1) in steps with the progress
    segments: (1) applicants: name, job, employment type, net income; dashed
    "Add co-applicant" for the second; (2) household: adults and children
@@ -284,8 +308,11 @@ profile survives a browser restart; settings export, import and delete.
    shows every problem or replaces the data after a confirm), delete all
    data (confirm, then clears storage and returns to onboarding).
 5. Components used by these screens built from the design system: Button,
-   Card, TextField, Stepper, SegmentedControl, Chip, PanelHeader **[stack]**.
-6. Smoke test per screen; manual QA at 320px and 400px, keyboard only.
+   Card, TextField, Stepper, SegmentedControl, Chip, PanelHeader, as React
+   components in `src/ui/components/<Name>/` with a `<Name>.module.css`
+   each; screens in `src/ui/screens/`.
+6. Smoke test per screen with `@testing-library/react`; manual QA at 320px
+   and 400px, keyboard only.
 
 **Out of scope:** listing reading, the Claude key field (Phase 4), tracker.
 
@@ -324,9 +351,12 @@ detected", the listing's key numbers and the fit check.
    WBS requirement, contact person, features. Fixture tests: complete
    listing, listing with missing fields, a search results page (not a
    listing).
-4. Messaging between panel and content script **[stack]**: the panel asks
-   the active tab's content script for the listing when it opens and when
-   the tab URL changes.
+4. `src/messaging/`: a typed message union (`ping`, `getListing`, and the
+   later `getContactForm`, `fill`, `generateLetter`) with one send and one
+   handle helper over `chrome.runtime` and `chrome.tabs.sendMessage`. The
+   panel asks the active tab's content script for the listing when it opens
+   and when the tab URL changes. Adapters live in `src/adapters/`
+   (`types.ts`, `immoscout24/`); the content script only calls them.
 5. "Listing detected" screen (design system screen 2): detected badge with
    site name, title, meta line (`Prenzlauer Berg · 62 m² · 2. OG`), three
    stat tiles (Kaltmiete, Warmmiete, rooms), fit check card with one line
@@ -360,11 +390,16 @@ validator, and the user can switch tone, rewrite, edit and copy.
 
 **In scope**
 
-1. Claude client per ADR 4 **[stack]**: one function from `{ system, user }`
-   to text, model from settings with the ADR's default, timeouts, error
-   mapping to user-facing messages (no key, invalid key, rate limited,
-   network). The key (if ADR 4 picks the user's own key) is entered in
-   settings, stored locally, never exported, never logged.
+1. Probe first (ADR 4): a request from the service worker to the Messages
+   API with a real key succeeds; log what headers it needed. Then
+   `src/claude/`: `generate({ system, user }, { model }): Promise<string>`
+   calling `https://api.anthropic.com` from the service worker only (the
+   panel sends `generateLetter`), default model `claude-sonnet-5-5`,
+   `claude-haiku-5-5` selectable in settings, a timeout, error mapping to
+   user-facing messages (no key, invalid key, rate limited, network). The
+   key is entered in settings (and offered as a "connect Claude" step after
+   onboarding), stored under `apiKey`, never exported, never logged. Host
+   permission `https://api.anthropic.com/*` added to `wxt.config.ts`.
 2. Generate → validate → retry once with the problems listed in the retry
    prompt → if still invalid, show the letter with the problems as
    warnings. ADR 9.
@@ -411,8 +446,12 @@ the contact form.
    fields named, "Fill the form" as the teal button, and the reminder "You
    review and press Send yourself." under it.
 5. Never-submit test: on a local fixture page whose form records any submit
-   attempt, a fill leaves the record empty. Plus the scripted end-to-end
-   run from PLAN.md section 5 **[stack]**.
+   attempt, a fill leaves the record empty (Vitest, happy-dom). Plus
+   `e2e/never-submit.spec.ts` (Playwright): Chromium with
+   `.output/chrome-mv3/` loaded, a fixture served from `fixtures/`, the panel
+   page opened by its `chrome-extension://` URL, "Fill the form" pressed,
+   the fixture's submit record asserted empty. `npm run test:e2e` and a
+   Playwright job in CI on every PR. The fill code lives in `src/fill/`.
 
 **Out of scope:** unknown sites, the tracker.
 
