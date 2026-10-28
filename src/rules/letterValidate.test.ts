@@ -160,6 +160,16 @@ describe("validateLetter", () => {
     expect(validateLetter(general, anonymousRequest)).toEqual([]);
   });
 
+  it("treats a blank surname as no contact person", () => {
+    const blankRequest = {
+      ...request,
+      listing: { ...kreuzbergListing, contactPerson: { lastName: "" } },
+    };
+    expect(validateLetter(passingLetter, blankRequest)).toEqual([
+      { code: "wrong_salutation", text: "Sehr geehrte Frau Weber," },
+    ]);
+  });
+
   it("flags a pet the household has that the letter leaves out", () => {
     const letter = replaced("unser ruhiger Hund", "unser ruhiger Begleiter");
     expect(validateLetter(letter, request)).toEqual([
