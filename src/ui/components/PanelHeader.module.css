@@ -1,0 +1,96 @@
+/* PanelHeader (design system components/PanelHeader/README.md). The sky is
+   positioned against the panel root, which is position: relative and
+   overflow: hidden. Sizes and offsets below are the README's. */
+
+.sky {
+  --planet-size: 168px;
+  --planet-right: -56px;
+  --planet-top: -64px;
+  --ring-width: 150px;
+  --ring-height: 14px;
+  --ring-right: -40px;
+  --ring-top: 22px;
+  --sun-dot-size: 8px;
+  --sun-dot-right: 132px;
+  --sun-dot-top: 78px;
+  --teal-dot-size: 6px;
+  --teal-dot-left: 186px;
+  --teal-dot-top: 30px;
+
+  position: absolute;
+  border-radius: var(--radius-pill);
+}
+
+.planet {
+  right: var(--planet-right);
+  top: var(--planet-top);
+  width: var(--planet-size);
+  height: var(--planet-size);
+  background: var(--planet);
+}
+
+.ring {
+  right: var(--ring-right);
+  top: var(--ring-top);
+  width: var(--ring-width);
+  height: var(--ring-height);
+  background: var(--planet-ring);
+}
+
+.sunDot {
+  right: var(--sun-dot-right);
+  top: var(--sun-dot-top);
+  width: var(--sun-dot-size);
+  height: var(--sun-dot-size);
+  background: var(--sun);
+}
+
+.tealDot {
+  left: var(--teal-dot-left);
+  top: var(--teal-dot-top);
+  width: var(--teal-dot-size);
+  height: var(--teal-dot-size);
+  background: var(--teal);
+}
+
+.header {
+  /* README: icon and wordmark 10px apart, icon corners 11px. */
+  --brand-gap: 10px;
+  --icon-radius: 11px;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--brand-gap);
+  margin: 0;
+  color: var(--ink);
+}
+
+.icon {
+  width: var(--icon-header);
+  height: var(--icon-header);
+  border-radius: var(--icon-radius);
+}
+
+.settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--night-600);
+  cursor: pointer;
+}
+
+.glyph {
+  fill: var(--ink-muted);
+}
