@@ -122,6 +122,25 @@ export default tseslint.config(
     },
   },
   {
+    // Rules tests also need the test runner and the invented sample
+    // profiles; nothing else crosses the boundary, tests included.
+    files: ["src/rules/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^(?!\\./|vitest$|\\.\\./\\.\\./test-support/)",
+              message:
+                "src/rules/ tests import only rules, vitest and test-support (ADR 6).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Adapters and fill read and write a page; they may use the rules core
     // but never the UI, storage or the Claude client (ADR 6).
     files: ["src/adapters/**", "src/fill/**"],
