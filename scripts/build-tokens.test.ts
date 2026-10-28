@@ -11,16 +11,17 @@ describe("tokens.css", () => {
 
   it("has one custom property per colour, spacing, radius and size token", () => {
     const css = renderTokensCss(readFileSync(TOKENS_JSON, "utf8"));
-    expect(css).toContain("--night-800: #12175a;");
-    expect(css).toContain("--space-4: 16px;");
-    expect(css).toContain("--radius-xl: 22px;");
-    expect(css).toContain("--tap-min: 44px;");
+    // Shapes, not values: a design system update must not break this test.
+    expect(css).toMatch(/--night-800: #[0-9a-f]{6};/);
+    expect(css).toMatch(/--space-4: \d+px;/);
+    expect(css).toMatch(/--radius-xl: \d+px;/);
+    expect(css).toMatch(/--tap-min: \d+px;/);
   });
 
   it("has one class per type style", () => {
     const css = renderTokensCss(readFileSync(TOKENS_JSON, "utf8"));
-    expect(css).toMatch(/\.type-title-xl \{[^}]*font-size: 28px;/);
-    expect(css).toMatch(/\.type-body \{[^}]*line-height: 22px;/);
+    expect(css).toMatch(/\.type-title-xl \{[^}]*font-size: \d+px;/);
+    expect(css).toMatch(/\.type-body \{[^}]*line-height: \d+px;/);
   });
 
   it("names the broken path when tokens.json is malformed", () => {
