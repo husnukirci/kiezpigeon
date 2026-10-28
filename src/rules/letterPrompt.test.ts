@@ -146,7 +146,7 @@ describe("buildLetterPrompt", () => {
       "Begin with exactly this line: Sehr geehrte Frau Weber,",
     );
     expect(system).toContain("U+2014");
-    expect(system).not.toContain("—");
+    expect(system).not.toContain(String.fromCodePoint(0x2014));
     expect(system).toContain("Open with the strongest signals");
     expect(system).toContain("Use only the facts given");
   });
