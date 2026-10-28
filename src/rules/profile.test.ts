@@ -176,9 +176,9 @@ describe("export and import", () => {
   });
 
   it("never carries an API key, even one smuggled into the profile", () => {
-    const smuggled = { ...coupleWithDog, apiKey: "sk-ant-not-a-real-key" };
+    const smuggled = { ...coupleWithDog, apiKey: "FAKE-KEY-FOR-EXPORT-TEST" };
     const json = JSON.stringify(exportData(smuggled, [], exportedAt));
-    expect(json).not.toContain("sk-ant");
+    expect(json).not.toContain("FAKE-KEY");
     expect(json).not.toContain("apiKey");
   });
 
