@@ -62,6 +62,12 @@ describe("salutationFor", () => {
   it("falls back to the general salutation", () => {
     expect(salutationFor(undefined)).toBe("Sehr geehrte Damen und Herren,");
   });
+
+  it("falls back to the general salutation for a blank surname", () => {
+    expect(salutationFor({ salutation: "Frau", lastName: "  " })).toBe(
+      "Sehr geehrte Damen und Herren,",
+    );
+  });
 });
 
 describe("buildLetterPrompt", () => {

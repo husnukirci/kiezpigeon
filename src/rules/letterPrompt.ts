@@ -60,8 +60,16 @@ export function assertFeatureCount(features: readonly Feature[]): void {
   }
 }
 
+/** The contact person, or undefined when the listing gives no surname. */
+export function namedContact(
+  person: ContactPerson | undefined,
+): ContactPerson | undefined {
+  return person && person.lastName.trim() !== "" ? person : undefined;
+}
+
 /** The exact first line the letter must start with. */
-export function salutationFor(person: ContactPerson | undefined): string {
+export function salutationFor(contact: ContactPerson | undefined): string {
+  const person = namedContact(contact);
   if (!person) return "Sehr geehrte Damen und Herren,";
   switch (person.salutation) {
     case "Frau":

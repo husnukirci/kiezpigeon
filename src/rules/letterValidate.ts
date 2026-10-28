@@ -7,6 +7,7 @@ import {
   PET_NOUNS,
   assertFeatureCount,
   incomeRatioTenths,
+  namedContact,
   salutationFor,
 } from "./letterPrompt";
 import { sumCents } from "./money";
@@ -117,7 +118,7 @@ function salutationProblems(
   request: LetterRequest,
 ): LetterProblem[] {
   const firstLine = (text.trim().split(/\r?\n/)[0] ?? "").trim();
-  const person = request.listing.contactPerson;
+  const person = namedContact(request.listing.contactPerson);
   const ok = person
     ? firstLine.includes(person.lastName)
     : firstLine === salutationFor(undefined);
