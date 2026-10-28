@@ -136,17 +136,17 @@ PLAN.md, and its phase spec; implements; self-reviews against the phase and
 global checklists; fixes findings; opens the PR and stops. The author
 merges, then starts the next phase in a fresh session.
 
-| Phase | Work                                                                                       | PR              |
-| ----- | ------------------------------------------------------------------------------------------ | --------------- |
-| P0    | Scaffold per accepted ADRs: MV3 skeleton, side panel, tokens pipeline, font, tooling, CI    | chore(scaffold) |
-| P1    | Rules core, strict TDD (types → money/format → profile → fit → letterPrompt → letterValidate → fieldMatch → tracker) | feat(rules) |
-| P2    | Storage layer, onboarding and profile screens, settings with export/import/delete           | feat(profile)   |
-| P3    | Adapter interface, ImmoScout24 listing adapter on fixtures, messaging, "Listing detected" + fit card | feat(listing) |
-| P4    | Claude client, generate → validate → retry, "Letter ready" screen, tone, rewrite, edit, copy | feat(letter)    |
-| P5    | ImmoScout24 contact form adapter, fill without submit, "X of Y matched", send reminder       | feat(fill)      |
-| P6    | Generic form fallback for unknown sites with confirm-before-fill                            | feat(fallback)  |
-| P7    | Tracker: save on "I sent it", statuses, stats, filters, pigeon tip                          | feat(tracker)   |
-| P8    | Docs, ADR audit, ai-workflow finalize, README + screenshots, data scrub, v1 tag              | docs            |
+| Phase | Work                                                                                                                 | PR              |
+| ----- | -------------------------------------------------------------------------------------------------------------------- | --------------- |
+| P0    | Scaffold per accepted ADRs: MV3 skeleton, side panel, tokens pipeline, font, tooling, CI                             | chore(scaffold) |
+| P1    | Rules core, strict TDD (types → money/format → profile → fit → letterPrompt → letterValidate → fieldMatch → tracker) | feat(rules)     |
+| P2    | Storage layer, onboarding and profile screens, settings with export/import/delete                                    | feat(profile)   |
+| P3    | Adapter interface, ImmoScout24 listing adapter on fixtures, messaging, "Listing detected" + fit card                 | feat(listing)   |
+| P4    | Claude client, generate → validate → retry, "Letter ready" screen, tone, rewrite, edit, copy                         | feat(letter)    |
+| P5    | ImmoScout24 contact form adapter, fill without submit, "X of Y matched", send reminder                               | feat(fill)      |
+| P6    | Generic form fallback for unknown sites with confirm-before-fill                                                     | feat(fallback)  |
+| P7    | Tracker: save on "I sent it", statuses, stats, filters, pigeon tip                                                   | feat(tracker)   |
+| P8    | Docs, ADR audit, ai-workflow finalize, README + screenshots, data scrub, v1 tag                                      | docs            |
 
 Each phase lands green (tests, typecheck, lint, build, manual check in
 Chrome where the phase is user-visible) before the next starts.
