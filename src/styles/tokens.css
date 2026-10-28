@@ -1,0 +1,114 @@
+/* generated from design/tokens.json, do not edit */
+
+:root {
+  /* colour */
+  --night-900: #0e1248;
+  --night-800: #12175a;
+  --night-700: #1a2085;
+  --night-600: #1f278f;
+  --night-500: #2a3299;
+  --line: #343db5;
+  --planet: #2340d8;
+  --planet-ring: #2b4fe6;
+  --ink: #ffffff;
+  --ink-muted: #c3c8f0;
+  --ink-subtle: #aeb4e8;
+  --teal: #2fd6c3;
+  --on-teal: #0b1150;
+  --teal-deep: #13436e;
+  --teal-soft: #7ff0e2;
+  --violet: #8b4dff;
+  --sun: #ffc24b;
+  --sun-deep: #3d3470;
+  --sun-soft: #ffd27a;
+  --paper: #f7f5ff;
+  --paper-ink: #1b1f4a;
+  --paper-muted: #5b6190;
+  --focus: #7ff0e2;
+  /* spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  /* radius */
+  --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  /* size */
+  --tap-min: 44px;
+  --button-height: 54px;
+  --panel-width: 400px;
+  --icon-header: 40px;
+  /* font families */
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.type-title-xl {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.type-title-lg {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  line-height: 29px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.type-stat {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  line-height: 26px;
+  font-weight: 800;
+}
+
+.type-wordmark {
+  font-family: var(--font-sans);
+  font-size: 19px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.type-button {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 800;
+}
+
+.type-body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.type-body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 400;
+}
+
+.type-label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.type-caption {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}

@@ -8,15 +8,15 @@ ADRs 1 to 7 were proposed with their options and trade-offs, then accepted
 by the author before Phase 0; the proposals are in the git history. Each
 entry keeps one line per rejected option so the cut stays visible.
 
-| ADR | Title                                                  | Phase | Status   |
-| --: | ------------------------------------------------------ | ----- | -------- |
-|   1 | WXT for the extension build, TypeScript strict         | P0    | accepted |
-|   2 | React 19 for the side panel, no component library      | P0    | accepted |
-|   3 | All data in `chrome.storage.local` behind one module    | P2    | accepted |
-|   4 | The user's own Claude API key, behind a client interface | P4  | accepted |
-|   5 | Vitest + happy-dom + Testing Library, Playwright for e2e | P0   | accepted |
-|   6 | Single package with lint-enforced folder boundaries    | P0    | accepted |
-|   7 | Generated token variables, CSS Modules, stylelint gate | P0    | accepted |
+| ADR | Title                                                    | Phase | Status   |
+| --: | -------------------------------------------------------- | ----- | -------- |
+|   1 | WXT for the extension build, TypeScript strict           | P0    | accepted |
+|   2 | React 19 for the side panel, no component library        | P0    | accepted |
+|   3 | All data in `chrome.storage.local` behind one module     | P2    | accepted |
+|   4 | The user's own Claude API key, behind a client interface | P4    | accepted |
+|   5 | Vitest + happy-dom + Testing Library, Playwright for e2e | P0    | accepted |
+|   6 | Single package with lint-enforced folder boundaries      | P0    | accepted |
+|   7 | Generated token variables, CSS Modules, stylelint gate   | P0    | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -96,7 +96,7 @@ state; no global state library until a screen proves it needs one. "Delete
 all data" is one `chrome.storage.local.clear()`.
 
 Rejected: IndexedDB for applications (real queries, but two stores to
-export, migrate and wipe, and no access from content scripts); 
+export, migrate and wipe, and no access from content scripts);
 `chrome.storage.sync` for the profile (sends personal data through the
 user's Google account, 8 kB item quota); zod or valibot for validation (a
 second place import rules would live, outside strict TDD).
