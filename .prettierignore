@@ -1,0 +1,7 @@
+.output/
+.wxt/
+node_modules/
+package-lock.json
+src/styles/tokens.css
+public/
+design/tokens.json

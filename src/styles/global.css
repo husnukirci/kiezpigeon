@@ -1,0 +1,36 @@
+/* Base styles for the side panel. Token values come from tokens.css; the
+   few fixed values below are from the design system README, named here so
+   components never repeat a raw number. */
+
+:root {
+  /* README "Accessibility": 2px focus ring with 2px offset. */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--night-800);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-width: 320px;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus);
+  outline-offset: var(--focus-ring-offset);
+}
