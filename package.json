@@ -1,0 +1,29 @@
+{
+  "name": "kiezpigeon",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Chrome extension for the Berlin apartment hunt: reads a listing, writes a German application letter, fills the contact form. You press Send.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wxt-dev/module-react": "^1.2.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5",
+    "wxt": "^0.21.5"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}
