@@ -24,8 +24,8 @@ describe("tokens.css", () => {
   });
 
   it("names the broken path when tokens.json is malformed", () => {
-    expect(() => renderTokensCss('{"color": {"tokens": [{"name": 1}]}}')).toThrow(
-      "tokens.json: type must be an object",
-    );
+    expect(() =>
+      renderTokensCss('{"color": {"tokens": [{"name": 1}]}}'),
+    ).toThrow("tokens.json: type must be an object");
   });
 });

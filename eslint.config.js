@@ -93,9 +93,18 @@ export default tseslint.config(
       ],
       "no-restricted-globals": [
         "error",
-        ...["window", "document", "navigator", "fetch", "chrome", "browser", "localStorage"].map(
-          (name) => ({ name, message: "src/rules/ is pure: pass data in instead." }),
-        ),
+        ...[
+          "window",
+          "document",
+          "navigator",
+          "fetch",
+          "chrome",
+          "browser",
+          "localStorage",
+        ].map((name) => ({
+          name,
+          message: "src/rules/ is pure: pass data in instead.",
+        })),
       ],
       "no-restricted-properties": [
         "error",
@@ -122,7 +131,14 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["**/ui", "**/ui/**", "**/storage", "**/storage/**", "**/claude", "**/claude/**"],
+              group: [
+                "**/ui",
+                "**/ui/**",
+                "**/storage",
+                "**/storage/**",
+                "**/claude",
+                "**/claude/**",
+              ],
               message:
                 "src/adapters/ and src/fill/ may import src/rules/, never ui, storage or claude (ADR 6).",
             },
