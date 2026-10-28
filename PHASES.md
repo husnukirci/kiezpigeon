@@ -45,9 +45,9 @@ when ADRs 1 to 7 were accepted. Paths follow the folder map in ADR 6.
       session
 - [ ] No real personal data in the diff: fixtures scrubbed, sample profiles
       invented, no API key (grep for `@`, phone-number shapes, `sk-ant-`)
-- [ ] Never-submit grep: no `.submit(`, `requestSubmit`, `new
-    SubmitEvent`, `dispatchEvent(new Event("submit"`, `.click()` on a
-      button outside the panel's own UI, or synthetic `Enter` key events
+- [ ] Never-submit grep: no `.submit(`, `requestSubmit`,
+      `new SubmitEvent`, `dispatchEvent(new Event("submit"`, `.click()` on
+      a button outside the panel's own UI, or synthetic `Enter` key events
 - [ ] The rules core still imports nothing from browser APIs, the UI
       framework, the DOM or the network (check every import line)
 - [ ] Styles use tokens only: no raw hex, px font sizes, spacings or radii
