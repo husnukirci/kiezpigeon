@@ -26,7 +26,8 @@ function lengthProblems(text: string): LetterProblem[] {
 
 // An em dash anywhere, or an en dash with whitespace on both sides (used as
 // an em dash). `18–20` between digits is a range and stays allowed.
-const DASH = /\S*(?:\s*—\s*|\s+–\s+)\S*/gu;
+// Escapes are spelled for RegExp so the source holds no dash characters.
+const DASH = new RegExp(String.raw`\S*(?:\s*\u2014\s*|\s+\u2013\s+)\S*`, "gu");
 
 function dashProblems(text: string): LetterProblem[] {
   return [...text.matchAll(DASH)].map((m) => ({
