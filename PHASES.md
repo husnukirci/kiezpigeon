@@ -46,7 +46,7 @@ when ADRs 1 to 7 were accepted. Paths follow the folder map in ADR 6.
 - [ ] No real personal data in the diff: fixtures scrubbed, sample profiles
       invented, no API key (grep for `@`, phone-number shapes, `sk-ant-`)
 - [ ] Never-submit grep: no `.submit(`, `requestSubmit`, `new
-      SubmitEvent`, `dispatchEvent(new Event("submit"`, `.click()` on a
+    SubmitEvent`, `dispatchEvent(new Event("submit"`, `.click()` on a
       button outside the panel's own UI, or synthetic `Enter` key events
 - [ ] The rules core still imports nothing from browser APIs, the UI
       framework, the DOM or the network (check every import line)
@@ -113,7 +113,7 @@ and tests it.
    property per colour, spacing, radius and size token (`--night-800`,
    `--space-4`, `--radius-xl`, `--tap-min`) and one class per type style
    (`.type-title-xl`, `.type-body`, ...), headed `/* generated from
-   design/tokens.json, do not edit */`. `scripts/build-tokens.test.ts`
+design/tokens.json, do not edit */`. `scripts/build-tokens.test.ts`
    regenerates in memory and fails if the committed file differs.
 5. Plus Jakarta Sans 400, 600, 700, 800 as woff2 in `public/fonts/` with its
    OFL licence, declared in `src/styles/fonts.css`; no remote font loading.
@@ -173,20 +173,20 @@ data.
 
 - **Income** is the sum of `netIncomeCents` of all applicants (1 or 2).
 - **Budget line:** rent = `warmmieteCents`, else `kaltmieteCents +
-  nebenkostenCents` when both known, else unknown. No budget in the profile →
+nebenkostenCents` when both known, else unknown. No budget in the profile →
   `unknown`, reason `Set a budget in your profile`. rent ≤ budget → `ok`,
   `Within your 1.300 € budget`. rent ≤ budget × 1.10 → `warn`, `90 € over
-  your budget`. Otherwise `no`, `260 € over your budget`.
+your budget`. Otherwise `no`, `260 € over your budget`.
 - **Income line:** Kaltmiete unknown → `unknown`. ratio = income /
   Kaltmiete, floored to one decimal. ratio ≥ 3.0 → `ok`, `Income is 3.4 ×
-  Kaltmiete`. Otherwise `warn`, `Income is 2.6 × Kaltmiete. Many landlords
-  ask for 3 ×.` Never `no`: landlords decide, not Kiezpigeon.
+Kaltmiete`. Otherwise `warn`, `Income is 2.6 × Kaltmiete. Many landlords
+ask for 3 ×.` Never `no`: landlords decide, not Kiezpigeon.
 - **Pets line:** household has no pets → `ok`, `No pets`. Listing
   `allowed` → `ok`, `Pets allowed`. Listing `by_arrangement` or unknown →
   `warn`, `Pets by arrangement. I'll mention them honestly.` Listing
   `not_allowed` → `no`, `No pets allowed here`.
 - **WBS line:** listing requires WBS: profile has WBS → `ok`, `You have a
-  WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
+WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
   `No WBS needed`. Listing silent → `unknown`, `Listing doesn't say`.
 - The fit check returns the four lines in that order. It never blocks
   writing a letter.
@@ -205,7 +205,7 @@ data.
 - **Salutation:** contact person known → the first line contains their
   surname (`Sehr geehrte Frau Weber,` / `Sehr geehrter Herr Weber,` /
   `Guten Tag Frau Weber,`). Unknown → the first line is `Sehr geehrte Damen
-  und Herren,`.
+und Herren,`.
 - **Pets honesty:** household has pets → for every pet kind the letter
   contains its keyword (`Hund`, `Katze`, plus a small table for others) or
   a general `Haustier`. No pets → no pet keyword appears.
@@ -230,7 +230,7 @@ data.
   days (relative to the passed-in date). Filters: all, sent, viewing,
   closed; newest first.
 - **Export:** `{ "kiezpigeon": 1, "exportedAt": ..., "profile": ...,
-  "applications": [...] }`. Import rejects a file with an unknown schema
+"applications": [...] }`. Import rejects a file with an unknown schema
   version or invalid fields and names every problem; it never half-imports.
   The Claude API key, if any, is never part of an export.
 
@@ -240,7 +240,7 @@ data.
    fields optional where a page may not show them, and `missing: string[]`.
 2. `money` and `format`: cents helpers; `formatEuro(118000) === "1.180 €"`,
    `formatArea(62) === "62 m²"`, `formatDate("2027-03-01") ===
-   "01.03.2027"`, using the German grouping rules without relying on the
+"01.03.2027"`, using the German grouping rules without relying on the
    runtime's `Intl` locale data being present (test both ways).
 3. `profile`: validation (1 or 2 applicants, non-negative cents, counts ≥ 0,
    adults ≥ 1, dates valid), defaults (tone `warm`, language `de`), export
@@ -249,7 +249,7 @@ data.
    Tests: every branch of every line, including the 10% edge and the 3.0
    edge.
 5. `letterPrompt`: `buildLetterPrompt(request): { system: string; user:
-   string }`. Facts only, signal order, tone instruction, word range, no em
+string }`. Facts only, signal order, tone instruction, word range, no em
    dash instruction, contact person, chosen features, pets sentence when
    present. Tests assert the facts block exactly and that no profile field
    absent from the request appears.
@@ -261,7 +261,7 @@ data.
 7. `fieldMatch`: `classifyField(descriptor): FieldKind` from `name`, `id`,
    `autocomplete`, label text and placeholder against a German and English
    keyword table; `mapFields(descriptors, profile, letter): { mappings,
-   matched, total }`. Descriptors are plain data, not DOM nodes.
+matched, total }`. Descriptors are plain data, not DOM nodes.
 8. `tracker`: `setStatus`, `stats`, `filter` per the rules above.
 
 **Out of scope:** storage, DOM reading, any network call, any screen.
@@ -343,7 +343,7 @@ detected", the listing's key numbers and the fit check.
    (CLAUDE.md rule 6), and record in `docs/ai-workflow.md` which fields are
    in stable attributes or structured data and which only in visible text.
 2. Adapter interface (ADR 8): `matches(url)`, `readListing(document):
-   Listing`, `readContactForm(document): FormFieldDescriptor[]` (form part
+Listing`, `readContactForm(document): FormFieldDescriptor[]` (form part
    used in Phase 5). Adapters never throw on a missing field; they fill
    `missing`.
 3. ImmoScout24 listing adapter: title, address and district, Kaltmiete,
