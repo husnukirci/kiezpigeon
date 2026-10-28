@@ -1,0 +1,34 @@
+/* Plus Jakarta Sans, bundled (OFL, public/fonts/OFL.txt). The latin subset
+   covers German umlauts, ß, € and ². No remote font loading (ADR 7). */
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("/fonts/plus-jakarta-sans-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("/fonts/plus-jakarta-sans-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("/fonts/plus-jakarta-sans-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("/fonts/plus-jakarta-sans-latin-800-normal.woff2") format("woff2");
+}
