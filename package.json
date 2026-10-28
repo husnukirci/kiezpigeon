@@ -15,7 +15,9 @@
     "postinstall": "wxt prepare",
     "tokens": "node scripts/build-tokens.ts",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && vitest run"
+    "test": "npm run typecheck && vitest run",
+    "lint": "eslint . && stylelint \"**/*.css\"",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
