@@ -25,6 +25,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P1 | The spec gives exact reasons for most fit branches but none for "rent cannot be worked out" or "no Kaltmiete". | Chose `Rent not shown` and `Kaltmiete not shown`, pinned by tests and flagged in the PR for the author to confirm.
 - P1 | A first version of `parseProfile` read applicant items lazily in the return object, so problems came out in a different order than the profile's fields; the order test caught it. | Readers run strictly in field order.
 - P1 | Prettier rewrote the test's `"\u2014"` escape into a literal em dash, which the global em dash grep would flag. | The test builds it with `String.fromCodePoint(0x2014)`; the prompt itself names U+2014 instead of containing it.
+- P1 | Spec conflict: the prompt's signal list includes "non-smoking household without pets", which invites "keine Haustiere", but the validator rule "no pets → no pet keyword appears" would reject that honest sentence. | A pet word with `kein…` or `ohne` among the two words before it counts as a denial, in both directions: it neither satisfies `pets_missing` nor triggers `pets_invented`. Pet words match word endings so `Hunderten` is not a dog. Tested.
+- P1 | My hand-counted word totals in two validator tests were wrong (15 and 184 instead of 16 and 186); the code was right. | Expectations corrected from the actual counts; the fixture letter's 150 is asserted by `countWords` in the test itself.
+- P1 | The em dash grep found a literal U+2014 in the validator's own dash regex after it was committed (the escape had become the character). | The pattern is built with `new RegExp(String.raw...)` so the source holds only the `\u2014` escape; fixed in a follow-up commit, tests unchanged and green.
 
 ## Per-phase narrative
 
