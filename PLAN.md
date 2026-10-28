@@ -10,8 +10,11 @@ Scope is tiered so the project is releasable at every milestone: Tier 1 is a
 complete, usable v1; Tiers 2 and 3 are follow-ups, not prerequisites.
 
 Design system: https://claude.ai/artifact/5M9uVbsEWmLzmcsTc54yoo
-(`project/README.md`, `project/tokens.json`, component READMEs). Tech
-choices: `docs/decisions.md`, ADRs 1 to 7, **proposed, not yet accepted**.
+(`project/README.md`, `project/tokens.json`, component READMEs). Stack
+(`docs/decisions.md`, ADRs 1 to 7): WXT + TypeScript strict, React 19 side
+panel, `chrome.storage.local`, the user's own Claude API key from the
+service worker, Vitest + happy-dom + Testing Library + Playwright, one npm
+package, CSS Modules on generated design-token variables.
 
 ---
 
@@ -60,7 +63,7 @@ profile value or the letter and reports how many matched. An
 **application** is a saved record of a letter for a listing with a status
 `sent | viewing | closed`. All rules are pure functions over plain data.
 
-**Profile fields added beyond the brief, to confirm:** budget (the fit check
+**Profile fields added beyond the brief, confirmed by the author:** budget (the fit check
 needs it), WBS flag (the WBS rule needs it), contact details (every contact
 form asks for email and phone).
 
@@ -68,7 +71,7 @@ form asks for email and phone).
 
 ### Tier 1: v1 release
 
-- [ ] Tech choices accepted: ADRs 1 to 7 moved from proposed to accepted;
+- [x] Tech choices accepted: ADRs 1 to 7 moved from proposed to accepted;
       CLAUDE.md "Tech invariants" filled in
 - [ ] Scaffold: extension skeleton with service worker, side panel and one
       content script; tokens pipeline from the design system's
@@ -120,8 +123,8 @@ form asks for email and phone).
 
 ### Tier 3: stretch
 
-Chrome Web Store listing with a privacy policy; a small backend if ADR 4
-starts with the user's own key; Firefox port; encrypted export. Listed so
+Chrome Web Store listing with a privacy policy; a small backend implementing ADR 4's
+client interface so users need no key of their own; Firefox port; encrypted export. Listed so
 cuts are deliberate and discussable, not accidental. Tiers 2 and 3 may never
 ship; Tier 1 is complete without them.
 
@@ -190,7 +193,7 @@ Expected during the build:
 10. Never submit: how filling works on framework-driven forms (P5)
 11. Fallback field classification for unknown sites (P6)
 
-## 7. Manifest permissions (Tier 1, to confirm in P0)
+## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 
 - `sidePanel`: the UI.
 - `storage`: profile, settings, applications (plus `unlimitedStorage` only
@@ -199,7 +202,7 @@ Expected during the build:
   user action, including unknown sites for the fallback.
 - Host permission for `https://www.immobilienscout24.de/*`: the known
   adapter's content script.
-- The Claude API host (or the backend host), per ADR 4.
+- Host permission for `https://api.anthropic.com/*` (ADR 4, Phase 4).
 
 No `tabs`, `history`, `webRequest`, `cookies` or `<all_urls>`.
 
@@ -215,7 +218,10 @@ No `tabs`, `history`, `webRequest`, `cookies` or `<all_urls>`.
 - **Generated facts.** A model can invent a detail. The validator rejects
   numbers not in the facts and a wrong salutation; invented prose details it
   cannot catch, which is why the user reviews every letter.
-- **API cost and key safety.** Depends on ADR 4.
+- **API cost and key safety.** Users bring their own key (ADR 4) and pay
+  their own usage; the key sits unencrypted in local extension storage and
+  is never exported, logged or sent to a content script. The README says
+  both plainly.
 
 ## 9. Definition of done (Tier 1)
 
