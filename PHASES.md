@@ -192,7 +192,8 @@ WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
   writing a letter.
 - **Letter word count:** a word is a maximal run of non-whitespace that
   contains at least one letter or digit. The whole letter counts,
-  salutation and sign-off included. Valid range 120 to 180 inclusive.
+  salutation and sign-off included. At most 180; no minimum since the
+  ADR 9 amendment of 2026-10-29 (it was 120).
 - **Dashes:** U+2014 (em dash) anywhere is a problem. U+2013 (en dash)
   with whitespace on both sides is a problem (it is being used as an em
   dash). An en dash between two digits (`18–20`) is allowed.
@@ -413,7 +414,7 @@ validator, and the user can switch tone, rewrite, edit and copy.
 **Out of scope:** form filling, saving to the tracker.
 
 **Acceptance:** on three fixture listings with two sample profiles
-(one with a dog), every generated letter is 120 to 180 words, uses the
+(one with a dog), every generated letter is at most 180 words, uses the
 contact person's surname, mentions the dog, contains no em dash, and every
 number in it is in the facts; recorded in the PR with the letters.
 

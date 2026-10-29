@@ -151,7 +151,7 @@ describe("buildLetterPrompt", () => {
     expect(system).toContain("Write in German");
     expect(system).toContain("Tone: warm and personal");
     expect(system).toContain("the way a native speaker writes to a landlord");
-    expect(system).toContain("120 to 180 words");
+    expect(system).toContain("at most 180 words");
     expect(system).toContain(
       "Begin with exactly this line: Sehr geehrte Frau Weber,",
     );
@@ -177,7 +177,7 @@ describe("buildLetterPrompt", () => {
       const match = /aim for about (\d+) words/.exec(system);
       return Number(match?.[1]);
     });
-    expect(targets).toEqual([150, 150, 140]);
+    expect(targets).toEqual([125, 125, 115]);
   });
 
   it("asks for the chosen features by name", () => {

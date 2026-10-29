@@ -5,7 +5,6 @@ import {
   kreuzbergListing,
 } from "../../test-support/sample-profiles";
 import { buildLetterPrompt, createLetterRequest } from "./letterPrompt";
-import { countWords } from "./letterValidate";
 import type { LetterPrompt } from "./letterPrompt";
 import { buildRetryPrompt, describeProblem, writeLetter } from "./writeLetter";
 
@@ -14,13 +13,11 @@ const request = createLetterRequest(coupleWithDog, kreuzbergListing, {
   features: ["Balkon", "Altbau"],
 });
 
-const tooShort =
-  "Sehr geehrte Frau Weber,\n\nwir mögen den Balkon und den Altbau mit unserem Hund.";
+/** Fails only one check: 999 is not in the facts. */
+const broken =
+  "Sehr geehrte Frau Weber,\n\nwir mögen den Balkon und den Altbau mit unserem Hund und zahlen 999 €.";
 
-const shortBy = {
-  code: "too_short",
-  text: `${countWords(tooShort)} words`,
-} as const;
+const wrongNumber = { code: "unknown_number", text: "999" } as const;
 
 /** A generator that answers with the given letters in turn. */
 function scripted(...letters: string[]) {
@@ -37,11 +34,8 @@ function scripted(...letters: string[]) {
 
 describe("describeProblem", () => {
   it("says each problem in one plain sentence", () => {
-    expect(describeProblem({ code: "too_short", text: "98 words" })).toBe(
-      "The letter has 98 words; it needs 120 to 180. Add about 52 words.",
-    );
     expect(describeProblem({ code: "too_long", text: "201 words" })).toBe(
-      "The letter has 201 words; it needs 120 to 180. Cut about 51 words.",
+      "The letter has 201 words; it needs at most 180. Cut about 76 words.",
     );
     expect(describeProblem({ code: "em_dash", text: "Altbau – sofort" })).toBe(
       'A dash is used as punctuation in "Altbau – sofort". Use a comma or a full stop.',
@@ -72,15 +66,13 @@ describe("describeProblem", () => {
 describe("buildRetryPrompt", () => {
   it("keeps the rules and adds the letter and its problems to the facts", () => {
     const first = buildLetterPrompt(request);
-    const retry = buildRetryPrompt(request, tooShort, [
-      { code: "too_short", text: "12 words" },
-    ]);
+    const retry = buildRetryPrompt(request, broken, [wrongNumber]);
     expect(retry.system).toBe(first.system);
     expect(retry.user.startsWith(first.user)).toBe(true);
     expect(retry.user).toContain(
-      "Your previous letter broke these rules:\n- The letter has 12 words; it needs 120 to 180. Add about 138 words.",
+      "Your previous letter broke these rules:\n- The number 999 is not in the facts.",
     );
-    expect(retry.user).toContain(`Previous letter:\n${tooShort}`);
+    expect(retry.user).toContain(`Previous letter:\n${broken}`);
     expect(retry.user.trimEnd()).toMatch(/Write the whole letter again.*\.$/);
   });
 });
@@ -97,18 +89,20 @@ describe("writeLetter", () => {
   });
 
   it("retries once with the problems and returns the fixed letter", async () => {
-    const { generate, prompts } = scripted(tooShort, passingLetter);
+    const { generate, prompts } = scripted(broken, passingLetter);
     const draft = await writeLetter(request, generate);
     expect(draft).toEqual({ text: passingLetter, problems: [], attempts: 2 });
-    expect(prompts[1]).toEqual(buildRetryPrompt(request, tooShort, [shortBy]));
+    expect(prompts[1]).toEqual(
+      buildRetryPrompt(request, broken, [wrongNumber]),
+    );
   });
 
   it("returns the second letter with its problems when it is still invalid", async () => {
-    const { generate, prompts } = scripted(tooShort, tooShort);
+    const { generate, prompts } = scripted(broken, broken);
     const draft = await writeLetter(request, generate);
     expect(draft.attempts).toBe(2);
-    expect(draft.text).toBe(tooShort);
-    expect(draft.problems).toEqual([shortBy]);
+    expect(draft.text).toBe(broken);
+    expect(draft.problems).toEqual([wrongNumber]);
     expect(prompts).toHaveLength(2);
   });
 

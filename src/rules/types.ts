@@ -161,7 +161,6 @@ export interface LetterRequest {
 }
 
 export type LetterProblemCode =
-  | "too_short"
   | "too_long"
   | "em_dash"
   | "unknown_number"
