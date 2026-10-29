@@ -454,6 +454,8 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",
     "- State the household income only as given, never per person or as an exact sum.",
+    "- Use the income ratio exactly as given, without words like deutlich or weit.",
+    "- Do not repeat the listing's facts (size, floor, rent, free date) back to the landlord; mention only the chosen features, and the move-in when it is a signal.",
     ...jobSearchRules(request),
     ...(features.length === 0
       ? []
