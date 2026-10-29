@@ -75,6 +75,13 @@ describe("immoscout24.readListing", () => {
     });
   });
 
+  it("says a search results page is not a listing", () => {
+    const page = loadFixture("immoscout24", "search-results.html");
+    // The two result cards made it through the parse.
+    expect(page.querySelectorAll(".listing-card")).toHaveLength(2);
+    expect(immoscout24.readListing(page, URL)).toBeUndefined();
+  });
+
   it("reads a WBS row by its label", () => {
     // Invented markup in the shape of the page's criteria rows: no saved
     // page had a WBS field (docs/ai-workflow.md, Phase 3).
