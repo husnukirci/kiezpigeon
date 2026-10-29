@@ -19,6 +19,7 @@ entry keeps one line per rejected option so the cut stays visible.
 |   7 | Generated token variables, CSS Modules, stylelint gate         | P0    | accepted |
 |   8 | One adapter per site: DOM in, `Listing` and form out           | P3    | accepted |
 |   9 | The validator is the guarantee: generate, validate, retry once | P4    | accepted |
+|  10 | Move-in as a choice, schema 2                                  | P4+   | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -369,3 +370,51 @@ screen with problems, so the screen must show them plainly and the user
 must still review it, which they do anyway. Rules the validator does not
 check (invented prose details) stay the user's job, as PLAN.md risks
 says. The running probe is `src/rules/writeLetter.test.ts`.
+
+## ADR 10: Move-in as a choice and how two applicants are related, schema 2
+
+**Status.** Accepted.
+
+**Context.** The profile stored the move-in as one optional date. Two real
+answers did not fit: "as soon as possible" and "the date does not matter".
+Both are strong landlord signals, since every empty month costs rent, and
+the letter could not use them. The contact forms Phase 5 fills also ask for
+an Einzugstermin.
+
+**Decision.** `Profile.moveIn` is a choice: `{ kind: "date", date }`,
+`{ kind: "asap" }` or `{ kind: "flexible" }`; absent means not stated. It
+replaces `moveInDate`. Stored data moves to schema 2: `MIGRATIONS[1]` turns
+a stored `moveInDate` into a date move-in through the rules core's
+`upgradeProfileV1`, and leaves a store without a profile alone. Export files
+are version 2; a version 1 file still imports through the same function.
+`moveInDateOf` gives code that needs a date (the fill layer, the number
+check) the date of a date move-in only.
+
+Rejected: a `moveInFlexible` flag beside the date (it allows "a date and as
+soon as possible" at once); free text (the letter and the fill layer could
+not use it).
+
+**Consequences.** An older Kiezpigeon build refuses schema 2 data instead
+of misreading it (the existing newer-version guard). Phase 5 fills an
+Einzugstermin field only for a date move-in, and must decide how to word
+"as soon as possible" in a free-text field. The running probes are the
+migration tests in `src/storage/storage.test.ts` and the import test in
+`src/rules/profile.test.ts`.
+
+**Amendment (same change): the applicants' relationship.** Two adults with
+two incomes and no stated relationship can read as a flatshare, which many
+landlords avoid, and the letters were already guessing ("mein Partner und
+ich") from facts that never said so. `Household.relationship` is optional:
+`partners`, `married`, `flatmates` or `family`; absent means the letter
+says nothing. It only applies with two applicants: `createLetterRequest`
+drops it for one, so a leftover value is never mentioned. With two
+applicants and no relationship, the prompt forbids saying how they are
+related. A stated one is said once, briefly, and never in gendered words
+("Freundin", "Ehefrau"), since the profile records no gender. The
+validator flags marriage words (`relationship_invented`) unless the
+relationship is `married`; gendered wording is held by the prompt only,
+because the validator cannot know who is who.
+
+Rejected: free text (it cannot be validated and invites details a
+landlord does not need); recording each applicant's gender to allow
+"meine Freundin" (a stored personal field for a single phrase).

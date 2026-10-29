@@ -1,7 +1,12 @@
 // Parsers for the German text listing pages show: money, numbers, dates
 // and contact names. Each returns undefined for text it cannot read, so an
 // adapter can name the field in `missing` instead of guessing.
-import type { Cents, ContactPerson, IsoDate } from "../rules/types";
+import type {
+  Availability,
+  Cents,
+  ContactPerson,
+  IsoDate,
+} from "../rules/types";
 
 /** `750 €`, `+ 1.180,50 €`, `1180` → cents. */
 export function parseEuroText(text: string): Cents | undefined {
@@ -29,6 +34,15 @@ export function parseGermanDate(text: string): IsoDate | undefined {
   if (!match) return undefined;
   const [, day = "", month = "", year = ""] = match;
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+/** `01.03.2027`, `ab sofort`, `nach Vereinbarung` → when the flat is free. */
+export function parseAvailability(text: string): Availability | undefined {
+  const date = parseGermanDate(text);
+  if (date) return { kind: "date", date };
+  if (/sofort/i.test(text)) return { kind: "immediately" };
+  if (/vereinbarung|absprache/i.test(text)) return { kind: "by_arrangement" };
+  return undefined;
 }
 
 const SALUTATIONS = new Set(["Frau", "Herr"]);

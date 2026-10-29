@@ -5,6 +5,7 @@ import { coupleWithDog } from "../../test-support/sample-profiles";
 import {
   clearAll,
   migrate,
+  MIGRATIONS,
   read,
   remove,
   resetForTests,
@@ -116,6 +117,40 @@ describe("clearAll", () => {
 });
 
 describe("migrate", () => {
+  it("migrates a schema 1 profile's move-in date", async () => {
+    const v1: Record<string, unknown> = { ...coupleWithDog };
+    delete v1.moveIn;
+    await browser.storage.local.set({
+      schemaVersion: 1,
+      profile: { ...v1, moveInDate: "2027-03-01" },
+    });
+    const read1 = await read("profile");
+    expect(read1.ok && read1.value?.moveIn).toEqual({
+      kind: "date",
+      date: "2027-03-01",
+    });
+    expect(await browser.storage.local.get("schemaVersion")).toEqual({
+      schemaVersion: 2,
+    });
+  });
+
+  it("migrates a schema 1 store that has a key but no profile yet", async () => {
+    // The step itself must not add a profile key, whatever storage does
+    // with an undefined value.
+    expect(MIGRATIONS[1]?.({ apiKey: "FAKE-KEY" })).toEqual({
+      apiKey: "FAKE-KEY",
+    });
+    expect(Object.keys(MIGRATIONS[1]?.({ apiKey: "FAKE-KEY" }) ?? {})).toEqual([
+      "apiKey",
+    ]);
+    await browser.storage.local.set({ schemaVersion: 1, apiKey: "FAKE-KEY" });
+    await migrate();
+    expect(await browser.storage.local.get(null)).toEqual({
+      schemaVersion: 2,
+      apiKey: "FAKE-KEY",
+    });
+  });
+
   it("does nothing to an empty store", async () => {
     await migrate();
     expect(await browser.storage.local.get(null)).toEqual({});
@@ -123,7 +158,10 @@ describe("migrate", () => {
 
   it("runs the migration from each older version and stamps the new one", async () => {
     await browser.storage.local.set({ schemaVersion: 0, profile: "old" });
-    await migrate({ 0: (data) => ({ ...data, profile: "migrated" }) });
+    await migrate({
+      0: (data) => ({ ...data, profile: "migrated" }),
+      1: (data) => data,
+    });
     expect(await browser.storage.local.get(null)).toEqual({
       schemaVersion: SCHEMA_VERSION,
       profile: "migrated",

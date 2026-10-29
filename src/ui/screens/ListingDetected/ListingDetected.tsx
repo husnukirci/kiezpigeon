@@ -6,6 +6,7 @@ import { useId, useState } from "react";
 import { checkFit } from "../../../rules/fit";
 import {
   formatArea,
+  formatAvailability,
   formatEuro,
   formatFloor,
   formatNumber,
@@ -124,12 +125,18 @@ function money(cents: number | undefined): string | undefined {
   return cents === undefined ? undefined : formatEuro(cents);
 }
 
-/** `Prenzlauer Berg · 62 m² · 2. OG`, leaving out what the page lacks. */
+/**
+ * `Prenzlauer Berg · 62 m² · 2. OG · Free from 01.03.2027`, leaving out
+ * what the page lacks.
+ */
 function metaLine(listing: Listing): string {
   return [
     listing.district,
     listing.areaM2 === undefined ? undefined : formatArea(listing.areaM2),
     listing.floor === undefined ? undefined : formatFloor(listing.floor),
+    listing.availability === undefined
+      ? undefined
+      : formatAvailability(listing.availability),
   ]
     .filter((part) => part !== undefined)
     .join(" · ");
