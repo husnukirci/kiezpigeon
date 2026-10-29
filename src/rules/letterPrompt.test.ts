@@ -8,7 +8,7 @@ import {
 import {
   buildLetterPrompt,
   createLetterRequest,
-  incomeBand,
+  incomePhrase,
   incomeRatioPhrase,
   salutationFor,
 } from "./letterPrompt";
@@ -81,7 +81,7 @@ describe("buildLetterPrompt", () => {
         "Bewerber:",
         "- Mara Testmann, Softwareentwicklerin, unbefristete Festanstellung",
         "- Jonas Beispiel, Lehrer, verbeamtet",
-        "Haushaltsnettoeinkommen: zwischen 4.000 und 5.000 € im Monat",
+        "Haushaltsnettoeinkommen: über 4.000 € im Monat",
         "Haushalt: 2 Erwachsene, keine Kinder, Nichtraucher",
         "Beziehung: ein Paar",
         "Haustiere: 1 Hund",
@@ -123,7 +123,7 @@ describe("buildLetterPrompt", () => {
         "",
         "Bewerber:",
         "- Pia Musterfrau, Studentin, im Studium",
-        "Haushaltsnettoeinkommen: zwischen 500 und 1.000 € im Monat",
+        "Haushaltsnettoeinkommen: unter 1.000 € im Monat",
         "Haushalt: 1 erwachsene Person, keine Kinder, Nichtraucher",
         "Haustiere: keine",
         "",
@@ -364,25 +364,22 @@ describe("buildLetterPrompt", () => {
   });
 });
 
-describe("incomeBand", () => {
-  it("names the household income in the bands contact forms use", () => {
+describe("incomePhrase", () => {
+  it("rounds the household income down to whole thousands", () => {
     const cases: [number, string][] = [
-      [40000, "unter 500 €"],
-      [50000, "unter 500 €"],
-      [50001, "zwischen 500 und 1.000 €"],
-      [95000, "zwischen 500 und 1.000 €"],
-      [150000, "zwischen 1.000 und 1.500 €"],
-      [199900, "zwischen 1.500 und 2.000 €"],
-      [262300, "zwischen 2.000 und 3.000 €"],
-      [400000, "zwischen 3.000 und 4.000 €"],
-      [460000, "zwischen 4.000 und 5.000 €"],
-      [500001, "über 5.000 €"],
-      [1200000, "über 5.000 €"],
+      [40000, "unter 1.000 €"],
+      [95000, "unter 1.000 €"],
+      [100000, "1.000 €"],
+      [150000, "über 1.000 €"],
+      [460000, "über 4.000 €"],
+      [600000, "6.000 €"],
+      [623000, "über 6.000 €"],
+      [1250000, "über 12.000 €"],
     ];
     for (const [cents, phrase] of cases) {
-      expect([cents, incomeBand(cents).phrase]).toEqual([cents, phrase]);
+      expect([cents, incomePhrase(cents).phrase]).toEqual([cents, phrase]);
     }
-    expect(incomeBand(460000).euros).toEqual([4000, 5000]);
+    expect(incomePhrase(623000).euros).toEqual([6000]);
   });
 });
 
@@ -426,12 +423,10 @@ describe("natural letters", () => {
     expect(system).toContain("Bürgschaft");
   });
 
-  it("gives the income only as the band, never per person or exact", () => {
+  it("gives the income only rounded, never per person or exact", () => {
     const { system, user } = buildLetterPrompt(strong);
     expect(user).not.toMatch(/2\.600|2\.000 €|4\.600/);
-    expect(system).toContain(
-      "State the household income only as the range given",
-    );
+    expect(system).toContain("State the household income only as given");
   });
 
   it("says a job search plainly with the last role, and claims no job", () => {

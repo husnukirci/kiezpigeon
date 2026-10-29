@@ -7,7 +7,7 @@ import {
   PET_NOUNS,
   assertFeatureCount,
   availableDateOf,
-  incomeBand,
+  incomePhrase,
   incomeRatioTenths,
   moveInDateOf,
   namedContact,
@@ -97,7 +97,7 @@ function allowedNumbers(request: LetterRequest): Set<number> {
     ...dateParts(moveInDateOf(request.moveIn)),
     ...dateParts(availableDateOf(listing.availability)),
     tenths === undefined ? undefined : tenths / 10,
-    ...incomeBand(sumCents(incomes)).euros,
+    ...incomePhrase(sumCents(incomes)).euros,
     ...[
       contact.phone,
       contact.street,

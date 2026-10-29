@@ -446,10 +446,12 @@ form's employment select picks its job-seeking option. No schema bump: an
 older build reading the new value shows "Your profile could not be read"
 instead of misreading it, which is acceptable for an unpacked extension
 with one user. In the same change the letter stopped quoting incomes:
-the facts give the household's net income only as the band contact forms
-use ("zwischen 4.000 und 5.000 €", `incomeBand`) and the ratio to the
+the facts give the household's net income only rounded down to whole
+thousands ("über 6.000 €", `incomePhrase`; the author chose thousands over
+the contact form's bands, which stop at 5.000 €) and the ratio to the
 Kaltmiete in words, rounded down ("mehr als das Dreifache"); the validator
-accepts the band's edges.
+accepts the rounded figure. The form's income select still picks its own
+band.
 
 ## ADR 11: Never submit: filling a framework-driven form
 

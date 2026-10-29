@@ -119,10 +119,10 @@ describe("validateLetter", () => {
     expect(validateLetter(letter, request)).toEqual([]);
   });
 
-  it("accepts the income band and the rent it is compared with", () => {
+  it("accepts the rounded income and the rent it is compared with", () => {
     const letter = replaced(
       "Kaltmiete von 1.180 €.",
-      "Kaltmiete von 1.180 €, bei einem Einkommen zwischen 4.000 und 5.000 €.",
+      "Kaltmiete von 1.180 €, bei einem Einkommen von über 4.000 €.",
     );
     expect(validateLetter(letter, request)).toEqual([]);
   });

@@ -155,31 +155,21 @@ export function salutationFor(contact: ContactPerson | undefined): string {
   }
 }
 
-/** The bands ImmoScout24's contact form uses, in euros (ADR 11). */
-const INCOME_BANDS = [500, 1000, 1500, 2000, 3000, 4000, 5000];
-
 /**
- * The household income as a band, never the exact sum: "zwischen 4.000
- * und 5.000 €". A band's upper edge belongs to it, as on the form.
+ * The household income rounded down to whole thousands, never the exact
+ * sum: "über 6.000 €", "6.000 €" when it is exactly that, "unter 1.000 €".
  */
-export function incomeBand(cents: number): {
+export function incomePhrase(cents: number): {
   phrase: string;
   euros: number[];
 } {
   const euros = cents / 100;
-  const upper = INCOME_BANDS.findIndex((edge) => euros <= edge);
-  const top = INCOME_BANDS.at(-1) ?? 0;
-  if (upper === -1) {
-    return { phrase: `über ${formatNumber(top)} €`, euros: [top] };
-  }
-  const high = INCOME_BANDS[upper] ?? top;
-  const low = INCOME_BANDS[upper - 1];
-  if (low === undefined) {
-    return { phrase: `unter ${formatNumber(high)} €`, euros: [high] };
-  }
+  const thousands = Math.floor(euros / 1000) * 1000;
+  if (thousands === 0) return { phrase: "unter 1.000 €", euros: [1000] };
+  const amount = `${formatNumber(thousands)} €`;
   return {
-    phrase: `zwischen ${formatNumber(low)} und ${formatNumber(high)} €`,
-    euros: [low, high],
+    phrase: euros === thousands ? amount : `über ${amount}`,
+    euros: [thousands],
   };
 }
 
@@ -407,7 +397,7 @@ function factsBlock(request: LetterRequest): string {
     "",
     "Bewerber:",
     ...applicantLines,
-    `Haushaltsnettoeinkommen: ${incomeBand(income).phrase} im Monat`,
+    `Haushaltsnettoeinkommen: ${incomePhrase(income).phrase} im Monat`,
     householdLine(household),
     ...(household.relationship
       ? [`Beziehung: ${RELATIONSHIP_FACTS[household.relationship]}`]
@@ -463,7 +453,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",
-    "- State the household income only as the range given, never per person or as an exact sum.",
+    "- State the household income only as given, never per person or as an exact sum.",
     ...jobSearchRules(request),
     ...(features.length === 0
       ? []
