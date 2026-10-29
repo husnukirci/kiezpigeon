@@ -92,7 +92,7 @@ export const kreuzbergListing: Listing = {
   areaM2: 62,
   rooms: 2,
   floor: 3,
-  availableFrom: "2027-03-01",
+  availability: { kind: "date", date: "2027-03-01" },
   yearBuilt: 1905,
   petPolicy: "by_arrangement",
   wbsRequired: false,

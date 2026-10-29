@@ -90,6 +90,12 @@ export interface ContactPerson {
  */
 export type Feature = string;
 
+/** When the flat is free, as the listing says it. */
+export type Availability =
+  | { kind: "date"; date: IsoDate }
+  | { kind: "immediately" }
+  | { kind: "by_arrangement" };
+
 /** What an adapter read from one listing page. */
 export interface Listing {
   url: string;
@@ -102,7 +108,7 @@ export interface Listing {
   areaM2?: number;
   rooms?: number;
   floor?: number;
-  availableFrom?: IsoDate;
+  availability?: Availability;
   yearBuilt?: number;
   petPolicy?: PetPolicy;
   wbsRequired?: boolean;
