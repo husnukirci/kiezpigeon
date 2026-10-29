@@ -205,6 +205,19 @@ describe("buildLetterPrompt", () => {
     ).toThrow(RangeError);
   });
 
+  it("forbids a move-in date the applicants did not give", () => {
+    const solo = createLetterRequest(soloStudent, kreuzbergListing, {
+      tone: "short",
+      features: ["Balkon"],
+    });
+    expect(buildLetterPrompt(solo).system).toContain(
+      "- The applicants gave no move-in date. Do not say when they want to move in or that the listing's date suits them.",
+    );
+    expect(buildLetterPrompt(strong).system).not.toContain(
+      "gave no move-in date",
+    );
+  });
+
   it("writes without features when the listing names none", () => {
     const bare = createLetterRequest(coupleWithDog, sparseListing, {
       tone: "warm",

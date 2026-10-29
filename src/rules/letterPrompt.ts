@@ -309,6 +309,11 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
       : [
           `- Mention these features of the flat by name: ${features.join(", ")}.`,
         ]),
+    ...(request.moveInDate === undefined
+      ? [
+          "- The applicants gave no move-in date. Do not say when they want to move in or that the listing's date suits them.",
+        ]
+      : []),
     hasPets(household)
       ? `- Mention the pets honestly in one sentence: ${petsPhrase(household)}.`
       : "- The household has no pets. You may say so; never suggest any.",
