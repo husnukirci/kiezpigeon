@@ -19,6 +19,7 @@ import type {
   Pet,
   PetKind,
   Profile,
+  Relationship,
   Settings,
   Tone,
 } from "./types";
@@ -70,6 +71,12 @@ export const CLAUDE_MODELS: readonly ClaudeModel[] = [
   "claude-opus-5-5",
   "claude-fable-5-1",
   "claude-haiku-5-5",
+];
+const RELATIONSHIPS: readonly Relationship[] = [
+  "partners",
+  "married",
+  "flatmates",
+  "family",
 ];
 const MOVE_IN_KINDS: readonly MoveIn["kind"][] = ["date", "asap", "flexible"];
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
@@ -265,7 +272,7 @@ function readPet(r: Reader): Pet {
 }
 
 function readHousehold(r: Reader): Household {
-  return {
+  return withoutUndefined({
     adults: r.count("adults", 1),
     children: r.count("children", 0),
     pets: r
@@ -273,7 +280,11 @@ function readHousehold(r: Reader): Household {
       .map((pet, i) => r.item("pets", i, pet))
       .flatMap((pr) => (pr ? [readPet(pr)] : [])),
     smoker: r.bool("smoker"),
-  };
+    relationship:
+      r.raw("relationship") === undefined
+        ? undefined
+        : r.oneOf("relationship", RELATIONSHIPS),
+  });
 }
 
 function readContact(r: Reader): ContactDetails {

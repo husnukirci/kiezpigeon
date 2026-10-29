@@ -92,6 +92,23 @@ describe("parseProfile", () => {
     ]);
   });
 
+  it("keeps how two applicants are related", () => {
+    for (const relationship of ["partners", "married", "flatmates", "family"]) {
+      const household = { ...coupleWithDog.household, relationship };
+      const parsed = parseProfile(withChanges({ household }));
+      expect(parsed.ok && parsed.value.household.relationship).toBe(
+        relationship,
+      );
+    }
+  });
+
+  it("names an unknown relationship", () => {
+    const household = { ...coupleWithDog.household, relationship: "dating" };
+    expect(problemsOf(withChanges({ household }))).toEqual([
+      "household.relationship: must be one of partners, married, flatmates, family",
+    ]);
+  });
+
   it("reads each move-in kind", () => {
     for (const moveIn of [
       { kind: "date", date: "2027-03-01" },

@@ -27,6 +27,7 @@ export const coupleWithDog: Profile = {
     children: 0,
     pets: [{ kind: "dog", count: 1 }],
     smoker: false,
+    relationship: "partners",
   },
   moveIn: { kind: "date", date: "2027-03-01" },
   contact: {

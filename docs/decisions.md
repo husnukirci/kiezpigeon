@@ -371,7 +371,7 @@ must still review it, which they do anyway. Rules the validator does not
 check (invented prose details) stay the user's job, as PLAN.md risks
 says. The running probe is `src/rules/writeLetter.test.ts`.
 
-## ADR 10: Move-in as a choice, schema 2
+## ADR 10: Move-in as a choice and how two applicants are related, schema 2
 
 **Status.** Accepted.
 
@@ -400,3 +400,21 @@ Einzugstermin field only for a date move-in, and must decide how to word
 "as soon as possible" in a free-text field. The running probes are the
 migration tests in `src/storage/storage.test.ts` and the import test in
 `src/rules/profile.test.ts`.
+
+**Amendment (same change): the applicants' relationship.** Two adults with
+two incomes and no stated relationship can read as a flatshare, which many
+landlords avoid, and the letters were already guessing ("mein Partner und
+ich") from facts that never said so. `Household.relationship` is optional:
+`partners`, `married`, `flatmates` or `family`; absent means the letter
+says nothing. It only applies with two applicants: `createLetterRequest`
+drops it for one, so a leftover value is never mentioned. With two
+applicants and no relationship, the prompt forbids saying how they are
+related. A stated one is said once, briefly, and never in gendered words
+("Freundin", "Ehefrau"), since the profile records no gender. The
+validator flags marriage words (`relationship_invented`) unless the
+relationship is `married`; gendered wording is held by the prompt only,
+because the validator cannot know who is who.
+
+Rejected: free text (it cannot be validated and invites details a
+landlord does not need); recording each applicant's gender to allow
+"meine Freundin" (a stored personal field for a single phrase).

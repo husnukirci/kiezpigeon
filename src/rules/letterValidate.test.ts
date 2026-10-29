@@ -262,6 +262,33 @@ describe("validateLetter", () => {
     ).toEqual([{ code: "unknown_number", text: "01.03.2027" }]);
   });
 
+  describe("marriage claims", () => {
+    const related = (
+      relationship: LetterRequest["household"]["relationship"],
+    ): LetterRequest => {
+      const household = { ...request.household };
+      if (relationship) household.relationship = relationship;
+      else delete household.relationship;
+      return { ...request, household };
+    };
+    const claims = (text: string, req: LetterRequest) =>
+      validateLetter(`${passingLetter}\n${text}`, req).filter(
+        (p) => p.code === "relationship_invented",
+      );
+
+    it.each([
+      ["Wir sind ein Ehepaar.", "partners", ["Ehepaar"]],
+      ["verheiratete Bewerber", undefined, ["verheiratete"]],
+      ["Eheleute", "married", []],
+      ["mehr", undefined, []],
+      ["ehemalige Nachbarn", undefined, []],
+    ] as const)("%j with %s", (text, relationship, flagged) => {
+      expect(claims(text, related(relationship))).toEqual(
+        flagged.map((word) => ({ code: "relationship_invented", text: word })),
+      );
+    });
+  });
+
   it("lists problems in code order", () => {
     const emDash = String.fromCodePoint(0x2014);
     const letter = ["Liebe Leute,", `wir zahlen 999 € ${emDash} sofort.`].join(

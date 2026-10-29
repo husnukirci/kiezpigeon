@@ -189,6 +189,26 @@ function petProblems(text: string, request: LetterRequest): LetterProblem[] {
     .map((kind) => ({ code: "pets_missing", text: PET_NOUNS[kind][0] }));
 }
 
+// Words that say the applicants are married: Ehepaar, Eheleute, Ehemann,
+// Ehefrau, Ehepartner, Ehegatte, and any form of verheiratet. `mehr` and
+// `ehemalig` are not among them.
+const MARRIED = /^(ehe(paar|leute|mann|männer|frau|partner|gatt)|verheirat)/;
+
+function relationshipProblems(
+  text: string,
+  request: LetterRequest,
+): LetterProblem[] {
+  if (request.household.relationship === "married") return [];
+  const words = text
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}]/gu, ""))
+    .filter((w) => MARRIED.test(w.toLowerCase()));
+  return [...new Set(words)].map((word) => ({
+    code: "relationship_invented",
+    text: word,
+  }));
+}
+
 function featureProblems(
   text: string,
   request: LetterRequest,
@@ -211,5 +231,6 @@ export function validateLetter(
     ...salutationProblems(text, request),
     ...petProblems(text, request),
     ...featureProblems(text, request),
+    ...relationshipProblems(text, request),
   ];
 }
