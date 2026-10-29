@@ -436,6 +436,21 @@ Rejected: free text (it cannot be validated and invites details a
 landlord does not need); recording each applicant's gender to allow
 "meine Freundin" (a stored personal field for a single phrase).
 
+**Amendment (2026-10-29): looking for work.** An applicant between jobs
+could only pick "Other", and the letter then said nothing true about their
+situation. `EmploymentType` gains `job_seeking`. The job field holds the
+last role ("Last job" in the form); the facts say "zuletzt <job>, derzeit
+auf Stellensuche", and the prompt asks for it once, plainly, with no
+current job or employer. It is never a secure-employment signal, and a
+form's employment select picks its job-seeking option. No schema bump: an
+older build reading the new value shows "Your profile could not be read"
+instead of misreading it, which is acceptable for an unpacked extension
+with one user. In the same change the letter stopped quoting incomes:
+the facts give the household's net income only as the band contact forms
+use ("zwischen 4.000 und 5.000 €", `incomeBand`) and the ratio to the
+Kaltmiete in words, rounded down ("mehr als das Dreifache"); the validator
+accepts the band's edges.
+
 ## ADR 11: Never submit: filling a framework-driven form
 
 **Status.** Accepted.

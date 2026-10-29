@@ -323,6 +323,7 @@ const EMPLOYMENT_OPTIONS: Record<EmploymentType, RegExp> = {
     /selbst ?st[äa]ndig|selbständig|freiberuf|self employed|freelanc/u,
   trainee: /auszubild|azubi|ausbildung|trainee|apprentic/u,
   student: /student|studier/u,
+  job_seeking: /arbeitssuch|arbeitslos|stellensuch|job ?seek|unemploy/u,
   other: /sonstig|other|andere/u,
 };
 

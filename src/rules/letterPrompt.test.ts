@@ -8,6 +8,8 @@ import {
 import {
   buildLetterPrompt,
   createLetterRequest,
+  incomeBand,
+  incomeRatioPhrase,
   salutationFor,
 } from "./letterPrompt";
 import type { LetterRequest, Listing } from "./types";
@@ -77,9 +79,9 @@ describe("buildLetterPrompt", () => {
         "Anrede: Sehr geehrte Frau Weber,",
         "",
         "Bewerber:",
-        "- Mara Testmann, Softwareentwicklerin, unbefristete Festanstellung, 2.600 € netto im Monat",
-        "- Jonas Beispiel, Lehrer, verbeamtet, 2.000 € netto im Monat",
-        "Haushaltsnettoeinkommen: 4.600 € im Monat",
+        "- Mara Testmann, Softwareentwicklerin, unbefristete Festanstellung",
+        "- Jonas Beispiel, Lehrer, verbeamtet",
+        "Haushaltsnettoeinkommen: zwischen 4.000 und 5.000 € im Monat",
         "Haushalt: 2 Erwachsene, keine Kinder, Nichtraucher",
         "Beziehung: ein Paar",
         "Haustiere: 1 Hund",
@@ -102,7 +104,7 @@ describe("buildLetterPrompt", () => {
         "",
         "Stärkste Signale, in dieser Reihenfolge:",
         "1. Sichere Anstellung (unbefristete Festanstellung oder verbeamtet)",
-        "2. Einkommen 3,8 × Kaltmiete",
+        "2. Einkommen mehr als das Dreifache der Kaltmiete",
         "3. Alle Unterlagen liegen vollständig vor",
         "4. Einzug zum 01.03.2027, passend zum Bezugstermin",
       ].join("\n"),
@@ -120,8 +122,8 @@ describe("buildLetterPrompt", () => {
         "Anrede: Sehr geehrte Damen und Herren,",
         "",
         "Bewerber:",
-        "- Pia Musterfrau, Studentin, im Studium, 950 € netto im Monat",
-        "Haushaltsnettoeinkommen: 950 € im Monat",
+        "- Pia Musterfrau, Studentin, im Studium",
+        "Haushaltsnettoeinkommen: zwischen 500 und 1.000 € im Monat",
         "Haushalt: 1 erwachsene Person, keine Kinder, Nichtraucher",
         "Haustiere: keine",
         "",
@@ -148,6 +150,7 @@ describe("buildLetterPrompt", () => {
     const { system } = buildLetterPrompt(strong);
     expect(system).toContain("Write in German");
     expect(system).toContain("Tone: warm and personal");
+    expect(system).toContain("the way a native speaker writes to a landlord");
     expect(system).toContain("120 to 180 words");
     expect(system).toContain(
       "Begin with exactly this line: Sehr geehrte Frau Weber,",
@@ -358,5 +361,88 @@ describe("buildLetterPrompt", () => {
     const { system, user } = buildLetterPrompt(bare);
     expect(system).not.toContain("Mention these features");
     expect(user).not.toContain("Ausgewählte Merkmale");
+  });
+});
+
+describe("incomeBand", () => {
+  it("names the household income in the bands contact forms use", () => {
+    const cases: [number, string][] = [
+      [40000, "unter 500 €"],
+      [50000, "unter 500 €"],
+      [50001, "zwischen 500 und 1.000 €"],
+      [95000, "zwischen 500 und 1.000 €"],
+      [150000, "zwischen 1.000 und 1.500 €"],
+      [199900, "zwischen 1.500 und 2.000 €"],
+      [262300, "zwischen 2.000 und 3.000 €"],
+      [400000, "zwischen 3.000 und 4.000 €"],
+      [460000, "zwischen 4.000 und 5.000 €"],
+      [500001, "über 5.000 €"],
+      [1200000, "über 5.000 €"],
+    ];
+    for (const [cents, phrase] of cases) {
+      expect([cents, incomeBand(cents).phrase]).toEqual([cents, phrase]);
+    }
+    expect(incomeBand(460000).euros).toEqual([4000, 5000]);
+  });
+});
+
+describe("incomeRatioPhrase", () => {
+  it("says the ratio in words, rounded down, and only from three times up", () => {
+    const withRent = (kaltmieteCents: number): LetterRequest => ({
+      ...strong,
+      listing: { ...strong.listing, kaltmieteCents },
+    });
+    // 4.600 € income.
+    expect(incomeRatioPhrase(withRent(118000))).toBe("mehr als das Dreifache");
+    expect(incomeRatioPhrase(withRent(115000))).toBe("das Vierfache");
+    expect(incomeRatioPhrase(withRent(90000))).toBe("mehr als das Fünffache");
+    expect(incomeRatioPhrase(withRent(40000))).toBe("mehr als das Zehnfache");
+    expect(incomeRatioPhrase(withRent(160000))).toBeUndefined();
+  });
+});
+
+describe("natural letters", () => {
+  it("asks for plain native German and names the phrases to avoid", () => {
+    const { system } = buildLetterPrompt(strong);
+    expect(system).toContain("Short, clear sentences");
+    for (const phrase of [
+      "hiermit bewerbe ich mich",
+      "mit großem Interesse",
+      "mit großer Freude",
+    ]) {
+      expect(system).toContain(phrase);
+    }
+  });
+
+  it("gives the income only as the band, never per person or exact", () => {
+    const { system, user } = buildLetterPrompt(strong);
+    expect(user).not.toMatch(/2\.600|2\.000 €|4\.600/);
+    expect(system).toContain(
+      "State the household income only as the range given",
+    );
+  });
+
+  it("says a job search plainly with the last role, and claims no job", () => {
+    const seeking = createLetterRequest(
+      {
+        ...coupleWithDog,
+        applicants: coupleWithDog.applicants.map((a, i) =>
+          i === 0
+            ? { ...a, job: "Teamleiterin", employment: "job_seeking" }
+            : a,
+        ),
+      },
+      kreuzbergListing,
+      { tone: "warm", features: ["Balkon"] },
+    );
+    const { system, user } = buildLetterPrompt(seeking);
+    expect(user).toContain(
+      "- Mara Testmann, zuletzt Teamleiterin, derzeit auf Stellensuche",
+    );
+    expect(system).toContain(
+      "- Mara Testmann is looking for a new job; Teamleiterin was the last role.",
+    );
+    // Jonas is still verbeamtet, so secure employment stays a signal.
+    expect(user).toContain("1. Sichere Anstellung");
   });
 });
