@@ -10,9 +10,12 @@ export type ActiveListing = { kind: "loading" } | ListingResult;
 const NOT_LISTING: ListingResult = { kind: "not_listing" };
 
 async function askActiveTab(): Promise<ListingResult> {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id === undefined) return NOT_LISTING;
   try {
+    const [tab] = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (tab?.id === undefined) return NOT_LISTING;
     return await send({ type: "getListing" }, tab.id);
   } catch {
     // No content script on this page, or one from before an update.
