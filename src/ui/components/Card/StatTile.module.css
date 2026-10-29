@@ -1,11 +1,6 @@
 .row {
-  /* Narrow enough for three tiles at the 400px design width, wide enough
-     that "1.180 €" in the stat style never breaks; at 320px the tiles
-     wrap to two columns instead. */
-  --tile-min: 104px;
-
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--tile-min), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
@@ -13,6 +8,11 @@
   /* README preview: 2px between number and label. */
   --tile-gap: 2px;
 
+  /* Equal shares of the row, but never narrower than the value, so
+     "1.028,29 €" stays on one line and a tile wraps to the next row when
+     three do not fit. */
+  flex: 1 1 0;
+  min-width: max-content;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
