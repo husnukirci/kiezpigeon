@@ -1,6 +1,7 @@
 // Form field matching: classify each field of a contact form from its
 // plain-data description, pair it with a profile value or the letter, and
 // score "X of Y matched". Consent and privacy fields never get a value.
+import { moveInDateOf } from "./letterPrompt";
 import { sumCents } from "./money";
 import type {
   FieldKind,
@@ -204,7 +205,7 @@ function valueFor(
     case "employment":
       return applicant?.employment;
     case "moveInDate":
-      return profile.moveInDate;
+      return moveInDateOf(profile.moveIn);
     case "wbs":
       return profile.hasWbs;
     // No profile field holds a salutation yet; consent is never filled.

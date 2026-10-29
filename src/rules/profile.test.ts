@@ -9,6 +9,7 @@ import {
   parseApplication,
   parseProfile,
   parseSettings,
+  upgradeProfileV1,
 } from "./profile";
 import type { Application } from "./types";
 
@@ -91,14 +92,30 @@ describe("parseProfile", () => {
     ]);
   });
 
-  it("needs real calendar dates", () => {
-    expect(problemsOf(withChanges({ moveInDate: "2027-02-30" }))).toEqual([
-      "moveInDate: must be a date as YYYY-MM-DD",
+  it("reads each move-in kind", () => {
+    for (const moveIn of [
+      { kind: "date", date: "2027-03-01" },
+      { kind: "asap" },
+      { kind: "flexible" },
+    ]) {
+      const parsed = parseProfile(withChanges({ moveIn }));
+      expect(parsed.ok && parsed.value.moveIn).toEqual(moveIn);
+    }
+  });
+
+  it("needs real calendar dates and a known move-in kind", () => {
+    const on = (date: string) =>
+      problemsOf(withChanges({ moveIn: { kind: "date", date } }));
+    expect(on("2027-02-30")).toEqual([
+      "moveIn.date: must be a date as YYYY-MM-DD",
     ]);
-    expect(problemsOf(withChanges({ moveInDate: "01.03.2027" }))).toEqual([
-      "moveInDate: must be a date as YYYY-MM-DD",
+    expect(on("01.03.2027")).toEqual([
+      "moveIn.date: must be a date as YYYY-MM-DD",
     ]);
-    expect(problemsOf(withChanges({ moveInDate: "2028-02-29" }))).toEqual([]);
+    expect(on("2028-02-29")).toEqual([]);
+    expect(problemsOf(withChanges({ moveIn: { kind: "soon" } }))).toEqual([
+      "moveIn.kind: must be one of date, asap, flexible",
+    ]);
   });
 
   it("names every bad enum and missing field at once", () => {
@@ -163,8 +180,44 @@ describe("parseApplication", () => {
   });
 });
 
+/** A profile as schema 1 stored it: a bare `moveInDate`. */
+function v1Profile(moveInDate?: string): Record<string, unknown> {
+  const rest: Record<string, unknown> = { ...coupleWithDog };
+  delete rest.moveIn;
+  return moveInDate === undefined ? rest : { ...rest, moveInDate };
+}
+
+describe("upgradeProfileV1", () => {
+  it("turns a version 1 move-in date into a date move-in", () => {
+    expect(upgradeProfileV1(v1Profile("2027-03-01"))).toEqual({
+      ...v1Profile(),
+      moveIn: { kind: "date", date: "2027-03-01" },
+    });
+  });
+
+  it("leaves a profile without a move-in date, or a non-object, as it is", () => {
+    expect(upgradeProfileV1(v1Profile())).toEqual(v1Profile());
+    expect(upgradeProfileV1("nonsense")).toBe("nonsense");
+    expect(upgradeProfileV1(null)).toBe(null);
+  });
+});
+
 describe("export and import", () => {
   const exportedAt = "2027-02-10T18:00:00.000Z";
+
+  it("imports a version 1 export and carries the move-in over", () => {
+    const json = JSON.stringify({
+      kiezpigeon: 1,
+      exportedAt,
+      profile: v1Profile("2027-03-01"),
+      applications: [],
+    });
+    const result = importData(json);
+    expect(result.ok && result.value.profile.moveIn).toEqual({
+      kind: "date",
+      date: "2027-03-01",
+    });
+  });
 
   it("exports a versioned file with the profile and applications only", () => {
     const file = exportData(coupleWithDog, [application], exportedAt);
@@ -174,7 +227,7 @@ describe("export and import", () => {
       "profile",
       "applications",
     ]);
-    expect(file.kiezpigeon).toBe(1);
+    expect(file.kiezpigeon).toBe(2);
     expect(file.exportedAt).toBe(exportedAt);
   });
 
@@ -205,11 +258,11 @@ describe("export and import", () => {
   it("rejects an unknown schema version before looking further", () => {
     const json = JSON.stringify({
       ...exportData(coupleWithDog, [], exportedAt),
-      kiezpigeon: 2,
+      kiezpigeon: 3,
     });
     expect(importData(json)).toEqual({
       ok: false,
-      problems: ["kiezpigeon: unknown file version 2"],
+      problems: ["kiezpigeon: unknown file version 3"],
     });
   });
 

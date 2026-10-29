@@ -10,6 +10,7 @@ import type {
   Profile,
   Tone,
 } from "../../../rules/types";
+import { moveInDateOf } from "../../../rules/letterPrompt";
 import { cx } from "../../cx";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
@@ -284,11 +285,11 @@ export function HouseholdSection({ draft, onChange, errors }: SectionProps) {
         <TextField
           label="Move-in date"
           type="date"
-          value={draft.profile.moveInDate ?? ""}
+          value={moveInDateOf(draft.profile.moveIn) ?? ""}
           onChange={(value) => {
             const profile = { ...draft.profile };
-            if (value === "") delete profile.moveInDate;
-            else profile.moveInDate = value;
+            if (value === "") delete profile.moveIn;
+            else profile.moveIn = { kind: "date", date: value };
             onChange({ ...draft, profile });
           }}
         />

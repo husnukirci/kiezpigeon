@@ -437,7 +437,7 @@ the contact form.
 
 1. Probe first: on a scrubbed fixture of the contact form, find how the
    page's framework reads values; record which events make it accept a
-   programmatic value (ADR 10).
+   programmatic value (ADR 11).
 2. `readContactForm` in the ImmoScout24 adapter returns descriptors; the
    Phase 1 matcher maps them.
 3. Fill: set each matched field and fire the events from the probe; never
@@ -478,7 +478,7 @@ fill, confirms, and only then is anything filled.
 **In scope**
 
 1. On user action only, inject a script into the active tab via
-   `activeTab` + `scripting`; read visible forms into descriptors (ADR 11).
+   `activeTab` + `scripting`; read visible forms into descriptors (ADR 12).
 2. Listing facts on an unknown site: the user types or confirms rent,
    contact person and features in the panel; nothing is guessed silently.
 3. Preview: a list of "field label → value" pairs with per-field opt-out;

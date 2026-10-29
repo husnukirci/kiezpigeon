@@ -15,6 +15,7 @@ import type {
   Household,
   IsoDateTime,
   Language,
+  MoveIn,
   Pet,
   PetKind,
   Profile,
@@ -25,7 +26,10 @@ import type {
 export type Parsed<T> =
   { ok: true; value: T } | { ok: false; problems: string[] };
 
-export const EXPORT_VERSION = 1;
+export const EXPORT_VERSION = 2;
+
+/** Export versions importData still reads; 1 had a bare `moveInDate`. */
+const IMPORTABLE_VERSIONS: readonly unknown[] = [1, EXPORT_VERSION];
 
 export interface ExportFile {
   kiezpigeon: typeof EXPORT_VERSION;
@@ -67,6 +71,7 @@ export const CLAUDE_MODELS: readonly ClaudeModel[] = [
   "claude-fable-5-1",
   "claude-haiku-5-5",
 ];
+const MOVE_IN_KINDS: readonly MoveIn["kind"][] = ["date", "asap", "flexible"];
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
   "sent",
   "viewing",
@@ -201,6 +206,14 @@ class Reader {
     return undefined;
   }
 
+  date(key: string): string {
+    if (this.raw(key) === undefined) {
+      this.fail(key, "must be a date as YYYY-MM-DD");
+      return "";
+    }
+    return this.optionalDate(key) ?? "";
+  }
+
   dateTime(key: string): string {
     const value = this.source[key];
     if (isIsoDateTime(value)) return value;
@@ -290,7 +303,9 @@ function readProfile(r: Reader): Profile {
   const household = householdReader
     ? readHousehold(householdReader)
     : defaultHousehold();
-  const moveInDate = r.optionalDate("moveInDate");
+  const moveInReader =
+    r.raw("moveIn") === undefined ? undefined : r.object("moveIn");
+  const moveIn = moveInReader && readMoveIn(moveInReader);
   const contactReader = r.object("contact");
   const contact = contactReader ? readContact(contactReader) : emptyContact();
   const budgetWarmCents = r.optionalCents("budgetWarmCents");
@@ -310,13 +325,21 @@ function readProfile(r: Reader): Profile {
   return withoutUndefined({
     applicants,
     household,
-    moveInDate,
+    moveIn,
     contact,
     budgetWarmCents,
     hasWbs,
     letterDefaults,
     documents,
   });
+}
+
+function readMoveIn(r: Reader): MoveIn {
+  const kind = r.oneOf("kind", MOVE_IN_KINDS);
+  if (kind !== "date") return { kind };
+  // An unknown kind falls back to "date" and is already a problem; only a
+  // real date move-in is asked for its date.
+  return { kind, date: r.raw("kind") === "date" ? r.date("date") : "" };
 }
 
 function readApplication(r: Reader): Application {
@@ -375,6 +398,20 @@ export function parseApiKey(input: unknown): Parsed<string> {
     return { ok: false, problems: ["apiKey: must not contain spaces"] };
   }
   return { ok: true, value: key };
+}
+
+/**
+ * Schema 1 stored the move-in as a bare `moveInDate`; schema 2 stores a
+ * `moveIn` choice (ADR 10). Anything else passes through unchanged for the
+ * reader to judge.
+ */
+export function upgradeProfileV1(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return raw;
+  }
+  const { moveInDate, ...rest } = raw as Record<string, unknown>;
+  if (moveInDate === undefined) return raw;
+  return { ...rest, moveIn: { kind: "date", date: moveInDate } };
 }
 
 function defaultHousehold(): Household {
@@ -465,7 +502,7 @@ export function importData(
   if (version === undefined) {
     return { ok: false, problems: ["kiezpigeon: not a Kiezpigeon export"] };
   }
-  if (version !== EXPORT_VERSION) {
+  if (!IMPORTABLE_VERSIONS.includes(version)) {
     return {
       ok: false,
       problems: [`kiezpigeon: unknown file version ${JSON.stringify(version)}`],
@@ -473,7 +510,13 @@ export function importData(
   }
 
   file.dateTime("exportedAt");
-  const profileReader = file.object("profile");
+  const rawProfile = file.raw("profile");
+  const profileReader = Reader.of(
+    problems,
+    "profile",
+    version === 1 ? upgradeProfileV1(rawProfile) : rawProfile,
+    "profile",
+  );
   const profile = profileReader ? readProfile(profileReader) : undefined;
   const applications = file
     .array("applications")

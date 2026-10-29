@@ -28,7 +28,7 @@ export const coupleWithDog: Profile = {
     pets: [{ kind: "dog", count: 1 }],
     smoker: false,
   },
-  moveInDate: "2027-03-01",
+  moveIn: { kind: "date", date: "2027-03-01" },
   contact: {
     email: "mara.testmann@example.org",
     phone: "030 5550123",

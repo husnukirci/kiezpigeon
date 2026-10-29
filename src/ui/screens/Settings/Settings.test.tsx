@@ -119,7 +119,7 @@ describe("Settings", () => {
     });
     const text = await (blobs[0] as Blob).text();
     expect(JSON.parse(text)).toMatchObject({
-      kiezpigeon: 1,
+      kiezpigeon: 2,
       profile: coupleWithDog,
     });
     expect(text).not.toContain("FAKE-KEY");

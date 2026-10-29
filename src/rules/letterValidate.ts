@@ -7,6 +7,7 @@ import {
   PET_NOUNS,
   assertFeatureCount,
   incomeRatioTenths,
+  moveInDateOf,
   namedContact,
   salutationFor,
 } from "./letterPrompt";
@@ -91,7 +92,7 @@ function allowedNumbers(request: LetterRequest): Set<number> {
     household.adults + household.children,
     ...petCounts,
     sumCents(petCounts),
-    ...dateParts(request.moveInDate),
+    ...dateParts(moveInDateOf(request.moveIn)),
     ...dateParts(listing.availableFrom),
     tenths === undefined ? undefined : tenths / 10,
     ...[

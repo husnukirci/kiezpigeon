@@ -27,7 +27,7 @@ describe("createLetterRequest", () => {
       "features",
       "household",
       "listing",
-      "moveInDate",
+      "moveIn",
       "tone",
     ]);
   });
