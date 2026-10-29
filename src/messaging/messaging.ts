@@ -1,16 +1,27 @@
 // Typed messages between the side panel, the service worker and content
 // scripts (ADR 6, ADR 8). Each message type names its request and its
-// response; later phases add getContactForm, fill and generateLetter here.
+// response; later phases add getContactForm and fill here.
 import { browser } from "wxt/browser";
-import type { Listing } from "../rules/types";
+import type { ClaudeErrorCode } from "../claude/claude";
+import type { LetterRequest, Listing } from "../rules/types";
+import type { LetterDraft } from "../rules/writeLetter";
 
 export type ListingResult =
   | { kind: "listing"; siteName: string; listing: Listing }
   | { kind: "not_listing" };
 
+export type LetterResult =
+  | { kind: "letter"; draft: LetterDraft }
+  | { kind: "error"; code: ClaudeErrorCode; message: string };
+
 interface Messages {
   ping: { request: { type: "ping" }; response: { type: "pong" } };
   getListing: { request: { type: "getListing" }; response: ListingResult };
+  /** Panel to service worker: the only way a letter is requested. */
+  generateLetter: {
+    request: { type: "generateLetter"; request: LetterRequest };
+    response: LetterResult;
+  };
 }
 
 export type MessageType = keyof Messages;
@@ -26,7 +37,11 @@ export type Handlers = {
 /** What actually crosses the channel, so a failed handler rejects send(). */
 type Envelope = { ok: true; value: unknown } | { ok: false; error: string };
 
-const TYPES: readonly string[] = ["ping", "getListing"] satisfies MessageType[];
+const TYPES: readonly string[] = [
+  "ping",
+  "getListing",
+  "generateLetter",
+] satisfies MessageType[];
 
 export function isMessage(value: unknown): value is Message {
   return (
