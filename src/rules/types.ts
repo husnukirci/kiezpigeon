@@ -59,11 +59,15 @@ export type DocumentType =
   "schufa" | "mietschuldenfreiheit" | "incomeProof" | "id" | "wbs";
 export type DocumentStatus = "ready" | "pending";
 
+/** When the applicants can move in. */
+export type MoveIn =
+  { kind: "date"; date: IsoDate } | { kind: "asap" } | { kind: "flexible" };
+
 export interface Profile {
   /** One or two. */
   applicants: Applicant[];
   household: Household;
-  moveInDate?: IsoDate;
+  moveIn?: MoveIn;
   contact: ContactDetails;
   /** Maximum Warmmiete. */
   budgetWarmCents?: Cents;
@@ -135,7 +139,7 @@ export interface FitLine {
 export interface LetterRequest {
   applicants: Applicant[];
   household: Household;
-  moveInDate?: IsoDate;
+  moveIn?: MoveIn;
   allDocumentsReady: boolean;
   contact: ContactDetails;
   listing: Listing;

@@ -9,8 +9,10 @@ import type {
   EmploymentType,
   Feature,
   Household,
+  IsoDate,
   LetterRequest,
   Listing,
+  MoveIn,
   PetKind,
   PetPolicy,
   Profile,
@@ -77,6 +79,11 @@ export function assertFeatureCount(
   }
 }
 
+/** The move-in date, when the applicants gave one rather than a choice. */
+export function moveInDateOf(moveIn: MoveIn | undefined): IsoDate | undefined {
+  return moveIn?.kind === "date" ? moveIn.date : undefined;
+}
+
 /** The contact person, or undefined when the listing gives no surname. */
 export function namedContact(
   person: ContactPerson | undefined,
@@ -135,7 +142,7 @@ export function createLetterRequest(
   return {
     applicants: profile.applicants,
     household: profile.household,
-    moveInDate: profile.moveInDate,
+    moveIn: profile.moveIn,
     allDocumentsReady,
     contact: profile.contact,
     listing,
@@ -214,7 +221,8 @@ function listingLines(listing: Listing): string[] {
 
 /** Landlord signals that hold for this request, strongest first. */
 function signals(request: LetterRequest): string[] {
-  const { applicants, household, moveInDate, listing } = request;
+  const { applicants, household, listing } = request;
+  const moveInDate = moveInDateOf(request.moveIn);
   const result: string[] = [];
   if (
     applicants.some(
@@ -248,7 +256,8 @@ function signals(request: LetterRequest): string[] {
 }
 
 function factsBlock(request: LetterRequest): string {
-  const { applicants, household, moveInDate, listing, features } = request;
+  const { applicants, household, listing, features } = request;
+  const moveInDate = moveInDateOf(request.moveIn);
   const income = sumCents(applicants.map((a) => a.netIncomeCents));
   const applicantLines = applicants.map((a) =>
     [
@@ -309,7 +318,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
       : [
           `- Mention these features of the flat by name: ${features.join(", ")}.`,
         ]),
-    ...(request.moveInDate === undefined
+    ...(request.moveIn === undefined
       ? [
           "- The applicants gave no move-in date. Do not say when they want to move in or that the listing's date suits them.",
         ]
