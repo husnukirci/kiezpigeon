@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { coupleWithDog, soloStudent } from "../../test-support/sample-profiles";
 import { classifyField, mapFields } from "./fieldMatch";
 import { defaultProfile } from "./profile";
-import type { FieldKind, FormField } from "./types";
+import type {
+  EmploymentType,
+  FieldKind,
+  FormField,
+  Household,
+  Profile,
+} from "./types";
 
 let nextKey = 0;
 function field(partial: Partial<FormField>): FormField {
@@ -109,7 +115,7 @@ describe("mapFields", () => {
       field({ label: "Lieblingsfarbe" }),
     ];
     const result = mapFields(fields, coupleWithDog, letter);
-    expect(result.total).toBe(11);
+    expect(result.total).toBe(10);
     expect(result.matched).toBe(8);
     expect(result.mappings.map((m) => [m.kind, m.value])).toEqual([
       ["salutation", undefined],
@@ -121,19 +127,31 @@ describe("mapFields", () => {
       ["adults", 2],
       ["pets", true],
       ["moveInDate", "2027-03-01"],
-      ["consent", undefined],
       ["unknown", undefined],
+    ]);
+    expect(result.leftAlone.map((f) => f.label)).toEqual([
+      "Datenschutz akzeptiert",
     ]);
   });
 
-  it("never gives a consent checkbox a value", () => {
+  it("leaves a consent checkbox alone and out of the count", () => {
     const consent = field({ label: "Ich willige ein", type: "checkbox" });
     const result = mapFields([consent], coupleWithDog, letter);
-    expect(result.mappings).toEqual([
-      { field: consent, kind: "consent", value: undefined },
-    ]);
-    expect(result.matched).toBe(0);
-    expect(result.total).toBe(1);
+    expect(result.mappings).toEqual([]);
+    expect(result.leftAlone).toEqual([consent]);
+    expect(result).toMatchObject({ matched: 0, total: 0 });
+  });
+
+  it("treats every checkbox that states no household fact as an opt-in", () => {
+    const optIns = [
+      field({ label: "Anbieter:in darf dein Profil sehen", type: "checkbox" }),
+      field({ name: "followAnAgent", type: "checkbox" }),
+      field({ label: "Erhalte Angebote von Umzugsfirmen", type: "checkbox" }),
+    ];
+    const pets = field({ label: "Haustiere", type: "checkbox" });
+    const result = mapFields([...optIns, pets], coupleWithDog, letter);
+    expect(result.leftAlone).toEqual(optIns);
+    expect(result.mappings.map((m) => m.field)).toEqual([pets]);
   });
 
   it("leaves out hidden, disabled, button-like, file, password and captcha fields", () => {
@@ -155,7 +173,7 @@ describe("mapFields", () => {
     expect(result).toMatchObject({ matched: 1, total: 1 });
   });
 
-  it("maps household, income, employment and WBS as plain values", () => {
+  it("maps household, income, job and WBS as values a field can hold", () => {
     const fields = [
       field({ label: "Kinder", type: "number" }),
       field({ label: "Raucher", type: "checkbox" }),
@@ -172,8 +190,8 @@ describe("mapFields", () => {
     ).toEqual([
       0,
       false,
-      460000,
-      "permanent",
+      "4600",
+      "Softwareentwicklerin",
       false,
       "Erfundene Straße",
       "7",
@@ -216,5 +234,207 @@ describe("mapFields", () => {
       undefined,
     ]);
     expect(result).toMatchObject({ matched: 0, total: 3 });
+  });
+
+  it("writes a German date, ab sofort or flexibel into a text move-in field", () => {
+    const text = field({ label: "Einzugstermin" });
+    const date = field({ label: "Einzugstermin", type: "date" });
+    const valueOf = (profile: Profile, f: FormField) =>
+      mapFields([f], profile, letter).mappings[0]?.value;
+    expect(valueOf(coupleWithDog, text)).toBe("01.03.2027");
+    expect(valueOf(coupleWithDog, date)).toBe("2027-03-01");
+    const asap: Profile = { ...coupleWithDog, moveIn: { kind: "asap" } };
+    const flexible: Profile = {
+      ...coupleWithDog,
+      moveIn: { kind: "flexible" },
+    };
+    expect(valueOf(asap, text)).toBe("ab sofort");
+    expect(valueOf(flexible, text)).toBe("flexibel");
+    expect(valueOf(asap, date)).toBeUndefined();
+  });
+
+  it("marks a field whose different value it would replace", () => {
+    const fields = [
+      field({ label: "Vorname", value: "Jonas" }),
+      field({ label: "Nachname", value: "Testmann" }),
+      field({ label: "Telefon", value: "" }),
+      // An unticked box is the page's default, not something typed.
+      field({ label: "Haustiere", type: "checkbox", checked: false }),
+      field({ label: "Raucher", type: "checkbox", checked: true }),
+      field({ label: "Lieblingsfarbe", value: "blau" }),
+    ];
+    expect(
+      mapFields(fields, coupleWithDog, letter).mappings.map((m) => m.replaces),
+    ).toEqual([true, false, false, false, true, false]);
+  });
+});
+
+describe("mapFields on select fields", () => {
+  const letter = "Sehr geehrte Frau Weber, ...";
+  const options = (...pairs: [string, string][]) =>
+    pairs.map(([value, label]) => ({ value, label }));
+  const select = (label: string, ...pairs: [string, string][]) =>
+    field({ label, type: "select", options: options(["", ""], ...pairs) });
+  const valueOf = (profile: Profile, f: FormField) =>
+    mapFields([f], profile, letter).mappings[0]?.value;
+
+  it("answers yes and no questions with the matching option", () => {
+    const pets = select("Haustiere", ["TRUE", "Ja"], ["FALSE", "Nein"]);
+    expect(valueOf(coupleWithDog, pets)).toBe("TRUE");
+    expect(valueOf(soloStudent, pets)).toBe("FALSE");
+    const wbs = select("WBS vorhanden", ["1", "Yes"], ["0", "No"]);
+    expect(valueOf(soloStudent, wbs)).toBe("1");
+    const smoker = select("Raucher", ["n", "nein"], ["j", "ja"]);
+    expect(valueOf(coupleWithDog, smoker)).toBe("n");
+  });
+
+  it("picks the move-in option by the kind of move-in", () => {
+    const moveIn = select(
+      "Einzugstermin",
+      ["CONCRETE", "genaues Datum"],
+      ["FLEXIBLE", "flexibel"],
+      ["FROM_NOW", "ab sofort"],
+    );
+    expect(valueOf(coupleWithDog, moveIn)).toBe("CONCRETE");
+    expect(
+      valueOf({ ...coupleWithDog, moveIn: { kind: "asap" } }, moveIn),
+    ).toBe("FROM_NOW");
+    expect(
+      valueOf({ ...coupleWithDog, moveIn: { kind: "flexible" } }, moveIn),
+    ).toBe("FLEXIBLE");
+    expect(valueOf(soloStudent, moveIn)).toBeUndefined();
+  });
+
+  it("picks the income range that holds the household's net income", () => {
+    const income = select(
+      "Monatliches netto Haushaltseinkommen",
+      ["BELOW_500", "< 500 €"],
+      ["OVER_500_UPTO_1000", "500 - 1.000 €"],
+      ["OVER_1000_UPTO_1500", "1.000 - 1.500 €"],
+      ["OVER_4000_UPTO_5000", "4.000 - 5.000 €"],
+      ["OVER_5000", "> 5.000 €"],
+    );
+    expect(valueOf(coupleWithDog, income)).toBe("OVER_4000_UPTO_5000");
+    expect(valueOf(soloStudent, income)).toBe("OVER_500_UPTO_1000");
+    const atEdge = (cents: number): Profile => ({
+      ...soloStudent,
+      applicants: soloStudent.applicants.map((a) => ({
+        ...a,
+        netIncomeCents: cents,
+      })),
+    });
+    expect(valueOf(atEdge(100000), income)).toBe("OVER_500_UPTO_1000");
+    expect(valueOf(atEdge(100001), income)).toBe("OVER_1000_UPTO_1500");
+    expect(valueOf(atEdge(40000), income)).toBe("BELOW_500");
+    expect(valueOf(atEdge(900000), income)).toBe("OVER_5000");
+  });
+
+  it("does not depend on the order of the options", () => {
+    const income = select(
+      "Einkommen",
+      ["HIGH", "1.000 - 1.500 €"],
+      ["LOW", "500 - 1.000 €"],
+    );
+    const atThousand: Profile = {
+      ...soloStudent,
+      applicants: soloStudent.applicants.map((a) => ({
+        ...a,
+        netIncomeCents: 100000,
+      })),
+    };
+    expect(valueOf(atThousand, income)).toBe("LOW");
+    const documents = select(
+      "Bewerbungsunterlagen",
+      ["FALSE", "Nicht vorhanden"],
+      ["TRUE", "Vorhanden"],
+    );
+    expect(valueOf(coupleWithDog, documents)).toBe("TRUE");
+  });
+
+  it("leaves an income select alone when no range holds the income", () => {
+    const income = select("Einkommen", ["A", "1.000 - 1.500 €"]);
+    expect(valueOf(coupleWithDog, income)).toBeUndefined();
+  });
+
+  it("picks the employment option for the first applicant", () => {
+    const employment = select(
+      "Beschäftigungsart",
+      ["PUBLIC_EMPLOYEE", "Angestellte:r"],
+      ["WORKER", "Arbeiter:in"],
+      ["SELF_EMPLOYED", "Selbstständige:r"],
+      ["OFFICER", "Beamter:Beamtin"],
+      ["TRAINEE", "Auszubildende:r"],
+      ["STUDENT", "Student:in"],
+      ["OTHER", "Sonstiges"],
+    );
+    const as = (employment: EmploymentType): Profile => ({
+      ...coupleWithDog,
+      applicants: coupleWithDog.applicants
+        .slice(0, 1)
+        .map((a) => ({ ...a, employment })),
+    });
+    expect(valueOf(as("permanent"), employment)).toBe("PUBLIC_EMPLOYEE");
+    expect(valueOf(as("fixed_term"), employment)).toBe("PUBLIC_EMPLOYEE");
+    expect(valueOf(as("civil_servant"), employment)).toBe("OFFICER");
+    expect(valueOf(as("self_employed"), employment)).toBe("SELF_EMPLOYED");
+    expect(valueOf(as("trainee"), employment)).toBe("TRAINEE");
+    expect(valueOf(as("student"), employment)).toBe("STUDENT");
+    expect(valueOf(as("other"), employment)).toBe("OTHER");
+  });
+
+  it("picks the household option from adults, children and relationship", () => {
+    const household = select(
+      "Haushaltsgröße",
+      ["ONE_PERSON", "Einpersonenhaushalt"],
+      ["TWO_PERSON", "Zwei Erwachsene"],
+      ["FAMILY", "Familie"],
+      ["BIG_GROUP", "Wohngemeinschaft"],
+    );
+    const withHousehold = (h: Partial<Household>): Profile => ({
+      ...coupleWithDog,
+      household: { ...coupleWithDog.household, ...h },
+    });
+    expect(valueOf(soloStudent, household)).toBe("ONE_PERSON");
+    expect(valueOf(coupleWithDog, household)).toBe("TWO_PERSON");
+    expect(valueOf(withHousehold({ children: 1 }), household)).toBe("FAMILY");
+    expect(
+      valueOf(withHousehold({ relationship: "flatmates" }), household),
+    ).toBe("BIG_GROUP");
+    expect(valueOf(withHousehold({ adults: 1, children: 2 }), household)).toBe(
+      "FAMILY",
+    );
+  });
+
+  it("says the documents are there only when every one is ready", () => {
+    const documents = select(
+      "Bewerbungsunterlagen",
+      ["TRUE", "Vorhanden"],
+      ["FALSE", "Nicht vorhanden"],
+    );
+    expect(classifyField(documents)).toBe("documents");
+    // The WBS paper only counts for someone who has a WBS.
+    expect(valueOf(coupleWithDog, documents)).toBe("TRUE");
+    expect(valueOf(soloStudent, documents)).toBeUndefined();
+  });
+
+  it("has no option to pick for a salutation, and counts it unmatched", () => {
+    const salutation = select("Anrede *", ["FEMALE", "Frau"], ["MALE", "Herr"]);
+    const result = mapFields([salutation], coupleWithDog, letter);
+    expect(result).toMatchObject({ matched: 0, total: 1 });
+  });
+
+  it("marks a select whose chosen option it would change", () => {
+    const pets = (value: string) =>
+      field({
+        label: "Haustiere",
+        type: "select",
+        value,
+        options: options(["", ""], ["TRUE", "Ja"], ["FALSE", "Nein"]),
+      });
+    const replaces = (f: FormField) =>
+      mapFields([f], coupleWithDog, letter).mappings[0]?.replaces;
+    expect(replaces(pets(""))).toBe(false);
+    expect(replaces(pets("TRUE"))).toBe(false);
+    expect(replaces(pets("FALSE"))).toBe(true);
   });
 });

@@ -91,6 +91,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P5 | The real form has 7 selects (Anrede, Einzugstermin, Haushaltsgröße, Haustiere, Beschäftigungsart, Einkommen in ranges, Bewerbungsunterlagen), three pre-ticked opt-in toggles (profile visible, follow the agent, Umzugsfirmen offers) and labels not tied to the selects by `for`. The Phase 1 matcher only produced raw values (`true`, cents, a date) and counted consent fields toward Y. | Spec gap: `FormField` gains options and the current value, the matcher picks an option per kind, and opt-in checkboxes are left alone and not counted (ADR 11).
 - P5 | A shell step hung for two minutes on a stray `cat >> file` with no input, left in a chained command; nothing had run past it. | Stopped and rerun without it.
 
+- P5 | Reading the Phase 1 matcher before filling with it: a text field labelled `Beruf` would have received the code `permanent`, and `Nettoeinkommen` the cents `460000`; the tests pinned both, because Phase 1 values were never meant to be written into a page. | Values are now ready to write (the job, whole euros, a German date); the old expectations were changed test-first. 14 new or changed tests seen failing, then green in one pass, so the pass was not taken as proof.
+- P5 | Mutation check on the new matcher code: `>` to `>=` on the income range and dropping the `!NO` guard (so `Nicht vorhanden` reads as yes) both survived, because every test listed options in ascending, yes-first order and `find` stopped at the right one by luck. | A test with the options reversed kills both; the opt-in, replaces and WBS-documents mutants failed tests from the start.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
