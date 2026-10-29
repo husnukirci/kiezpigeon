@@ -1,0 +1,54 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  /* README: 14px side padding. Its 40px height is raised to the 44px
+     tap minimum from CLAUDE.md for every chip you can press. */
+  --chip-padding-x: 14px;
+  --chip-border: 2px;
+
+  min-height: var(--tap-min);
+  padding: 0 var(--chip-padding-x);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.toggle {
+  border: var(--chip-border) solid var(--line);
+  background: transparent;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.toggle[aria-pressed="true"] {
+  border-color: var(--teal);
+  background: var(--teal-deep);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.document {
+  /* README preview: 6px between icon and label. */
+  --icon-gap: 6px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-gap);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+.ready {
+  background: var(--teal-deep);
+  color: var(--teal-soft);
+}
+
+.pending {
+  background: var(--sun-deep);
+  color: var(--sun-soft);
+}

@@ -1,9 +1,13 @@
-import { cx } from "../cx";
+import { cx } from "../../cx";
 import styles from "./PanelHeader.module.css";
 
 const ICON_URL = "/icon/48.png";
 
-export function PanelHeader() {
+interface PanelHeaderProps {
+  onSettings: () => void;
+}
+
+export function PanelHeader({ onSettings }: PanelHeaderProps) {
   return (
     <>
       <div className={cx(styles.sky, styles.planet)} aria-hidden="true" />
@@ -15,8 +19,12 @@ export function PanelHeader() {
           <img className={styles.icon} src={ICON_URL} alt="" />
           Kiezpigeon
         </p>
-        {/* Settings opens in Phase 2; the button is here so the header is complete. */}
-        <button type="button" className={styles.settings} aria-label="Settings">
+        <button
+          type="button"
+          className={styles.settings}
+          aria-label="Settings"
+          onClick={onSettings}
+        >
           <SettingsGlyph />
         </button>
       </header>

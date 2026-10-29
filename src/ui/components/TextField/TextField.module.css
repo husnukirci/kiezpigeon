@@ -1,0 +1,49 @@
+.field {
+  /* README preview: label to field 6px, 14px horizontal padding. */
+  --label-gap: 6px;
+  --field-padding-x: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--label-gap);
+  min-width: 0;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--label-gap);
+  color: var(--ink-muted);
+}
+
+.control {
+  width: 100%;
+  min-width: 0;
+  height: var(--tap-min);
+  padding: 0 var(--field-padding-x);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--night-900);
+  color: var(--ink);
+  color-scheme: dark;
+}
+
+.control::placeholder {
+  color: var(--ink-subtle);
+}
+
+.control:focus-visible {
+  border-color: var(--teal);
+}
+
+.invalid {
+  border-color: var(--sun);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--label-gap);
+  margin: 0;
+  color: var(--sun-soft);
+}
