@@ -72,6 +72,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P4 | The SDK made the service worker bundle 362 kB (it was a few kB). | Accepted for typed errors and version tracking (ADR 4 implementation note); flagged in the PR.
 - P4 | QA at 320px: the edit textarea had a fixed minimum height, so editing a 150-word letter meant scrolling inside the paper. | `field-sizing: content` lets it grow with the letter.
 - P4 | QA script: reading the clipboard back failed in headless Chromium (`NotAllowedError`), which first looked like Copy failing. The extension's write had succeeded. | The script records what `writeText` receives instead: the exact letter, 905 of 905 characters.
+- P4 | Acceptance with Haiku 5.5: two of six letters were still too short after the retry, because the retry only said "it needs 120 to 180". | `describeProblem` now names how many words to add or cut to reach the middle (test first); Haiku then passed five of six, and the sixth reaches the screen with that warning (ADR 9).
+- P4 | Why Sonnet letters needed the retry (first attempts checked directly): short-tone letters undershooting the length, and the model rounding the listing's 51,44 m² to "51,4", which the validator rejects as a number not in the facts. | Kept strict: a rounded fact is not the fact. The retry fixes both; every final Sonnet letter passed.
 
 ## Per-phase narrative
 
