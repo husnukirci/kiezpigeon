@@ -43,8 +43,8 @@ const RELATIONSHIPS: readonly {
 ];
 
 const MOVE_IN_KINDS: readonly { value: MoveIn["kind"]; label: string }[] = [
-  { value: "date", label: "On a date" },
-  { value: "asap", label: "As soon as possible" },
+  { value: "date", label: "A date" },
+  { value: "asap", label: "Now" },
   { value: "flexible", label: "Flexible" },
 ];
 

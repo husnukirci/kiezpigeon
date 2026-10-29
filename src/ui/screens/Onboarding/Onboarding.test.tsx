@@ -105,9 +105,7 @@ describe("Onboarding", () => {
     });
     next();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "As soon as possible" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Now" }));
     expect(screen.queryByLabelText("Move-in date")).toBeNull();
     type("Email", "mara.testmann@example.org");
     next();
