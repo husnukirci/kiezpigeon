@@ -91,7 +91,7 @@ form asks for email and phone).
         present, salutation matches the contact person
   - [x] `fieldMatch`: classify form fields, map to profile values, score
   - [x] `tracker`: status transitions, stats, filters
-- [ ] Profile and onboarding: step flow (applicants, household, move-in and
+- [x] Profile and onboarding: step flow (applicants, household, move-in and
       budget, documents checklist, letter defaults), settings with export,
       import and delete all data
 - [ ] Listing detection: adapter interface; ImmoScout24 adapter tested
