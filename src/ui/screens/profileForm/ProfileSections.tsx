@@ -6,8 +6,10 @@ import type {
   DocumentType,
   EmploymentType,
   Language,
+  MoveIn,
   PetKind,
   Profile,
+  Relationship,
   Tone,
 } from "../../../rules/types";
 import { moveInDateOf } from "../../../rules/letterPrompt";
@@ -27,6 +29,24 @@ export interface SectionProps {
   onChange: (draft: Draft) => void;
   errors: FieldErrors;
 }
+
+/** "none" stands for not set: the letter then says nothing about it. */
+const RELATIONSHIPS: readonly {
+  value: Relationship | "none";
+  label: string;
+}[] = [
+  { value: "none", label: "Don't mention" },
+  { value: "partners", label: "Partners" },
+  { value: "married", label: "Married" },
+  { value: "flatmates", label: "Flatmates" },
+  { value: "family", label: "Family" },
+];
+
+const MOVE_IN_KINDS: readonly { value: MoveIn["kind"]; label: string }[] = [
+  { value: "date", label: "On a date" },
+  { value: "asap", label: "As soon as possible" },
+  { value: "flexible", label: "Flexible" },
+];
 
 const EMPLOYMENT: readonly { value: EmploymentType; label: string }[] = [
   { value: "permanent", label: "Permanent (unbefristet)" },
@@ -114,10 +134,26 @@ export function ApplicantsSection({ draft, onChange, errors }: SectionProps) {
   };
 
   const removeCoApplicant = (): void => {
+    // How two people are related means nothing once there is one.
+    const single = { ...household };
+    delete single.relationship;
     onChange({
-      ...withProfile(draft, { applicants: applicants.slice(0, 1) }),
+      ...withProfile(draft, {
+        applicants: applicants.slice(0, 1),
+        household: single,
+      }),
       income: draft.income.slice(0, 1),
     });
+  };
+
+  const setRelationship = (value: Relationship | "none"): void => {
+    const rest = { ...household };
+    delete rest.relationship;
+    onChange(
+      withProfile(draft, {
+        household: value === "none" ? rest : { ...rest, relationship: value },
+      }),
+    );
   };
 
   return (
@@ -174,7 +210,15 @@ export function ApplicantsSection({ draft, onChange, errors }: SectionProps) {
               }}
             />
             {i === 1 && (
-              <Button onClick={removeCoApplicant}>Remove co-applicant</Button>
+              <>
+                <SelectField
+                  label="You are"
+                  options={RELATIONSHIPS}
+                  value={household.relationship ?? "none"}
+                  onChange={setRelationship}
+                />
+                <Button onClick={removeCoApplicant}>Remove co-applicant</Button>
+              </>
             )}
           </Card>
         );
@@ -282,17 +326,34 @@ export function HouseholdSection({ draft, onChange, errors }: SectionProps) {
       </Card>
 
       <Card title="Move-in and budget">
-        <TextField
-          label="Move-in date"
-          type="date"
-          value={moveInDateOf(draft.profile.moveIn) ?? ""}
-          onChange={(value) => {
+        <SegmentedControl
+          label="When can you move in?"
+          options={MOVE_IN_KINDS}
+          value={draft.profile.moveIn?.kind ?? "date"}
+          onChange={(kind) => {
             const profile = { ...draft.profile };
-            if (value === "") delete profile.moveIn;
-            else profile.moveIn = { kind: "date", date: value };
+            if (kind === "date") {
+              // Back to a date: keep one if there was one, else none yet.
+              if (profile.moveIn?.kind !== "date") delete profile.moveIn;
+            } else {
+              profile.moveIn = { kind };
+            }
             onChange({ ...draft, profile });
           }}
         />
+        {(draft.profile.moveIn?.kind ?? "date") === "date" && (
+          <TextField
+            label="Move-in date"
+            type="date"
+            value={moveInDateOf(draft.profile.moveIn) ?? ""}
+            onChange={(value) => {
+              const profile = { ...draft.profile };
+              if (value === "") delete profile.moveIn;
+              else profile.moveIn = { kind: "date", date: value };
+              onChange({ ...draft, profile });
+            }}
+          />
+        )}
         <TextField
           label="Max Warmmiete (€)"
           inputMode="decimal"

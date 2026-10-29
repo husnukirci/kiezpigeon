@@ -89,6 +89,41 @@ describe("Onboarding", () => {
     expect(container.querySelector('input[type="file"]')).toBeNull();
   });
 
+  it("stores how two applicants are related and when they can move in", async () => {
+    render(<Onboarding />);
+    fireEvent.click(screen.getByRole("button", { name: "Add co-applicant" }));
+    const fill = (label: string, values: string[]): void => {
+      screen.getAllByLabelText(label).forEach((field, i) => {
+        fireEvent.change(field, { target: { value: values[i] } });
+      });
+    };
+    fill("First name", ["Mara", "Jonas"]);
+    fill("Last name", ["Testmann", "Beispiel"]);
+    fill("Net monthly income (€)", ["2.600", "2.000"]);
+    fireEvent.change(screen.getByLabelText("You are"), {
+      target: { value: "married" },
+    });
+    next();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "As soon as possible" }),
+    );
+    expect(screen.queryByLabelText("Move-in date")).toBeNull();
+    type("Email", "mara.testmann@example.org");
+    next();
+    next();
+    next();
+    next();
+
+    await waitFor(async () => {
+      const stored = await read("profile");
+      expect(stored.ok && stored.value).toMatchObject({
+        household: { relationship: "married" },
+        moveIn: { kind: "asap" },
+      });
+    });
+  });
+
   it("adds a co-applicant and counts them as an adult", () => {
     render(<Onboarding />);
     fireEvent.click(screen.getByRole("button", { name: "Add co-applicant" }));
