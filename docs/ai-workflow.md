@@ -119,6 +119,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Follow-up (letter length) | The author's next real letter padded to reach 120 words with invented hobbies ("Wir kochen gern und sitzen abends gern draußen") and a rent comment the prompt forbids. The author lowered the minimum to 100. | Real runs then showed first drafts at 83 to 94 words with a target of 125, and still 77 to 99 with a target of 140: the no-filler rules, not the target, set the length, and every letter still went to the retry, which kept padding ("Das sagen wir Ihnen offen", "Er bringt Erfahrung in der Führung mit"). Asked again with the numbers; the author removed the minimum. Five real letters afterwards: all passed on the first call, 52 to 96 words, no padding.
 - Follow-up (letter length) | One of those runs flagged "Haustiere haben wir keine." as invented pets: the false positive logged in the P4 model comparison, never fixed. | The validator reads a `kein…` up to three words after a pet word as a denial when it ends the clause, and not when it goes on ("Hund hat keine Probleme"); both cases tested first.
 
+- Follow-up (names once) | The author's next real letter named both applicants three times: in the opening, in the job lines and in the sign-off. | A prompt rule keeps names out of the opening sentence, test-first. Five real letters: no opening sentence held a name (a first check counted the whole first paragraph, which in three letters also held the job lines, and so over-reported); all passed on the first call.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
