@@ -1,0 +1,24 @@
+.teal {
+  fill: var(--teal);
+}
+
+.onTeal {
+  fill: var(--on-teal);
+}
+
+.sun {
+  fill: var(--sun);
+}
+
+.sunDeep {
+  fill: var(--sun-deep);
+}
+
+.current {
+  fill: currentcolor;
+}
+
+/* Icons keep their size when the text beside them wraps. */
+.icon {
+  flex-shrink: 0;
+}
