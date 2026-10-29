@@ -32,6 +32,7 @@ const KEEP_ATTRIBUTES = new Set([
   "property",
   "itemprop",
   "lang",
+  "charset",
   "disabled",
   "required",
   "checked",
@@ -61,7 +62,12 @@ export function reduce(html: string): string {
     out = out.replace(new RegExp(`<${tag}\\b[\\s\\S]*?</${tag}>`, "gi"), "");
   }
   // Removed where they stand; they have no content.
-  out = out.replace(/<(link|meta|img|source|base)\b[^>]*>/gi, "");
+  // One charset meta stays, so a served fixture decodes as the page did;
+  // Chrome saves pages as UTF-8.
+  out = out.replace(/<meta\b[^>]*>/gi, (tag) =>
+    /charset=/i.test(tag) ? '<meta charset="utf-8">' : "",
+  );
+  out = out.replace(/<(link|img|source|base)\b[^>]*>/gi, "");
   out = out.replace(/<!--[\s\S]*?-->/g, "");
   out = out.replace(
     /<([a-z][\w-]*)((?:\s+[^\s=>]+(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>/gi,

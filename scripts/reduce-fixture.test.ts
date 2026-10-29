@@ -21,6 +21,14 @@ describe("reduce", () => {
       ),
     ).toBe('<div data-qa="contactName"><a href="#">x</a></div>');
   });
+
+  it("keeps the charset meta and drops the others", () => {
+    expect(
+      reduce(
+        '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="description" content="Musterweg 5">',
+      ),
+    ).toBe('<meta charset="utf-8">');
+  });
 });
 
 describe("replaceAll", () => {
