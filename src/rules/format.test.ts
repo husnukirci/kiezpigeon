@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
+import {
+  formatArea,
+  formatDate,
+  formatEuro,
+  formatFloor,
+  formatNumber,
+} from "./format";
 
 // German grouping is written out by hand so the output does not depend on
 // the runtime's locale data: every case runs once with `Intl` present and
@@ -52,5 +58,12 @@ describe.each([
 
   it("rejects a string that is not an ISO date", () => {
     expect(() => formatDate("1.3.2027")).toThrow(RangeError);
+  });
+
+  it("names floors the way German listings do", () => {
+    expect(formatFloor(0)).toBe("EG");
+    expect(formatFloor(1)).toBe("1. OG");
+    expect(formatFloor(12)).toBe("12. OG");
+    expect(formatFloor(-1)).toBe("UG");
   });
 });
