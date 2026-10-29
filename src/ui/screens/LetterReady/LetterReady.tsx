@@ -1,10 +1,12 @@
 // "Letter ready" (design system screen 3): the letter on paper, its checks,
-// Rewrite / Edit / Copy, and the tone switch, which writes it again. Edits
-// are re-checked as you type. The form card and Fill the form arrive with
-// form filling in Phase 5; until then the button is disabled.
+// Rewrite / Edit / Copy, the tone switch, which writes it again, and the
+// form fields card. Edits are re-checked as you type, and Fill the form
+// writes the letter as edited. The user presses Send on the page.
 import { useState } from "react";
+import { fillSteps, type FillStep } from "../../../fill/fill";
+import { mapFields } from "../../../rules/fieldMatch";
 import { countWords, validateLetter } from "../../../rules/letterValidate";
-import type { LetterRequest, Tone } from "../../../rules/types";
+import type { LetterRequest, Profile, Tone } from "../../../rules/types";
 import { describeProblem, type LetterDraft } from "../../../rules/writeLetter";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
@@ -12,14 +14,21 @@ import { LetterCard } from "../../components/Card/LetterCard";
 import { ExclamationIcon, TickIcon } from "../../components/Icons/Icons";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
 import { cx } from "../../cx";
+import type { ContactFormState } from "../../hooks/useContactForm";
 import type { LetterState } from "../../hooks/useLetter";
 import { TONES } from "../profileForm/ProfileSections";
 import screen from "../Screen.module.css";
+import { FormCard } from "./FormCard";
 import styles from "./LetterReady.module.css";
 
 interface LetterReadyProps {
   state: Exclude<LetterState, { status: "idle" }>;
+  profile: Profile;
   listingTitle: string | undefined;
+  form: ContactFormState;
+  onCheckForm: () => void;
+  /** Fills the page's form; never sends it. */
+  onFill: (steps: FillStep[]) => void;
   /** Writes the letter again in another tone. */
   onTone: (tone: Tone) => void;
   /** Writes the letter again in the same tone. */
@@ -29,11 +38,25 @@ interface LetterReadyProps {
 
 export function LetterReady({
   state,
+  profile,
   listingTitle,
+  form,
+  onCheckForm,
+  onFill,
   onTone,
   onRewrite,
   onBack,
 }: LetterReadyProps) {
+  // Edits belong to one draft; a new draft starts clean.
+  const [edit, setEdit] = useState<{ of: LetterDraft; text: string }>();
+  const draft = state.status === "ready" ? state.draft : undefined;
+  const text = draft && (edit?.of === draft ? edit.text : draft.text);
+  const match =
+    text !== undefined && form.status === "form"
+      ? mapFields(form.fields, profile, text)
+      : undefined;
+  const canFill = match !== undefined && match.matched > 0;
+
   return (
     <section className={screen.screen} aria-labelledby="letter-title">
       <div className={screen.heading}>
@@ -70,24 +93,38 @@ export function LetterReady({
         </Card>
       )}
 
-      {state.status === "ready" && (
-        <ReadyLetter
-          draft={state.draft}
-          request={state.request}
-          onRewrite={onRewrite}
-        />
+      {state.status === "ready" && text !== undefined && (
+        <>
+          <ReadyLetter
+            draft={state.draft}
+            text={text}
+            onEdit={(edited) => {
+              setEdit({ of: state.draft, text: edited });
+            }}
+            request={state.request}
+            onRewrite={onRewrite}
+          />
+          <FormCard state={form} match={match} onCheck={onCheckForm} />
+        </>
       )}
 
       <div className={cx(screen.actions, styles.bottom)}>
         <Button className={screen.back} onClick={onBack}>
           Back
         </Button>
-        <Button kind="primary" disabled aria-describedby="fill-next">
+        <Button
+          kind="primary"
+          disabled={!canFill}
+          aria-describedby="send-reminder"
+          onClick={() => {
+            if (match) onFill(fillSteps(match.mappings));
+          }}
+        >
           Fill the form
         </Button>
       </div>
-      <p id="fill-next" className={cx(styles.next, "type-caption")}>
-        Coming next
+      <p id="send-reminder" className={cx(styles.next, "type-caption")}>
+        You review and press Send yourself.
       </p>
     </section>
   );
@@ -95,16 +132,23 @@ export function LetterReady({
 
 interface ReadyLetterProps {
   draft: LetterDraft;
+  /** The draft's text as the user edited it. */
+  text: string;
+  onEdit: (text: string) => void;
   request: LetterRequest;
   onRewrite: () => void;
 }
 
-function ReadyLetter({ draft, request, onRewrite }: ReadyLetterProps) {
-  // Edits and the copy note belong to one draft; a new draft starts clean.
-  const [edit, setEdit] = useState<{ of: LetterDraft; text: string }>();
+function ReadyLetter({
+  draft,
+  text,
+  onEdit,
+  request,
+  onRewrite,
+}: ReadyLetterProps) {
+  // The editor and the copy note belong to one draft, like the edits.
   const [editingOf, setEditingOf] = useState<LetterDraft>();
   const [copy, setCopy] = useState<{ text: string; ok: boolean }>();
-  const text = edit?.of === draft ? edit.text : draft.text;
   const editing = editingOf === draft;
   const problems = validateLetter(text, request);
   const words = countWords(text);
@@ -132,7 +176,7 @@ function ReadyLetter({ draft, request, onRewrite }: ReadyLetterProps) {
               // The user just asked to edit; take them to the text.
               autoFocus
               onChange={(e) => {
-                setEdit({ of: draft, text: e.target.value });
+                onEdit(e.target.value);
               }}
             />
           </label>

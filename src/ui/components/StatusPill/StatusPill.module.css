@@ -1,7 +1,7 @@
 .pill {
   /* README: padding 4px 10px; the detected variant 6px 12px. */
-  --pill-padding-y: 6px;
-  --pill-padding-x: 12px;
+  --pill-padding-y: 4px;
+  --pill-padding-x: 10px;
 
   flex-shrink: 0;
   margin: 0;
@@ -10,8 +10,16 @@
   font-weight: 700;
 }
 
+.matched {
+  background: var(--teal);
+  color: var(--on-teal);
+  white-space: nowrap;
+}
+
 .detected {
   /* README: a leading 8px teal dot, 6px before the words. */
+  --pill-padding-y: 6px;
+  --pill-padding-x: 12px;
   --dot-size: 8px;
   --dot-gap: 6px;
 

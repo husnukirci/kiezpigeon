@@ -11,11 +11,19 @@ export type ActiveListing = { kind: "loading" } | ListingResult;
 
 const NOT_LISTING: ListingResult = { kind: "not_listing" };
 
+/** The panel's own tab, or the active one for a panel without a tab. */
+export async function panelTab(
+  ownTab: number | undefined,
+): Promise<number | undefined> {
+  return (
+    ownTab ??
+    (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id
+  );
+}
+
 async function askTab(ownTab: number | undefined): Promise<ListingResult> {
   try {
-    const tabId =
-      ownTab ??
-      (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
+    const tabId = await panelTab(ownTab);
     if (tabId === undefined) return NOT_LISTING;
     return await send({ type: "getListing" }, tabId);
   } catch {
