@@ -7,6 +7,7 @@ import type {
   Application,
   ApplicationStatus,
   Applicant,
+  ClaudeModel,
   ContactDetails,
   DocumentStatus,
   DocumentType,
@@ -17,6 +18,7 @@ import type {
   Pet,
   PetKind,
   Profile,
+  Settings,
   Tone,
 } from "./types";
 
@@ -58,6 +60,11 @@ const DOCUMENT_TYPES: readonly DocumentType[] = [
   "wbs",
 ];
 const DOCUMENT_STATUSES: readonly DocumentStatus[] = ["ready", "pending"];
+/** Sonnet first: the default. */
+export const CLAUDE_MODELS: readonly ClaudeModel[] = [
+  "claude-sonnet-5-5",
+  "claude-haiku-5-5",
+];
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
   "sent",
   "viewing",
@@ -343,6 +350,29 @@ export function parseProfile(input: unknown): Parsed<Profile> {
 
 export function parseApplication(input: unknown): Parsed<Application> {
   return parseWith(input, "application", readApplication);
+}
+
+export function parseSettings(input: unknown): Parsed<Settings> {
+  return parseWith(input, "settings", (r) => ({
+    model: r.oneOf("model", CLAUDE_MODELS),
+  }));
+}
+
+export function defaultSettings(): Settings {
+  return { model: "claude-sonnet-5-5" };
+}
+
+/**
+ * The user's own API key, trimmed. Problems never repeat the value, so a
+ * mistyped key cannot end up in a message or a log.
+ */
+export function parseApiKey(input: unknown): Parsed<string> {
+  const key = typeof input === "string" ? input.trim() : "";
+  if (key === "") return { ok: false, problems: ["apiKey: is empty"] };
+  if (/\s/.test(key)) {
+    return { ok: false, problems: ["apiKey: must not contain spaces"] };
+  }
+  return { ok: true, value: key };
 }
 
 function defaultHousehold(): Household {
