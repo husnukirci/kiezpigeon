@@ -240,6 +240,15 @@ describe("validateLetter", () => {
     ).toThrow(RangeError);
   });
 
+  it("asks for no feature when the listing names none", () => {
+    const bare = {
+      ...request,
+      listing: { ...request.listing, features: [] },
+      features: [],
+    };
+    expect(validateLetter(passingLetter, bare)).toEqual([]);
+  });
+
   it("lists problems in code order", () => {
     const emDash = String.fromCodePoint(0x2014);
     const letter = ["Liebe Leute,", `wir zahlen 999 € ${emDash} sofort.`].join(
