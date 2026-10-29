@@ -77,6 +77,16 @@ describe("read and write", () => {
   });
 });
 
+describe("writeAll with extra keys", () => {
+  it("ignores keys it does not know instead of failing", async () => {
+    await writeAll({ profile: coupleWithDog, step: "confirm" } as never);
+    expect(await browser.storage.local.get(null)).toEqual({
+      schemaVersion: SCHEMA_VERSION,
+      profile: coupleWithDog,
+    });
+  });
+});
+
 describe("clearAll", () => {
   it("leaves storage completely empty", async () => {
     await writeAll({ profile: coupleWithDog, applications: [application] });
