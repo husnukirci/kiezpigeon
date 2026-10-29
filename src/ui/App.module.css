@@ -10,8 +10,7 @@
   color: var(--ink);
 }
 
-.intro {
-  position: relative;
+.text {
   margin: 0;
   color: var(--ink-muted);
 }
