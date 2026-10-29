@@ -61,6 +61,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P3 | The search page held 24 result cards with real addresses. | It was trimmed to two cards before scrubbing (noted in its header); the test asserts both cards parsed.
 - P3 | The reducer's own key pattern contained the literal `sk-ant`, which the global key grep would flag, the same trap as in Phase 1. | Spelled `sk-[a]nt`.
 - P3 | `npm run lint` reported 78,319 errors, all in the raw saved pages' downloaded scripts inside the ignored `kp-fixtures/` folder. | Linted with that folder excluded; the raw pages are deleted after the PR. CI never sees them.
+- P3 | Live check: the author's first listing tab showed nothing until a reload, because it was open before the unpacked extension was loaded, so it had no content script (the ADR 8 consequence). A newly opened listing worked straight away. | Kept as is in this phase; injecting the script on demand needs the `scripting` permission, proposed for Phase 6 where it arrives with an ADR.
 
 ## Per-phase narrative
 
