@@ -431,13 +431,28 @@ function optionFor(
 }
 
 /** Whether filling `value` would change something already in the field. */
-function replacesCurrent(field: FormField, value: FieldValue | undefined) {
+function replacesCurrent(
+  kind: FieldKind,
+  field: FormField,
+  value: FieldValue | undefined,
+) {
   if (value === undefined) return false;
   // Only a tick can have been set by someone; unticked is the default.
-  if (field.type === "checkbox")
+  if (field.type === "checkbox") {
     return field.checked === true && value === false;
+  }
   const current = field.value ?? "";
-  return current !== "" && current !== String(value);
+  if (current === "") return false;
+  // The same number written another way is not a replacement.
+  if (kind === "phone") {
+    return phoneDigits(current) !== phoneDigits(String(value));
+  }
+  return current !== String(value);
+}
+
+/** A German phone number as digits, `+49` and `0049` read as `0`. */
+function phoneDigits(text: string): string {
+  return text.replace(/[^\d+]/gu, "").replace(/^(?:\+|00)49/u, "0");
 }
 
 export function mapFields(
@@ -459,7 +474,12 @@ export function mapFields(
       const kind = classifyField(field);
       const found = valueFor(kind, field, profile, letter);
       const value = found === "" ? undefined : found;
-      return { field, kind, value, replaces: replacesCurrent(field, value) };
+      return {
+        field,
+        kind,
+        value,
+        replaces: replacesCurrent(kind, field, value),
+      };
     });
   return {
     mappings,

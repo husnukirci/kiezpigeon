@@ -467,4 +467,15 @@ describe("review findings", () => {
     );
     expect(result).toMatchObject({ matched: 0, total: 0 });
   });
+
+  it("does not call a phone number replaced when only its format differs", () => {
+    const phone = (value: string) => field({ label: "Telefonnummer", value });
+    const replaces = (value: string) =>
+      mapFields([phone(value)], coupleWithDog, "").mappings[0]?.replaces;
+    // The profile has 030 5550123.
+    expect(replaces("+49 30 5550123")).toBe(false);
+    expect(replaces("0049 (30) 555-0123")).toBe(false);
+    expect(replaces("030/5550123")).toBe(false);
+    expect(replaces("+49 30 5550999")).toBe(true);
+  });
 });

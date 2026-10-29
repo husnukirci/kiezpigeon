@@ -102,6 +102,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 
 - P5 | Branch review (a fresh reviewer agent, no shell) found no submit path but seven real gaps: fill trusted the plan's `kind`, so a step calling an opt-in `pets` would have ticked it; `mobil` matched inside `Immobilie` (phone number into a message field); radios counted but never filled; `ab`/`bis` matched inside words in income labels; describe read hidden, file and password values; duplicate names made two fields share a key; the recorders missed focus, keyup, keypress, reset and non-button clicks, and the e2e highlight click was conditional. | All fixed with tests seen failing first; the opt-in guard was mutation-checked. Not changed: React checkboxes listen to `click`, which fill never sends; already a consequence in ADR 11, and ImmoScout24 asks those questions as selects.
 
+- P5 | Live acceptance on a German exposé in the author's Chrome (the English-site miss is logged on the follow-up branch): the card showed 13 of 15 matched, with Anrede and Bewerbungsunterlagen left for the user and three account-prefilled fields named as replaced; after Fill the form the author reported the result looked good, the form unsent. | Recorded in the PR as the author's report; the detailed checks (values stick after focus, no console errors) were asked for and summarised by the author as good, not observed by me.
+- P5 | The live card named Telefonnummer as replaced, though most likely only the format differed (`+49 …` on the account, `0…` in the profile). | Phone values are compared as digits with `+49` and `0049` read as `0`; test seen failing first.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
