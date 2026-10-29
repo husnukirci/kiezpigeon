@@ -1,6 +1,7 @@
 // "Listing detected" (design system screen 2): the badge, title and meta
 // line, three stat tiles, the fit check, tone and up to two highlights.
-// The letter itself arrives in Phase 4; until then the button is disabled.
+// "Write my letter" hands the tone and highlights to the caller; nothing is
+// sent before that click.
 import { useId, useState } from "react";
 import { checkFit } from "../../../rules/fit";
 import {
@@ -30,19 +31,35 @@ import styles from "./ListingDetected.module.css";
 
 const MAX_HIGHLIGHTS = 2;
 
+export interface LetterChoice {
+  tone: Tone;
+  features: Feature[];
+}
+
 interface ListingDetectedProps {
   profile: Profile;
   siteName: string;
   listing: Listing;
+  /** The choice from the last letter for this listing, if any. */
+  initialChoice?: LetterChoice | undefined;
+  onWrite: (choice: LetterChoice) => void;
 }
 
 export function ListingDetected({
   profile,
   siteName,
   listing,
+  initialChoice,
+  onWrite,
 }: ListingDetectedProps) {
-  const [tone, setTone] = useState<Tone>(profile.letterDefaults.tone);
+  const [tone, setTone] = useState<Tone>(
+    initialChoice?.tone ?? profile.letterDefaults.tone,
+  );
+  const [chosen, setChosen] = useState<Feature[]>(
+    () => initialChoice?.features ?? listing.features.slice(0, MAX_HIGHLIGHTS),
+  );
   const meta = metaLine(listing);
+  const needsHighlight = listing.features.length > 0 && chosen.length === 0;
 
   return (
     <section className={screen.screen} aria-labelledby="listing-title">
@@ -76,16 +93,29 @@ export function ListingDetected({
         onChange={setTone}
       />
 
-      <Highlights key={listing.url} features={listing.features} />
+      <Highlights
+        features={listing.features}
+        chosen={chosen}
+        onChange={setChosen}
+      />
 
       <div className={cx(screen.actions, styles.write)}>
-        <Button kind="primary" disabled aria-describedby="write-next">
+        <Button
+          kind="primary"
+          disabled={needsHighlight}
+          aria-describedby={needsHighlight ? "write-needs" : undefined}
+          onClick={() => {
+            onWrite({ tone, features: chosen });
+          }}
+        >
           Write my letter
         </Button>
       </div>
-      <p id="write-next" className={cx(styles.next, "type-caption")}>
-        Coming next
-      </p>
+      {needsHighlight && (
+        <p id="write-needs" className={cx(styles.next, "type-caption")}>
+          Pick at least one highlight first.
+        </p>
+      )}
     </section>
   );
 }
@@ -124,11 +154,14 @@ function FitCard({ lines }: { lines: FitLine[] }) {
   );
 }
 
-function Highlights({ features }: { features: Feature[] }) {
+interface HighlightsProps {
+  features: Feature[];
+  chosen: Feature[];
+  onChange: (chosen: Feature[]) => void;
+}
+
+function Highlights({ features, chosen, onChange }: HighlightsProps) {
   const labelId = useId();
-  const [chosen, setChosen] = useState<Feature[]>(() =>
-    features.slice(0, MAX_HIGHLIGHTS),
-  );
   const [full, setFull] = useState(false);
 
   if (features.length === 0) {
@@ -142,10 +175,10 @@ function Highlights({ features }: { features: Feature[] }) {
 
   const toggle = (feature: Feature): void => {
     if (chosen.includes(feature)) {
-      setChosen(chosen.filter((f) => f !== feature));
+      onChange(chosen.filter((f) => f !== feature));
       setFull(false);
     } else if (chosen.length < MAX_HIGHLIGHTS) {
-      setChosen([...chosen, feature]);
+      onChange([...chosen, feature]);
       setFull(false);
     } else {
       setFull(true);
