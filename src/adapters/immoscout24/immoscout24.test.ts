@@ -2,6 +2,8 @@
 // exact Listing the adapter returns for it.
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
+import { coupleWithDog } from "../../../test-support/sample-profiles";
+import { mapFields } from "../../rules/fieldMatch";
 import { immoscout24 } from "./immoscout24";
 
 const URL = "https://www.immobilienscout24.de/expose/100000003";
@@ -109,5 +111,106 @@ describe("immoscout24.readListing", () => {
     expect(
       immoscout24.readListing(page("nicht erforderlich"), URL)?.wbsRequired,
     ).toBe(false);
+  });
+});
+
+describe("immoscout24.readContactForm", () => {
+  const contactPage = () => loadFixture("immoscout24", "contact-form.html");
+
+  it("reads nothing while the Nachricht dialog is closed", () => {
+    const page = loadFixture("immoscout24", "listing-complete.html");
+    expect(immoscout24.contactForm(page)).toBeUndefined();
+    expect(immoscout24.readContactForm(page)).toEqual([]);
+  });
+
+  it("reads every field of the open dialog with its label and value", () => {
+    const fields = immoscout24.readContactForm(contactPage());
+    expect(
+      fields.map((f) => [f.key, f.type, f.label, f.value ?? f.checked]),
+    ).toEqual([
+      ["name:message", "textarea", "Nachricht schreiben", ""],
+      ["name:salutation", "select", "Anrede *", ""],
+      ["name:firstName", "text", "Vorname *", "Jonas"],
+      ["name:lastName", "text", "Nachname *", "Vorbelegt"],
+      ["name:emailAddress", "text", "E-Mail *", "jonas.vorbelegt@example.org"],
+      ["name:phoneNumber", "text", "Telefonnummer", "030 5550999"],
+      ["name:street", "text", "Straße *", "Musterweg"],
+      ["name:houseNumber", "text", "Hausnummer *", "12"],
+      ["name:postcode", "text", "Postleitzahl *", "10115"],
+      ["name:city", "text", "Ort *", "Berlin"],
+      ["name:moveInDateType", "select", "Einzugstermin", ""],
+      ["name:numberOfPersons", "select", "Haushaltsgröße", ""],
+      [
+        "name:hasPets",
+        "select",
+        "Haustiere (außer Kleintiere, z. B. Hamster)",
+        "",
+      ],
+      ["name:employmentRelationship", "select", "Beschäftigungsart", ""],
+      ["name:income", "select", "Monatliches netto Haushaltseinkommen", ""],
+      [
+        "name:applicationPackageCompleted",
+        "select",
+        "Bewerbungsunterlagen",
+        "",
+      ],
+      [
+        "name:sendUserProfile",
+        "checkbox",
+        "Anbieter:in darf dein Profil sehen",
+        true,
+      ],
+      [
+        "name:followAnAgent",
+        "checkbox",
+        "Anbieter:in folgen für Inserate & Profi-Tipps",
+        true,
+      ],
+      [
+        "id:is24-checkbox-isRelocationOfferChecked-input",
+        "checkbox",
+        "Erhalte Angebote von Umzugsfirmen",
+        false,
+      ],
+    ]);
+    expect(fields.find((f) => f.name === "emailAddress")?.disabled).toBe(true);
+    expect(fields.find((f) => f.name === "hasPets")?.options).toEqual([
+      { value: "", label: "" },
+      { value: "TRUE", label: "Ja" },
+      { value: "FALSE", label: "Nein" },
+    ]);
+  });
+
+  it("maps to 14 of 15 for the couple, naming what it replaces", () => {
+    const result = mapFields(
+      immoscout24.readContactForm(contactPage()),
+      coupleWithDog,
+      "Sehr geehrte Frau Beispiel, ...",
+    );
+    expect(result).toMatchObject({ matched: 14, total: 15 });
+    expect(
+      result.mappings.map((m) => [m.field.name, m.value, m.replaces]),
+    ).toEqual([
+      ["message", "Sehr geehrte Frau Beispiel, ...", false],
+      ["salutation", undefined, false],
+      ["firstName", "Mara", true],
+      ["lastName", "Testmann", true],
+      ["phoneNumber", "030 5550123", true],
+      ["street", "Erfundene Straße", true],
+      ["houseNumber", "7", true],
+      ["postcode", "10999", true],
+      ["city", "Berlin", false],
+      ["moveInDateType", "CONCRETE", false],
+      ["numberOfPersons", "TWO_PERSON", false],
+      ["hasPets", "TRUE", false],
+      ["employmentRelationship", "PUBLIC_EMPLOYEE", false],
+      ["income", "OVER_4000_UPTO_5000", false],
+      ["applicationPackageCompleted", "TRUE", false],
+    ]);
+    expect(result.leftAlone.map((f) => f.label)).toEqual([
+      "Anbieter:in darf dein Profil sehen",
+      "Anbieter:in folgen für Inserate & Profi-Tipps",
+      "Erhalte Angebote von Umzugsfirmen",
+    ]);
   });
 });
