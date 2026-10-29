@@ -116,7 +116,9 @@ export async function write<K extends StoredKey>(
 export async function writeAll(values: Partial<StoredData>): Promise<void> {
   await ready();
   const clean: Raw = { schemaVersion: SCHEMA_VERSION };
-  for (const key of Object.keys(values) as StoredKey[]) {
+  // Only known keys are written, whatever else the object carries.
+  for (const key of Object.keys(PARSERS) as StoredKey[]) {
+    if (!(key in values)) continue;
     const parsed = PARSERS[key](values[key]);
     if (!parsed.ok) {
       throw new Error(
