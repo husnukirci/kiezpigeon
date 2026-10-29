@@ -17,6 +17,7 @@ entry keeps one line per rejected option so the cut stays visible.
 |   5 | Vitest + happy-dom + Testing Library, Playwright for e2e | P0    | accepted |
 |   6 | Single package with lint-enforced folder boundaries      | P0    | accepted |
 |   7 | Generated token variables, CSS Modules, stylelint gate   | P0    | accepted |
+|   8 | One adapter per site: DOM in, `Listing` and form out     | P3    | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -256,3 +257,51 @@ Values the design system gives only in component READMEs (the 168px planet,
 18px card padding) become component-scoped custom properties declared in
 the module with a comment naming the README, so the stylelint rule still
 holds.
+
+## ADR 8: One adapter per site: DOM in, `Listing` and form out
+
+**Status.** Accepted.
+
+**Context.** Every listing site lays out the same facts differently, and
+ImmoScout24 can change its markup at any time (PLAN.md risks). The fit
+check, the letter and the form mapping must not care which site a listing
+came from. A missing field on a page is normal, not an error. The panel
+needs the listing of the tab the user is looking at, and nothing else
+(CLAUDE.md "Read only what the user is looking at").
+
+**Decision.** `src/adapters/types.ts` defines `SiteAdapter`: `id`,
+`siteName`, `matches(url)`, `readListing(document, url): Listing |
+undefined` and `readContactForm(document): FormField[]`. `readListing`
+returns `undefined` only when the page is not a listing, and otherwise never
+throws: a field it cannot read is left out of the `Listing` and named in
+`missing`. It reads stable attributes first (ImmoScout24's `is24qa-*`
+classes and `data-qa` attributes, found by the Phase 3 probe) and parses
+the visible text inside them; it does not read the page's tracking
+variables or inline scripts. Adapters take a `Document` and the URL as
+arguments, so tests run them on saved fixtures without a browser.
+`readContactForm` returns the rules core's `FormField`, so `fieldMatch`
+needs no adapter types.
+
+A content script per known site runs on the site's listing pages (the
+manifest's `content_scripts` match, which grants no extra permission) and
+answers typed messages from `src/messaging/` by calling its adapter. The
+side panel finds the active tab with `tabs.query` (the tab id needs no
+`tabs` permission), asks its content script for the listing when the panel
+opens, and asks again on `tabs.onActivated` and on `tabs.onUpdated` with
+status `complete`. No answer means "not a listing": the panel never injects
+a script or fetches a page to find out.
+
+Rejected: reading `utag_data` or the `ld+json` block (complete and
+machine-shaped, but tracking and SEO data with no promise of stability, and
+the content script would have to parse script text); one generic reader for
+every site (that is the Phase 6 fallback for forms, not a way to read
+prices reliably); the `tabs` permission to read each tab's URL (a broad
+permission for something an unanswered message already tells us).
+
+**Consequences.** Adding a site is a new folder in `src/adapters/`, a
+content script entrypoint, its host match in the manifest and its
+fixtures, with no change to the rules core or the UI. The phase spec's
+`readListing(document)` gains a `url` argument and an `undefined` result
+for "not a listing"; its `FormFieldDescriptor` is the existing `FormField`.
+A tab opened before the extension was installed or updated has no content
+script until it is reloaded; the not-a-listing screen says so.
