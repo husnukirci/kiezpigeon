@@ -1,7 +1,7 @@
 // German number, money, area and date formatting for the UI. Written by
 // hand rather than with `Intl` so the output is the same whatever locale
 // data the runtime ships, and uses a plain space before the unit.
-import type { Cents, IsoDate } from "./types";
+import type { Availability, Cents, IsoDate } from "./types";
 
 function groupThousands(digits: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -47,4 +47,16 @@ export function formatFloor(floor: number): string {
   if (floor < 0) return "UG";
   if (floor === 0) return "EG";
   return `${floor}. OG`;
+}
+
+/** `Free from 01.03.2027`, `Free now`, `Free by arrangement`. */
+export function formatAvailability(availability: Availability): string {
+  switch (availability.kind) {
+    case "date":
+      return `Free from ${formatDate(availability.date)}`;
+    case "immediately":
+      return "Free now";
+    case "by_arrangement":
+      return "Free by arrangement";
+  }
 }
