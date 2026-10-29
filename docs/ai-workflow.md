@@ -112,6 +112,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 
 - P5 follow-up | After the band was built, the author changed the income wording: the form's top band is "> 5.000 €", which undersells a higher income, so the letter now rounds down to whole thousands ("über 6.000 €") and ignores the form's bands. | `incomeBand` became `incomePhrase`, test-first; the form's select keeps picking the site's own band. The earlier line above stays as written.
 
+- P5 follow-up | A real letter on a live listing: natural and honest, but it overstated the income ratio ("deutlich") and repeated the size and floor back to the landlord, rounding the size, which the validator flagged. | Two prompt rules, test-first: the ratio exactly as given, and no listing facts repeated except the chosen features and a move-in signal. Three real letters on a similar invented case: neither problem came back; the short tone ended at 117 words after the retry, and the warm letter added an invented detail ("Morgenkaffee" on the balcony). Both reported to the author, not tuned further.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.

@@ -423,6 +423,14 @@ describe("natural letters", () => {
     expect(system).toContain("Bürgschaft");
   });
 
+  it("keeps the ratio as given and does not repeat the listing back", () => {
+    const { system } = buildLetterPrompt(strong);
+    expect(system).toContain(
+      "Use the income ratio exactly as given, without words like deutlich or weit",
+    );
+    expect(system).toContain("Do not repeat the listing's facts");
+  });
+
   it("gives the income only rounded, never per person or exact", () => {
     const { system, user } = buildLetterPrompt(strong);
     expect(user).not.toMatch(/2\.600|2\.000 €|4\.600/);
