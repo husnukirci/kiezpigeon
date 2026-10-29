@@ -1,0 +1,14 @@
+.letter {
+  /* README: 18px vertical, 20px horizontal padding. The README's 1.55 line
+     height is not a token; type-body-sm's 21px (1.5) is used instead. */
+  --letter-padding-y: 18px;
+  --letter-padding-x: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--letter-padding-y) var(--letter-padding-x);
+  border-radius: var(--radius-xl);
+  background: var(--paper);
+  color: var(--paper-ink);
+}
