@@ -109,7 +109,11 @@ export interface Listing {
 }
 
 /** The models a letter can be written with (ADR 4). */
-export type ClaudeModel = "claude-sonnet-5-5" | "claude-haiku-5-5";
+export type ClaudeModel =
+  | "claude-sonnet-5-5"
+  | "claude-opus-5-5"
+  | "claude-fable-5-1"
+  | "claude-haiku-5-5";
 
 export interface Settings {
   model: ClaudeModel;
