@@ -24,7 +24,7 @@ function listingWith(changes: Partial<Listing>): Listing {
 }
 
 describe("checkFit", () => {
-  it("returns budget, income, pets and WBS lines in that order", () => {
+  it("returns budget, income, pets, WBS and move-in lines in that order", () => {
     expect(checkFit(coupleWithDog, kreuzbergListing)).toEqual([
       { rule: "budget", status: "warn", reason: "100 € over your budget" },
       { rule: "income", status: "ok", reason: "Income is 3.8 × Kaltmiete" },
@@ -34,10 +34,15 @@ describe("checkFit", () => {
         reason: "Pets by arrangement. I'll mention them honestly.",
       },
       { rule: "wbs", status: "ok", reason: "No WBS needed" },
+      {
+        rule: "moveIn",
+        status: "ok",
+        reason: "Free from 01.03.2027, your move-in date",
+      },
     ]);
   });
 
-  it("returns four unknown-ish lines for a listing that shows nothing", () => {
+  it("returns unknown-ish lines for a listing that shows nothing", () => {
     expect(checkFit(soloStudent, sparseListing)).toEqual([
       {
         rule: "budget",
@@ -47,6 +52,11 @@ describe("checkFit", () => {
       { rule: "income", status: "unknown", reason: "Kaltmiete not shown" },
       { rule: "pets", status: "ok", reason: "No pets" },
       { rule: "wbs", status: "unknown", reason: "Listing doesn't say" },
+      {
+        rule: "moveIn",
+        status: "unknown",
+        reason: "The listing does not say when the flat is free",
+      },
     ]);
   });
 });
@@ -253,6 +263,113 @@ describe("WBS line", () => {
       rule: "wbs",
       status: "unknown",
       reason: "Listing doesn't say",
+    });
+  });
+});
+
+describe("move-in line", () => {
+  const on = (date: string) => ({ kind: "date", date }) as const;
+  const march = on("2027-03-01");
+
+  it.each<
+    [Listing["availability"], Profile["moveIn"], FitLine["status"], string]
+  >([
+    [
+      undefined,
+      on("2027-03-01"),
+      "unknown",
+      "The listing does not say when the flat is free",
+    ],
+    [
+      march,
+      undefined,
+      "unknown",
+      "Free from 01.03.2027. Add when you can move in to compare.",
+    ],
+    [march, on("2027-03-01"), "ok", "Free from 01.03.2027, your move-in date"],
+    [
+      march,
+      on("2027-03-20"),
+      "ok",
+      "Free from 01.03.2027, close to your move-in date 20.03.2027",
+    ],
+    [
+      march,
+      on("2027-04-01"),
+      "ok",
+      "Free from 01.03.2027, close to your move-in date 01.04.2027",
+    ],
+    [
+      march,
+      on("2027-02-15"),
+      "warn",
+      "Free from 01.03.2027, after your move-in date 15.02.2027",
+    ],
+    [
+      march,
+      on("2027-05-01"),
+      "warn",
+      "Free from 01.03.2027, more than a month before your move-in date 01.05.2027",
+    ],
+    [
+      march,
+      { kind: "asap" },
+      "ok",
+      "Free from 01.03.2027. You can move in as soon as it is free.",
+    ],
+    [
+      march,
+      { kind: "flexible" },
+      "ok",
+      "Free from 01.03.2027. Your move-in date is flexible.",
+    ],
+    [
+      { kind: "immediately" },
+      { kind: "asap" },
+      "ok",
+      "Free now. You can move in right away.",
+    ],
+    [
+      { kind: "immediately" },
+      { kind: "flexible" },
+      "ok",
+      "Free now. You can move in right away.",
+    ],
+    [
+      { kind: "immediately" },
+      on("2027-05-01"),
+      "warn",
+      "Free now. You want to move in on 01.05.2027; check the landlord can wait.",
+    ],
+    [
+      { kind: "by_arrangement" },
+      on("2027-05-01"),
+      "ok",
+      "Free by arrangement, so the date can be agreed",
+    ],
+    [
+      { kind: "by_arrangement" },
+      { kind: "asap" },
+      "ok",
+      "Free by arrangement, so the date can be agreed",
+    ],
+    [
+      { kind: "by_arrangement" },
+      undefined,
+      "unknown",
+      "Free by arrangement. Add when you can move in to compare.",
+    ],
+  ])("listing %j, profile %j → %s", (availability, moveIn, status, reason) => {
+    const profile: Profile = { ...coupleWithDog };
+    if (moveIn) profile.moveIn = moveIn;
+    else delete profile.moveIn;
+    const listing: Listing = { ...kreuzbergListing };
+    if (availability) listing.availability = availability;
+    else delete listing.availability;
+    expect(line(profile, listing, "moveIn")).toEqual({
+      rule: "moveIn",
+      status,
+      reason,
     });
   });
 });

@@ -2,18 +2,23 @@
 // states what the profile and listing say, in the order a landlord weighs
 // it, and nothing else. The validator (letterValidate.ts) is the guarantee;
 // this prompt is the first attempt at meeting it.
+import { isCloseMoveIn } from "./dates";
 import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
 import { sumCents } from "./money";
 import type {
+  Availability,
   ContactPerson,
   EmploymentType,
   Feature,
   Household,
+  IsoDate,
   LetterRequest,
   Listing,
+  MoveIn,
   PetKind,
   PetPolicy,
   Profile,
+  Relationship,
   Tone,
 } from "./types";
 
@@ -58,6 +63,36 @@ const TONE_WORD_TARGETS: Record<Tone, number> = {
   short: 140,
 };
 
+const RELATIONSHIP_FACTS: Record<Relationship, string> = {
+  partners: "ein Paar",
+  married: "verheiratet",
+  flatmates: "Wohngemeinschaft",
+  family: "Familie",
+};
+
+const NO_GENDER =
+  " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband (Freundin, Freund, Partnerin, Lebensgefährtin, Ehefrau, Ehemann).";
+
+const RELATIONSHIP_RULES: Record<Relationship, string> = {
+  partners: `- Say once, briefly, that the applicants are a couple.${NO_GENDER}`,
+  married: `- Say once, briefly, that the applicants are married.${NO_GENDER}`,
+  flatmates:
+    "- Say once, briefly, that the applicants share the flat as flatmates. Do not describe either applicant's gender.",
+  family:
+    "- Say once, briefly, that the applicants are family. Do not name the family relation (such as Schwester, Bruder, Sohn or Tochter) or describe either applicant's gender.",
+};
+
+/** The relationship rule for the system prompt, if the request has two applicants. */
+function relationshipRule(request: LetterRequest): string[] {
+  if (request.applicants.length < 2) return [];
+  const { relationship } = request.household;
+  return [
+    relationship
+      ? RELATIONSHIP_RULES[relationship]
+      : "- Do not say how the applicants are related to each other.",
+  ];
+}
+
 export const MIN_WORDS = 120;
 export const MAX_WORDS = 180;
 
@@ -75,6 +110,18 @@ export function assertFeatureCount(
       `A letter needs ${fewest} to 2 chosen features, got ${features.length}`,
     );
   }
+}
+
+/** The move-in date, when the applicants gave one rather than a choice. */
+export function moveInDateOf(moveIn: MoveIn | undefined): IsoDate | undefined {
+  return moveIn?.kind === "date" ? moveIn.date : undefined;
+}
+
+/** The listing's free-from date, when it gives a date. */
+export function availableDateOf(
+  availability: Availability | undefined,
+): IsoDate | undefined {
+  return availability?.kind === "date" ? availability.date : undefined;
 }
 
 /** The contact person, or undefined when the listing gives no surname. */
@@ -132,10 +179,13 @@ export function createLetterRequest(
     documents.incomeProof === "ready" &&
     documents.id === "ready" &&
     (!profile.hasWbs || documents.wbs === "ready");
+  const household = { ...profile.household };
+  // A relationship needs two people; a leftover one is never mentioned.
+  if (profile.applicants.length < 2) delete household.relationship;
   return {
     applicants: profile.applicants,
-    household: profile.household,
-    moveInDate: profile.moveInDate,
+    household,
+    moveIn: profile.moveIn,
     allDocumentsReady,
     contact: profile.contact,
     listing,
@@ -157,6 +207,20 @@ function householdLine(household: Household): string {
         : `${household.children} Kinder`;
   const smoking = household.smoker ? "Raucher" : "Nichtraucher";
   return `Haushalt: ${adults}, ${children}, ${smoking}`;
+}
+
+/** The listing's "Frei ab" in German, as the page would say it. */
+function freeFrom(availability: Availability | undefined): string | undefined {
+  switch (availability?.kind) {
+    case undefined:
+      return undefined;
+    case "date":
+      return formatDate(availability.date);
+    case "immediately":
+      return "sofort";
+    case "by_arrangement":
+      return "nach Vereinbarung";
+  }
 }
 
 function listingLines(listing: Listing): string[] {
@@ -189,12 +253,7 @@ function listingLines(listing: Listing): string[] {
       listing.rooms === undefined ? undefined : formatNumber(listing.rooms, 1),
     ],
     ["Etage", listing.floor === undefined ? undefined : String(listing.floor)],
-    [
-      "Frei ab",
-      listing.availableFrom === undefined
-        ? undefined
-        : formatDate(listing.availableFrom),
-    ],
+    ["Frei ab", freeFrom(listing.availability)],
     [
       "Baujahr",
       listing.yearBuilt === undefined ? undefined : String(listing.yearBuilt),
@@ -214,7 +273,9 @@ function listingLines(listing: Listing): string[] {
 
 /** Landlord signals that hold for this request, strongest first. */
 function signals(request: LetterRequest): string[] {
-  const { applicants, household, moveInDate, listing } = request;
+  const { applicants, household, listing } = request;
+  const moveInDate = moveInDateOf(request.moveIn);
+  const availableFrom = availableDateOf(listing.availability);
   const result: string[] = [];
   if (
     applicants.some(
@@ -237,18 +298,35 @@ function signals(request: LetterRequest): string[] {
   }
   if (
     moveInDate !== undefined &&
-    listing.availableFrom !== undefined &&
-    moveInDate <= listing.availableFrom
+    availableFrom !== undefined &&
+    isCloseMoveIn(availableFrom, moveInDate)
   ) {
     result.push(
       `Einzug zum ${formatDate(moveInDate)}, passend zum Bezugstermin`,
     );
   }
+  if (request.moveIn?.kind === "asap") result.push("Einzug ab sofort möglich");
+  if (request.moveIn?.kind === "flexible") {
+    result.push("Beim Einzugstermin flexibel");
+  }
   return result;
 }
 
+function moveInFacts(moveIn: MoveIn | undefined): string[] {
+  switch (moveIn?.kind) {
+    case undefined:
+      return [];
+    case "date":
+      return [`Gewünschter Einzug: ${formatDate(moveIn.date)}`];
+    case "asap":
+      return ["Einzug: ab sofort möglich"];
+    case "flexible":
+      return ["Einzug: beim Termin flexibel"];
+  }
+}
+
 function factsBlock(request: LetterRequest): string {
-  const { applicants, household, moveInDate, listing, features } = request;
+  const { applicants, household, listing, features } = request;
   const income = sumCents(applicants.map((a) => a.netIncomeCents));
   const applicantLines = applicants.map((a) =>
     [
@@ -268,9 +346,12 @@ function factsBlock(request: LetterRequest): string {
     ...applicantLines,
     `Haushaltsnettoeinkommen: ${formatEuro(income)} im Monat`,
     householdLine(household),
+    ...(household.relationship
+      ? [`Beziehung: ${RELATIONSHIP_FACTS[household.relationship]}`]
+      : []),
     `Haustiere: ${hasPets(household) ? petsPhrase(household) : "keine"}`,
     ...(request.allDocumentsReady ? ["Unterlagen: alle vollständig"] : []),
-    ...(moveInDate ? [`Gewünschter Einzug: ${formatDate(moveInDate)}`] : []),
+    ...moveInFacts(request.moveIn),
     ...listingLines(listing),
     ...(features.length === 0
       ? []
@@ -309,7 +390,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
       : [
           `- Mention these features of the flat by name: ${features.join(", ")}.`,
         ]),
-    ...(request.moveInDate === undefined
+    ...(request.moveIn === undefined
       ? [
           "- The applicants gave no move-in date. Do not say when they want to move in or that the listing's date suits them.",
         ]
@@ -318,6 +399,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
       ? `- Mention the pets honestly in one sentence: ${petsPhrase(household)}.`
       : "- The household has no pets. You may say so; never suggest any.",
     "- Never use a dash as punctuation: no em dash (U+2014) and no en dash with spaces around it. Use a comma or a full stop instead.",
+    ...relationshipRule(request),
     "- Sign off with the applicants' full names.",
     "- Reply with the letter text only.",
   ].join("\n");

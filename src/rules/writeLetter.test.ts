@@ -58,6 +58,11 @@ describe("describeProblem", () => {
     expect(describeProblem({ code: "pets_invented", text: "Katze" })).toBe(
       "Katze is mentioned, but the household has no pets.",
     );
+    expect(
+      describeProblem({ code: "relationship_invented", text: "Ehepaar" }),
+    ).toBe(
+      '"Ehepaar" says the applicants are married, but your profile does not.',
+    );
     expect(describeProblem({ code: "feature_missing", text: "Balkon" })).toBe(
       "The highlight Balkon is not mentioned.",
     );

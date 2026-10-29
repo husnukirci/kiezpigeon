@@ -7,11 +7,12 @@ import {
   parseApplication,
   parseProfile,
   parseSettings,
+  upgradeProfileV1,
   type Parsed,
 } from "../rules/profile";
 import type { Application, Profile, Settings } from "../rules/types";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** The validated values, by storage key. */
 export interface StoredData {
@@ -33,8 +34,15 @@ type Raw = Record<string, unknown>;
 /** Turns data stored at version `n` into data at version `n + 1`. */
 export type Migration = (data: Raw) => Raw;
 
-/** Keyed by the version they upgrade from. None yet. */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {};
+/** Keyed by the version they upgrade from. */
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+  // Schema 2 (ADR 10): the move-in date becomes a move-in choice.
+  // A store can hold a key and settings before onboarding saves a profile.
+  1: (data) =>
+    data.profile === undefined
+      ? data
+      : { ...data, profile: upgradeProfileV1(data.profile) },
+};
 
 const PARSERS: { [K in StoredKey]: (input: unknown) => Parsed<StoredData[K]> } =
   {

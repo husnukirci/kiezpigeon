@@ -42,7 +42,7 @@ describe("immoscout24.readListing", () => {
       features: [],
       missing: [
         "floor",
-        "availableFrom",
+        "availability",
         "yearBuilt",
         "petPolicy",
         "wbsRequired",
@@ -66,13 +66,25 @@ describe("immoscout24.readListing", () => {
       areaM2: 51.44,
       rooms: 1,
       floor: 1,
-      availableFrom: "2027-02-01",
+      availability: { kind: "date", date: "2027-02-01" },
       yearBuilt: 2016,
       petPolicy: "allowed",
       features: ["Balkon", "Keller", "Personenaufzug", "Stufenloser Zugang"],
       // Neither saved page showed a WBS field; a company gets no name.
       missing: ["wbsRequired", "contactPerson"],
     });
+  });
+
+  it("reads a flat that is free now", () => {
+    const now = immoscout24.readListing(
+      loadFixture("immoscout24", "listing-available-now.html"),
+      URL,
+    );
+    const complete = immoscout24.readListing(
+      loadFixture("immoscout24", "listing-complete.html"),
+      URL,
+    );
+    expect(now).toEqual({ ...complete, availability: { kind: "immediately" } });
   });
 
   it("says a search results page is not a listing", () => {
