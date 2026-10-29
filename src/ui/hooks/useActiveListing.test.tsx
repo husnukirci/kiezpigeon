@@ -67,6 +67,14 @@ describe("useActiveListing", () => {
     expect(toTab).toHaveBeenLastCalledWith(8, { type: "getListing" });
   });
 
+  it("treats a failed tab lookup as not a listing", async () => {
+    vi.mocked(browser.tabs.query).mockRejectedValue(new Error("No window"));
+    const { result } = renderHook(() => useActiveListing());
+    await waitFor(() => {
+      expect(result.current).toEqual({ kind: "not_listing" });
+    });
+  });
+
   it("asks again when a tab finishes loading, not while it loads", async () => {
     toTab.mockResolvedValue({ ok: true, value: { kind: "not_listing" } });
     renderHook(() => useActiveListing());
