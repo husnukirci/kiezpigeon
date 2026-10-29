@@ -55,6 +55,7 @@ const EMPLOYMENT: readonly { value: EmploymentType; label: string }[] = [
   { value: "self_employed", label: "Self-employed" },
   { value: "trainee", label: "Trainee (Azubi)" },
   { value: "student", label: "Student" },
+  { value: "job_seeking", label: "Looking for work" },
   { value: "other", label: "Other" },
 ];
 
@@ -184,7 +185,10 @@ export function ApplicantsSection({ draft, onChange, errors }: SectionProps) {
               />
             </div>
             <TextField
-              label="Job"
+              // For someone looking for work, the letter names the last role.
+              label={
+                applicant.employment === "job_seeking" ? "Last job" : "Job"
+              }
               placeholder="e.g. Pflegefachkraft"
               value={applicant.job}
               onChange={(job) => {

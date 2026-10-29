@@ -29,6 +29,7 @@ const EMPLOYMENT_LABELS: Record<EmploymentType, string | undefined> = {
   self_employed: "selbstständig",
   trainee: "in Ausbildung",
   student: "im Studium",
+  job_seeking: "derzeit auf Stellensuche",
   other: undefined,
 };
 
@@ -46,6 +47,15 @@ const PET_POLICY_LABELS: Record<PetPolicy, string> = {
   by_arrangement: "nach Absprache",
   not_allowed: "nicht erlaubt",
 };
+
+/** Stock phrases that make a letter read like a template. */
+const CLICHES = [
+  "hiermit bewerbe ich mich",
+  "mit großem Interesse",
+  "mit großer Freude",
+  "ich würde mich riesig freuen",
+  "Ihre Anzeige hat mich sofort angesprochen",
+];
 
 const TONE_INSTRUCTIONS: Record<Tone, string> = {
   warm: "Tone: warm and personal, friendly and polite, addressing the reader as Sie.",
@@ -143,6 +153,48 @@ export function salutationFor(contact: ContactPerson | undefined): string {
     case undefined:
       return `Guten Tag ${[person.firstName, person.lastName].filter(Boolean).join(" ")},`;
   }
+}
+
+/**
+ * The household income rounded down to whole thousands, never the exact
+ * sum: "über 6.000 €", "6.000 €" when it is exactly that, "unter 1.000 €".
+ */
+export function incomePhrase(cents: number): {
+  phrase: string;
+  euros: number[];
+} {
+  const euros = cents / 100;
+  const thousands = Math.floor(euros / 1000) * 1000;
+  if (thousands === 0) return { phrase: "unter 1.000 €", euros: [1000] };
+  const amount = `${formatNumber(thousands)} €`;
+  return {
+    phrase: euros === thousands ? amount : `über ${amount}`,
+    euros: [thousands],
+  };
+}
+
+const MULTIPLES = [
+  "Dreifache",
+  "Vierfache",
+  "Fünffache",
+  "Sechsfache",
+  "Siebenfache",
+  "Achtfache",
+  "Neunfache",
+  "Zehnfache",
+];
+
+/**
+ * "mehr als das Dreifache": income over Kaltmiete in words, rounded down,
+ * from three times up; undefined below that or without a rent.
+ */
+export function incomeRatioPhrase(request: LetterRequest): string | undefined {
+  const tenths = incomeRatioTenths(request);
+  if (tenths === undefined || tenths < 30) return undefined;
+  const whole = Math.min(Math.floor(tenths / 10), 10);
+  const word = MULTIPLES[whole - 3];
+  if (word === undefined) return undefined;
+  return tenths === whole * 10 ? `das ${word}` : `mehr als das ${word}`;
 }
 
 /** Income divided by Kaltmiete in tenths, floored; undefined without rent. */
@@ -286,9 +338,9 @@ function signals(request: LetterRequest): string[] {
       "Sichere Anstellung (unbefristete Festanstellung oder verbeamtet)",
     );
   }
-  const tenths = incomeRatioTenths(request);
-  if (tenths !== undefined && tenths >= 30) {
-    result.push(`Einkommen ${formatNumber(tenths / 10, 1)} × Kaltmiete`);
+  const ratio = incomeRatioPhrase(request);
+  if (ratio !== undefined) {
+    result.push(`Einkommen ${ratio} der Kaltmiete`);
   }
   if (request.allDocumentsReady) {
     result.push("Alle Unterlagen liegen vollständig vor");
@@ -328,12 +380,13 @@ function moveInFacts(moveIn: MoveIn | undefined): string[] {
 function factsBlock(request: LetterRequest): string {
   const { applicants, household, listing, features } = request;
   const income = sumCents(applicants.map((a) => a.netIncomeCents));
+  // No one's own income: the household's band says enough, and exact
+  // sums read oddly in a letter.
   const applicantLines = applicants.map((a) =>
     [
       `- ${a.firstName} ${a.lastName}`,
-      a.job,
+      a.employment === "job_seeking" && a.job ? `zuletzt ${a.job}` : a.job,
       EMPLOYMENT_LABELS[a.employment],
-      `${formatEuro(a.netIncomeCents)} netto im Monat`,
     ]
       .filter((part) => part)
       .join(", "),
@@ -344,7 +397,7 @@ function factsBlock(request: LetterRequest): string {
     "",
     "Bewerber:",
     ...applicantLines,
-    `Haushaltsnettoeinkommen: ${formatEuro(income)} im Monat`,
+    `Haushaltsnettoeinkommen: ${incomePhrase(income).phrase} im Monat`,
     householdLine(household),
     ...(household.relationship
       ? [`Beziehung: ${RELATIONSHIP_FACTS[household.relationship]}`]
@@ -372,6 +425,17 @@ export interface LetterPrompt {
   user: string;
 }
 
+/** One rule per applicant who is looking for work. */
+function jobSearchRules(request: LetterRequest): string[] {
+  return request.applicants
+    .filter((a) => a.employment === "job_seeking")
+    .map((a) => {
+      const name = `${a.firstName} ${a.lastName}`;
+      const last = a.job ? ` ${a.job} was the last role.` : "";
+      return `- ${name} is looking for a new job;${last} Say this once, plainly and confidently. Do not suggest a current job or employer.`;
+    });
+}
+
 export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
   const { household, features, listing } = request;
   assertFeatureCount(features, listing);
@@ -381,10 +445,18 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     "Rules:",
     "- Write in German.",
     `- ${TONE_INSTRUCTIONS[request.tone]}`,
+    "- Write the way a native speaker writes to a landlord: natural, confident and friendly. Short, clear sentences. Not flowery, not stiff, no template phrases.",
+    `- Avoid stock phrases such as ${CLICHES.map((c) => `"${c}"`).join(", ")}. Say the same thing plainly.`,
+    "- Do not praise the applicants (zuverlässig, ruhig, ordentlich, sorgfältig) and do not claim how the flat or its location fits their life. Let the facts speak; a landlord skips such lines.",
+    "- Do not offer anything the facts do not contain, such as a Bürgschaft, a guarantor or further documents, and do not comment on whether the rent is affordable.",
     `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words.`,
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",
+    "- State the household income only as given, never per person or as an exact sum.",
+    "- Use the income ratio exactly as given, without words like deutlich or weit.",
+    "- Do not repeat the listing's facts (size, floor, rent, free date) back to the landlord; mention only the chosen features, and the move-in when it is a signal.",
+    ...jobSearchRules(request),
     ...(features.length === 0
       ? []
       : [
