@@ -143,6 +143,22 @@ created and one plain sentence about cost. Non-developer users face real
 setup friction; acceptable for v1. A Web Store release (Tier 3) needs either
 clear own-key wording or the backend.
 
+**Implementation (Phase 4).** `src/claude/claude.ts` uses the official
+`@anthropic-ai/sdk` (1.x) rather than hand-written `fetch`: typed errors
+map to user-facing codes without matching message strings, and the SDK
+tracks API versions. It is created with the base URL fixed to
+`https://api.anthropic.com`, `dangerouslyAllowBrowser` (which sends the
+`anthropic-dangerous-direct-browser-access` header the API requires from
+an extension; without it the API answers 401 with a CORS message), one
+retry, a 60 s timeout and logging off. SDK 1.x sends the key as
+`Authorization: Bearer` at API version `2026-10-21`; the probe saw the API
+accept that from a service worker for both models. Every failure becomes a
+`ClaudeError` whose message is written in this module, never the API's,
+so the key cannot travel in an error. The server-side refusal fallback is
+not enabled: a refusal on a rental letter is unlikely, and a fallback
+would silently bill the user's key for a different model; a refusal shows
+as an error instead. The running probe is `src/claude/claude.test.ts`.
+
 ## ADR 5: Vitest + happy-dom + Testing Library, Playwright for e2e
 
 **Status.** Accepted.
