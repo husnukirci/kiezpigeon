@@ -108,6 +108,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P5 follow-up | Real letters, round 1 (Sonnet, five cases): all passed the validator and none used a listed cliché, but they swapped the clichés for self-praise ("zuverlässig", "ruhigen, gepflegten Zustand") and fit claims ("passt gut zu unserem Alltag") that no fact supports. | A prompt rule against praising the applicants or claiming fit, test-first.
 - P5 follow-up | Round 2: the filler was gone, and the student letter instead offered a Bürgschaft and an Immatrikulationsbescheinigung and said the rent was over her income. An invented offer is worse than filler. | A rule against offering anything outside the facts or commenting on affordability, test-first. Round 3 (student, three tones): no invented offers, but two of three letters stayed under 120 words after the retry, because a sparse profile now has little left to say. Reported to the author as a trade-off, not tuned further.
 
+- P5 | Live check: the author's listing showed "Ready when you are" after every reload. The tab was ImmoScout24's English site (`/en/expose/<id>`); the content script matches only `/expose/*`, so nothing answered. The e2e run passed throughout, because it serves the fixture at the German address. A console check on the tab found it. | Live check moved to the German address. Supporting `/en/` needs English fixtures (labels and values are translated) and is proposed as a follow-up, together with a panel message that tells "unsupported page" from "not a listing".
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
