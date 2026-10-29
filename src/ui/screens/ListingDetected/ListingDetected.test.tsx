@@ -37,7 +37,7 @@ describe("ListingDetected", () => {
     expect(screen.getByText("2")).toBeDefined();
 
     const fit = screen.getByRole("region", { name: "Fit check" });
-    expect(fit.querySelectorAll("li")).toHaveLength(4);
+    expect(fit.querySelectorAll("li")).toHaveLength(5);
     expect(fit.textContent).toContain("over your budget");
 
     expect(
