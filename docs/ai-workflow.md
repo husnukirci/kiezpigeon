@@ -55,6 +55,12 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P3 | Fake browser: `tabs.query` throws after `reset()` (no current window), and `vi.spyOn` picks the callback overloads typed `void`. The App test also showed a failed tab lookup would leave the panel on "loading" forever. | Tests stub `tabs.query`; the hook treats a failed lookup as not a listing (test added).
 - P3 | QA in Chromium: the reducer stripped every `<meta>`, so a fixture served to the browser decoded as Latin-1 and the title showed mojibake; the unit tests read the file as UTF-8 and passed. | One `<meta charset="utf-8">` is kept.
 - P3 | QA at 320px: `750 €` broke the euro sign onto its own line in the stat tiles. | Tiles never break their value and wrap to two columns below the 400px width.
+- P3 | Probe (second page): floor (`is24qa-etage`, `1 von 5`), move-in date (`is24qa-bezugsfrei-ab`), pets (`is24qa-haustiere`, `Ja`) and year built (`is24qa-baujahr`) are visible attributes; features are tags under `#is24-boolean-criteria` with `data-qa="is24qa-balcony-label"` and similar. The contact was a company, and neither page nor its tracking data had any WBS field. | WBS is read from a row labelled Wohnberechtigungsschein or WBS, tested on invented markup and flagged in the PR; a company contact is not greeted by name.
+- P3 | QA at 400px: `1.028,29 €` overflowed its stat tile; the 320px fix had assumed whole-euro rents. | Tiles are at least as wide as their value and share the row; the third wraps when needed.
+- P3 | The fixture leak check missed `Hellersdorfer Straße 91` on the search page: its street pattern only knew `…straße 12` written as one word. Seen while reading the page text, not from the check. | The pattern covers a separate `Straße`, `Allee` and the rest; all three fixtures were rechecked with it.
+- P3 | The search page held 24 result cards with real addresses. | It was trimmed to two cards before scrubbing (noted in its header); the test asserts both cards parsed.
+- P3 | The reducer's own key pattern contained the literal `sk-ant`, which the global key grep would flag, the same trap as in Phase 1. | Spelled `sk-[a]nt`.
+- P3 | `npm run lint` reported 78,319 errors, all in the raw saved pages' downloaded scripts inside the ignored `kp-fixtures/` folder. | Linted with that folder excluded; the raw pages are deleted after the PR. CI never sees them.
 
 ## Per-phase narrative
 
