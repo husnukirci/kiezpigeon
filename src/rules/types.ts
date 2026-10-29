@@ -195,6 +195,8 @@ export type FieldKind =
   | "employment"
   | "moveInDate"
   | "wbs"
+  | "householdSize"
+  | "documents"
   | "consent"
   | "unknown";
 
@@ -211,12 +213,24 @@ export interface FormField {
   placeholder?: string;
   visible: boolean;
   disabled: boolean;
+  /** A select's choices, in page order. */
+  options?: FieldOption[];
+  /** What a text field or select holds now (a select's option value). */
+  value?: string;
+  /** Whether a checkbox is ticked now. */
+  checked?: boolean;
+}
+
+export interface FieldOption {
+  value: string;
+  /** The visible text. */
+  label: string;
 }
 
 /**
- * Income is total cents, counts are numbers, yes/no fields are booleans,
- * `employment` is an `EmploymentType`; the fill layer writes them in the
- * page's own format.
+ * Ready to write into its field (ADR 11): text as the page shows it
+ * (euros, German dates), a select's option value, a checkbox's tick, or a
+ * count for a number field.
  */
 export type FieldValue = string | number | boolean;
 
@@ -224,6 +238,8 @@ export interface FieldMapping {
   field: FormField;
   kind: FieldKind;
   value?: FieldValue;
+  /** The field already holds something different that the value replaces. */
+  replaces?: boolean;
 }
 
 export type ApplicationStatus = "sent" | "viewing" | "closed";
