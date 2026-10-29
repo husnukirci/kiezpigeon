@@ -8,16 +8,17 @@ ADRs 1 to 7 were proposed with their options and trade-offs, then accepted
 by the author before Phase 0; the proposals are in the git history. Each
 entry keeps one line per rejected option so the cut stays visible.
 
-| ADR | Title                                                    | Phase | Status   |
-| --: | -------------------------------------------------------- | ----- | -------- |
-|   1 | WXT for the extension build, TypeScript strict           | P0    | accepted |
-|   2 | React 19 for the side panel, no component library        | P0    | accepted |
-|   3 | All data in `chrome.storage.local` behind one module     | P2    | accepted |
-|   4 | The user's own Claude API key, behind a client interface | P4    | accepted |
-|   5 | Vitest + happy-dom + Testing Library, Playwright for e2e | P0    | accepted |
-|   6 | Single package with lint-enforced folder boundaries      | P0    | accepted |
-|   7 | Generated token variables, CSS Modules, stylelint gate   | P0    | accepted |
-|   8 | One adapter per site: DOM in, `Listing` and form out     | P3    | accepted |
+| ADR | Title                                                          | Phase | Status   |
+| --: | -------------------------------------------------------------- | ----- | -------- |
+|   1 | WXT for the extension build, TypeScript strict                 | P0    | accepted |
+|   2 | React 19 for the side panel, no component library              | P0    | accepted |
+|   3 | All data in `chrome.storage.local` behind one module           | P2    | accepted |
+|   4 | The user's own Claude API key, behind a client interface       | P4    | accepted |
+|   5 | Vitest + happy-dom + Testing Library, Playwright for e2e       | P0    | accepted |
+|   6 | Single package with lint-enforced folder boundaries            | P0    | accepted |
+|   7 | Generated token variables, CSS Modules, stylelint gate         | P0    | accepted |
+|   8 | One adapter per site: DOM in, `Listing` and form out           | P3    | accepted |
+|   9 | The validator is the guarantee: generate, validate, retry once | P4    | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -305,3 +306,35 @@ fixtures, with no change to the rules core or the UI. The phase spec's
 for "not a listing"; its `FormFieldDescriptor` is the existing `FormField`.
 A tab opened before the extension was installed or updated has no content
 script until it is reloaded; the not-a-listing screen says so.
+
+## ADR 9: The validator is the guarantee: generate, validate, retry once
+
+**Status.** Accepted.
+
+**Context.** The letter rules (length, no em dashes, no number outside the
+facts, the right salutation, honest pets, the chosen highlights) are
+product invariants. A prompt makes a model likely to keep them, never
+certain. Each extra call costs the user money and seconds, and a letter
+the user never sees because it failed a check helps nobody.
+
+**Decision.** `writeLetter(request, generate)` in `src/rules/writeLetter.ts`
+builds the prompt, calls the injected `generate`, and runs
+`validateLetter` on the trimmed answer. A letter with no problems is
+returned after one call. Otherwise the same rules go back once, with the
+facts, the previous letter and one plain sentence per problem
+(`describeProblem`). The second letter is returned whatever it holds, with
+its problems, and the "Letter ready" screen shows them as warnings beside
+the letter; the user edits or rewrites. The same sentences are used for
+the model and for the user. The generator is a parameter, so the loop is
+pure and tested with scripted answers.
+
+Rejected: retrying until valid (unbounded cost and wait for the user's own
+key); hiding an invalid letter (the user loses a draft that may need one
+word changed); a third call that keeps the better of two letters (more
+cost for a choice the user makes faster by reading).
+
+**Consequences.** At most two calls per click. A letter can reach the
+screen with problems, so the screen must show them plainly and the user
+must still review it, which they do anyway. Rules the validator does not
+check (invented prose details) stay the user's job, as PLAN.md risks
+says. The running probe is `src/rules/writeLetter.test.ts`.
