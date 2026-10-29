@@ -1,0 +1,46 @@
+.tile {
+  /* README: 12px 14px padding. */
+  --tile-padding-x: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) var(--tile-padding-x);
+  border-radius: var(--radius-lg);
+  background: var(--night-700);
+}
+
+.label {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.step {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--night-500);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.step:disabled {
+  background: var(--night-600);
+  color: var(--ink-subtle);
+  cursor: default;
+}
+
+.value {
+  color: var(--ink);
+}
