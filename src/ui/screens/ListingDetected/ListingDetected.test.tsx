@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   coupleWithDog,
   kreuzbergListing,
@@ -20,6 +20,7 @@ describe("ListingDetected", () => {
         profile={coupleWithDog}
         siteName="ImmoScout24"
         listing={kreuzbergListing}
+        onWrite={vi.fn()}
       />,
     );
     expect(screen.getByText("Listing detected · ImmoScout24")).toBeDefined();
@@ -42,7 +43,33 @@ describe("ListingDetected", () => {
     ).toBe("true");
     expect(
       screen.getByRole("button", { name: "Write my letter" }),
-    ).toHaveProperty("disabled", true);
+    ).toHaveProperty("disabled", false);
+  });
+
+  it("hands the tone and highlights to Write my letter, and needs one", () => {
+    const onWrite = vi.fn();
+    render(
+      <ListingDetected
+        profile={coupleWithDog}
+        siteName="ImmoScout24"
+        listing={kreuzbergListing}
+        onWrite={onWrite}
+      />,
+    );
+    const write = screen.getByRole("button", { name: "Write my letter" });
+    fireEvent.click(screen.getByRole("button", { name: "Formal" }));
+    fireEvent.click(chip("Balkon"));
+    fireEvent.click(write);
+    expect(onWrite).toHaveBeenCalledWith({
+      tone: "formal",
+      features: ["Altbau"],
+    });
+
+    fireEvent.click(chip("Altbau"));
+    expect(write).toHaveProperty("disabled", true);
+    expect(
+      screen.getByText("Pick at least one highlight first."),
+    ).toBeDefined();
   });
 
   it("caps highlights at two and explains the third press", () => {
@@ -51,6 +78,7 @@ describe("ListingDetected", () => {
         profile={coupleWithDog}
         siteName="ImmoScout24"
         listing={kreuzbergListing}
+        onWrite={vi.fn()}
       />,
     );
     expect(chip("Balkon").getAttribute("aria-pressed")).toBe("true");
@@ -74,6 +102,7 @@ describe("ListingDetected", () => {
         profile={coupleWithDog}
         siteName="ImmoScout24"
         listing={sparseListing}
+        onWrite={vi.fn()}
       />,
     );
     expect(screen.getAllByText("Not shown in listing")).toHaveLength(3);
