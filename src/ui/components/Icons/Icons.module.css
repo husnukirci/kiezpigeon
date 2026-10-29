@@ -17,3 +17,8 @@
 .current {
   fill: currentcolor;
 }
+
+/* Icons keep their size when the text beside them wraps. */
+.icon {
+  flex-shrink: 0;
+}

@@ -9,7 +9,13 @@ interface IconProps {
 
 export function TickIcon({ size = 14 }: IconProps) {
   return (
-    <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
+    <svg
+      className={styles.icon}
+      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      aria-hidden="true"
+    >
       <circle className={styles.teal} cx="8" cy="8" r="8" />
       <rect
         className={styles.onTeal}
@@ -35,7 +41,13 @@ export function TickIcon({ size = 14 }: IconProps) {
 
 export function ExclamationIcon({ size = 14 }: IconProps) {
   return (
-    <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
+    <svg
+      className={styles.icon}
+      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      aria-hidden="true"
+    >
       <circle className={styles.sun} cx="8" cy="8" r="8" />
       <rect
         className={styles.sunDeep}
@@ -53,7 +65,13 @@ export function ExclamationIcon({ size = 14 }: IconProps) {
 /** Drawn in the current text colour. */
 export function PlusIcon({ size = 16 }: IconProps) {
   return (
-    <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden="true">
+    <svg
+      className={styles.icon}
+      viewBox="0 0 20 20"
+      width={size}
+      height={size}
+      aria-hidden="true"
+    >
       <rect
         className={styles.current}
         x="8.5"
