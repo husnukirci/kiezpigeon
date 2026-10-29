@@ -110,6 +110,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 
 - P5 | Live check: the author's listing showed "Ready when you are" after every reload. The tab was ImmoScout24's English site (`/en/expose/<id>`); the content script matches only `/expose/*`, so nothing answered. The e2e run passed throughout, because it serves the fixture at the German address. A console check on the tab found it. | Live check moved to the German address. Supporting `/en/` needs English fixtures (labels and values are translated) and is proposed as a follow-up, together with a panel message that tells "unsupported page" from "not a listing".
 
+- P5 follow-up | After the band was built, the author changed the income wording: the form's top band is "> 5.000 €", which undersells a higher income, so the letter now rounds down to whole thousands ("über 6.000 €") and ignores the form's bands. | `incomeBand` became `incomePhrase`, test-first; the form's select keeps picking the site's own band. The earlier line above stays as written.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
