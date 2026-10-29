@@ -51,7 +51,11 @@ describe("checkFit", () => {
       },
       { rule: "income", status: "unknown", reason: "Kaltmiete not shown" },
       { rule: "pets", status: "ok", reason: "No pets" },
-      { rule: "wbs", status: "unknown", reason: "Listing doesn't say" },
+      {
+        rule: "wbs",
+        status: "unknown",
+        reason: "No WBS mentioned in the listing",
+      },
       {
         rule: "moveIn",
         status: "unknown",
@@ -262,7 +266,7 @@ describe("WBS line", () => {
     ).toEqual({
       rule: "wbs",
       status: "unknown",
-      reason: "Listing doesn't say",
+      reason: "No WBS mentioned in the listing",
     });
   });
 });

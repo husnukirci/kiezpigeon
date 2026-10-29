@@ -187,7 +187,7 @@ ask for 3 ×.` Never `no`: landlords decide, not Kiezpigeon.
   `not_allowed` → `no`, `No pets allowed here`.
 - **WBS line:** listing requires WBS: profile has WBS → `ok`, `You have a
 WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
-  `No WBS needed`. Listing silent → `unknown`, `Listing doesn't say`.
+  `No WBS needed`. Listing silent → `unknown`, `No WBS mentioned in the listing`.
 - The fit check returns the four lines in that order. It never blocks
   writing a letter.
 - **Letter word count:** a word is a maximal run of non-whitespace that

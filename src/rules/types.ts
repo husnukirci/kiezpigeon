@@ -12,6 +12,7 @@ export type EmploymentType =
   | "self_employed"
   | "trainee"
   | "student"
+  | "job_seeking"
   | "other";
 
 export interface Applicant {
