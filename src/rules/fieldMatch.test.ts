@@ -437,4 +437,34 @@ describe("mapFields on select fields", () => {
     expect(replaces(pets("TRUE"))).toBe(false);
     expect(replaces(pets("FALSE"))).toBe(true);
   });
+
+  it("reads an income bound only from whole words", () => {
+    const income = select("Einkommen", ["X", "3.000 € abzüglich Steuern"]);
+    expect(valueOf(coupleWithDog, income)).toBeUndefined();
+  });
+});
+
+describe("review findings", () => {
+  it("does not read the mobil in Immobilie as a phone field", () => {
+    expect(
+      classifyField(
+        field({
+          label: "Nachricht an den Anbieter der Immobilie",
+          type: "textarea",
+        }),
+      ),
+    ).toBe("message");
+    expect(classifyField(field({ name: "immobilienId" }))).toBe("unknown");
+    expect(classifyField(field({ label: "Mobil" }))).toBe("phone");
+    expect(classifyField(field({ label: "Mobilnummer" }))).toBe("phone");
+  });
+
+  it("does not count radio buttons, which fill never writes", () => {
+    const result = mapFields(
+      [field({ name: "pets", type: "radio" })],
+      coupleWithDog,
+      "",
+    );
+    expect(result).toMatchObject({ matched: 0, total: 0 });
+  });
 });

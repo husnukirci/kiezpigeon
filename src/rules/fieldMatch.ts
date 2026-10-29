@@ -57,7 +57,14 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
     pattern({ within: "anrede|salutation|geschlecht", whole: "gender" }),
   ],
   ["email", pattern({ within: "e ?mail" })],
-  ["phone", pattern({ within: "telefon|phone|handy|mobil", whole: "tel" })],
+  // `mobil` only as its own word or a known compound, not in `Immobilie`.
+  [
+    "phone",
+    pattern({
+      within: "telefon|phone|handy|mobilnummer|mobilfunk",
+      whole: "tel|mobil|mobile",
+    }),
+  ],
   [
     "firstName",
     pattern({ within: "vorname|first ?name|given ?name|forename" }),
@@ -128,6 +135,8 @@ const NOT_COUNTED_TYPES = new Set([
   "image",
   "file",
   "password",
+  // Fill never writes a radio (ADR 11), so it is not counted either.
+  "radio",
 ]);
 
 /** Name, id, label and placeholder as lower-case words. */
@@ -338,6 +347,9 @@ function householdOption(field: FormField, profile: Profile) {
   return undefined;
 }
 
+const UP_TO = new RegExp(word("unter|bis|below|under|less"), "u");
+const ABOVE = new RegExp(word("über|ueber|ab|over|more|mehr"), "u");
+
 /** Euro bounds of an income option such as `500 - 1.000 €` or `> 5.000 €`. */
 function incomeRange(
   text: string,
@@ -348,10 +360,10 @@ function incomeRange(
   const [first, second] = amounts;
   if (first === undefined) return undefined;
   if (second !== undefined) return { above: first, upTo: second };
-  if (/<|unter|bis|below|under|less/u.test(text)) {
+  if (/</u.test(text) || UP_TO.test(text)) {
     return { above: -Infinity, upTo: first };
   }
-  if (/>|über|ueber|ab|over|more|mehr/u.test(text)) {
+  if (/>/u.test(text) || ABOVE.test(text)) {
     return { above: first, upTo: Infinity };
   }
   return undefined;
