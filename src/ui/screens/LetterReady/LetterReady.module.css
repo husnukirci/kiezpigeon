@@ -1,0 +1,96 @@
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.waiting {
+  margin: 0;
+  color: var(--paper-muted);
+}
+
+.editLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--paper-muted);
+}
+
+.editor {
+  /* Room for a whole 180-word letter at 320px without scrolling much. */
+  --editor-min-height: 24rem;
+
+  min-height: var(--editor-min-height);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--paper-ink);
+  resize: vertical;
+}
+
+.editor:focus-visible {
+  /* The panel's focus colour is made for night surfaces; on paper the ring
+     uses the paper's own ink so it stays visible. */
+  outline-color: var(--paper-ink);
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.count {
+  margin: 0;
+  color: var(--ink-subtle);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line,
+.failure {
+  /* Card preview: 10px between icon and text. */
+  --icon-gap: 10px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--icon-gap);
+  margin: 0;
+  color: var(--ink);
+}
+
+.row {
+  /* Button README: secondary buttons in equal-width rows of 2 or 3. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.row [aria-pressed="true"] {
+  /* README colour roles: a selected toggle is violet. */
+  background: var(--violet);
+  color: var(--ink);
+}
+
+.copied {
+  min-height: 1lh;
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.bottom {
+  align-items: center;
+}
+
+.next {
+  margin: 0;
+  color: var(--ink-subtle);
+  text-align: center;
+}
