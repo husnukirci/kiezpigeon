@@ -102,6 +102,15 @@ describe("parseProfile", () => {
     }
   });
 
+  it("drops a relationship that a single applicant cannot have", () => {
+    const parsed = parseProfile({
+      ...coupleWithDog,
+      applicants: coupleWithDog.applicants.slice(0, 1),
+      household: { ...coupleWithDog.household, relationship: "married" },
+    });
+    expect(parsed.ok && "relationship" in parsed.value.household).toBe(false);
+  });
+
   it("names an unknown relationship", () => {
     const household = { ...coupleWithDog.household, relationship: "dating" };
     expect(problemsOf(withChanges({ household }))).toEqual([

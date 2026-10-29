@@ -1,8 +1,9 @@
 // The fit check: one line per rule, in a fixed order. It informs; it never
 // blocks writing a letter. Reasons are UI copy (PHASES.md, Phase 1).
+import { CLOSE_DAYS, daysBetween } from "./dates";
 import { formatAvailability, formatDate, formatEuro } from "./format";
 import { sumCents } from "./money";
-import type { Cents, FitLine, IsoDate, Listing, Profile } from "./types";
+import type { Cents, FitLine, Listing, Profile } from "./types";
 
 function rentOf(listing: Listing): Cents | undefined {
   if (listing.warmmieteCents !== undefined) return listing.warmmieteCents;
@@ -88,18 +89,6 @@ function wbsLine(profile: Profile, listing: Listing): FitLine {
   return profile.hasWbs
     ? { rule: "wbs", status: "ok", reason: "You have a WBS" }
     : { rule: "wbs", status: "no", reason: "This flat needs a WBS" };
-}
-
-/** A move-in this many days after the free-from date still counts as close. */
-const CLOSE_DAYS = 31;
-
-/** Whole days from `from` to `to`, both ISO dates; no clock involved. */
-function daysBetween(from: IsoDate, to: IsoDate): number {
-  const utc = (iso: IsoDate): number => {
-    const [year = 0, month = 1, day = 1] = iso.split("-").map(Number);
-    return Date.UTC(year, month - 1, day);
-  };
-  return Math.round((utc(to) - utc(from)) / 86_400_000);
 }
 
 function moveInLine(profile: Profile, listing: Listing): FitLine {

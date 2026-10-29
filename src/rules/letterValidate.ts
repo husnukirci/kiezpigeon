@@ -189,10 +189,12 @@ function petProblems(text: string, request: LetterRequest): LetterProblem[] {
     .map((kind) => ({ code: "pets_missing", text: PET_NOUNS[kind][0] }));
 }
 
-// Words that say the applicants are married: Ehepaar, Eheleute, Ehemann,
-// Ehefrau, Ehepartner, Ehegatte, and any form of verheiratet. `mehr` and
-// `ehemalig` are not among them.
-const MARRIED = /^(ehe(paar|leute|mann|männer|frau|partner|gatt)|verheirat)/;
+// Words that say the applicants are married. Compounds match anywhere in
+// the word (Akademikerehepaar, Lehrer-Ehepaar once hyphens are stripped);
+// the rest only as a whole word or its start, so mehr, eher, ehemalig,
+// ehrlich, eheähnlich and unverheiratet stay clean.
+const MARRIED =
+  /ehe(paar|leute|mann|männer|frau|partner|gatt)|^ehe$|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
 
 function relationshipProblems(
   text: string,

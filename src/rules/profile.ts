@@ -314,6 +314,9 @@ function readProfile(r: Reader): Profile {
   const household = householdReader
     ? readHousehold(householdReader)
     : defaultHousehold();
+  // How two people are related means nothing for one: an import or a hand
+  // edit must not keep one that a later co-applicant would inherit.
+  if (applicants.length < 2) delete household.relationship;
   const moveInReader =
     r.raw("moveIn") === undefined ? undefined : r.object("moveIn");
   const moveIn = moveInReader && readMoveIn(moveInReader);
