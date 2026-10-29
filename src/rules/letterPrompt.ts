@@ -457,6 +457,8 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     `- ${TONE_INSTRUCTIONS[request.tone]}`,
     "- Write the way a native speaker writes to a landlord: natural, confident and friendly. Short, clear sentences. Not flowery, not stiff, no template phrases.",
     `- Avoid stock phrases such as ${CLICHES.map((c) => `"${c}"`).join(", ")}. Say the same thing plainly.`,
+    "- Do not praise the applicants (zuverlässig, ruhig, ordentlich, sorgfältig) and do not claim how the flat or its location fits their life. Let the facts speak; a landlord skips such lines.",
+    "- Do not offer anything the facts do not contain, such as a Bürgschaft, a guarantor or further documents, and do not comment on whether the rent is affordable.",
     `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words.`,
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
