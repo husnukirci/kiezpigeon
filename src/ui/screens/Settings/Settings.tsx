@@ -15,6 +15,7 @@ import {
   LetterDefaultsSection,
 } from "../profileForm/ProfileSections";
 import screen from "../Screen.module.css";
+import { ClaudeCard } from "./ClaudeCard";
 import { DataCard } from "./DataCard";
 import styles from "./Settings.module.css";
 
@@ -71,6 +72,7 @@ export function Settings({ profile, onClose }: SettingsProps) {
           <HouseholdSection {...sections} />
           <DocumentsSection {...sections} />
           <LetterDefaultsSection {...sections} />
+          <ClaudeCard />
         </>
       )}
 

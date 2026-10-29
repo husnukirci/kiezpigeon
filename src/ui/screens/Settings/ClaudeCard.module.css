@@ -1,0 +1,23 @@
+.text {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.line {
+  /* Card preview: 10px between icon and text. */
+  --icon-gap: 10px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--icon-gap);
+  margin: 0;
+  color: var(--ink);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--tap-min);
+  color: var(--teal);
+}
