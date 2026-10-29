@@ -114,6 +114,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 
 - P5 follow-up | The author's first real letter on their own listing: natural and honest, but it said "deutlich über dem Sechsfachen" for a ratio of 6.3, and repeated the size and floor back to the landlord (rounding 69,75 m² to "69,8", which the validator flagged). | Two prompt rules, test-first: the ratio exactly as given, and no listing facts repeated except the chosen features and a move-in signal. Three real letters on a similar invented case: neither problem came back; the short tone ended at 117 words after the retry, and the warm letter added an invented detail ("Morgenkaffee" on the balcony). Both reported to the author, not tuned further.
 
+- Follow-up (short closing) | The author asked for a shorter closing paragraph after reading their latest letter. | A prompt rule for one closing sentence, test-first. Three real letters (Sonnet, the job-seeking couple case): every closing was the single sentence, all passed, but all three needed the retry because the first draft was under 120 words (final 121 to 130). Each letter now costs two calls; reported to the author together with the 120-word floor.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
