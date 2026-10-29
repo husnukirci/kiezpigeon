@@ -3,7 +3,6 @@
 // salutation, pets and chosen features; it does not grade prose.
 import {
   MAX_WORDS,
-  MIN_WORDS,
   PET_NOUNS,
   assertFeatureCount,
   availableDateOf,
@@ -23,7 +22,6 @@ export function countWords(text: string): number {
 
 function lengthProblems(text: string): LetterProblem[] {
   const words = countWords(text);
-  if (words < MIN_WORDS) return [{ code: "too_short", text: `${words} words` }];
   if (words > MAX_WORDS) return [{ code: "too_long", text: `${words} words` }];
   return [];
 }
@@ -153,21 +151,30 @@ const NEGATIONS = new Set([
 
 /**
  * Pet words the letter uses positively. A word with `kein…` or `ohne`
- * among the two words before it is a denial, not a mention.
+ * among the two words before it is a denial, not a mention; so is a
+ * `kein…` up to three words after it that ends the clause ("Haustiere
+ * haben wir keine."), but not one that goes on ("Hund hat keine Probleme").
  */
 function petMentions(text: string): string[] {
-  const words = text
-    .split(/\s+/)
-    .map((w) => w.replace(/[^\p{L}]/gu, ""))
-    .filter(Boolean);
+  const raw = text.split(/\s+/).filter((w) => /\p{L}/u.test(w));
+  const words = raw.map((w) => w.replace(/[^\p{L}]/gu, ""));
   const lower = words.map((w) => w.toLowerCase());
-  return words.filter((word, i) => {
+  const endsClause = (i: number): boolean =>
+    i === raw.length - 1 || /[.,;:!?]$/u.test(raw[i] ?? "");
+  const deniedAfter = (i: number): boolean => {
+    for (let j = i + 1; j <= i + 3 && j < raw.length; j += 1) {
+      if (NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
+      if (endsClause(j)) return false;
+    }
+    return false;
+  };
+  return words.filter((_, i) => {
     const w = lower[i] ?? "";
     const isPet = Object.values(PET_WORDS).some((re) => re.test(w));
-    const denied = lower
+    const deniedBefore = lower
       .slice(Math.max(0, i - 2), i)
       .some((before) => NEGATIONS.has(before));
-    return isPet && !denied;
+    return isPet && !deniedBefore && !(!endsClause(i) && deniedAfter(i));
   });
 }
 

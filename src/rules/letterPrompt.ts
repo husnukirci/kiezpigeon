@@ -66,11 +66,12 @@ const TONE_INSTRUCTIONS: Record<Tone, string> = {
 /**
  * Where each tone aims inside the length. Models land below a target more
  * often than above it, so even the short tone aims well over the minimum.
+ * The aims stay low enough that the facts fill them without padding.
  */
 const TONE_WORD_TARGETS: Record<Tone, number> = {
-  warm: 150,
-  formal: 150,
-  short: 140,
+  warm: 125,
+  formal: 125,
+  short: 115,
 };
 
 const RELATIONSHIP_FACTS: Record<Relationship, string> = {
@@ -103,7 +104,6 @@ function relationshipRule(request: LetterRequest): string[] {
   ];
 }
 
-export const MIN_WORDS = 120;
 export const MAX_WORDS = 180;
 
 /**
@@ -449,7 +449,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     `- Avoid stock phrases such as ${CLICHES.map((c) => `"${c}"`).join(", ")}. Say the same thing plainly.`,
     "- Do not praise the applicants (zuverlässig, ruhig, ordentlich, sorgfältig) and do not claim how the flat or its location fits their life. Let the facts speak; a landlord skips such lines.",
     "- Do not offer anything the facts do not contain, such as a Bürgschaft, a guarantor or further documents, and do not comment on whether the rent is affordable.",
-    `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words.`,
+    `- Length: at most ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words. Never pad: a shorter letter is better than an invented sentence.`,
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",

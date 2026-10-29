@@ -116,6 +116,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 
 - Follow-up (short closing) | The author asked for a shorter closing paragraph after reading their latest letter. | A prompt rule for one closing sentence, test-first. Three real letters (Sonnet, the job-seeking couple case): every closing was the single sentence, all passed, but all three needed the retry because the first draft was under 120 words (final 121 to 130). Each letter now costs two calls; reported to the author together with the 120-word floor.
 
+- Follow-up (letter length) | The author's next real letter padded to reach 120 words with invented hobbies ("Wir kochen gern und sitzen abends gern draußen") and a rent comment the prompt forbids. The author lowered the minimum to 100. | Real runs then showed first drafts at 83 to 94 words with a target of 125, and still 77 to 99 with a target of 140: the no-filler rules, not the target, set the length, and every letter still went to the retry, which kept padding ("Das sagen wir Ihnen offen", "Er bringt Erfahrung in der Führung mit"). Asked again with the numbers; the author removed the minimum. Five real letters afterwards: all passed on the first call, 52 to 96 words, no padding.
+- Follow-up (letter length) | One of those runs flagged "Haustiere haben wir keine." as invented pets: the false positive logged in the P4 model comparison, never fixed. | The validator reads a `kein…` up to three words after a pet word as a denial when it ends the clause, and not when it goes on ("Hund hat keine Probleme"); both cases tested first.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
