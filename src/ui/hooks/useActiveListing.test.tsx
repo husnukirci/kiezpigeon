@@ -87,4 +87,24 @@ describe("useActiveListing", () => {
       expect(toTab).toHaveBeenCalledTimes(2);
     });
   });
+
+  it("stays with its own tab: asks only it, ignores tab switches and other tabs", async () => {
+    activeTabId = 9;
+    toTab.mockResolvedValue({ ok: true, value: detected });
+    const { result } = renderHook(() => useActiveListing(7));
+    await waitFor(() => {
+      expect(result.current).toEqual(detected);
+    });
+    expect(toTab).toHaveBeenCalledTimes(1);
+    expect(toTab).toHaveBeenLastCalledWith(7, { type: "getListing" });
+    expect(browser.tabs.query).not.toHaveBeenCalled();
+
+    await fakeBrowser.tabs.onActivated.trigger({ tabId: 9, windowId: 1 });
+    await fakeBrowser.tabs.onUpdated.trigger(9, { status: "complete" }, tab(9));
+    await fakeBrowser.tabs.onUpdated.trigger(7, { status: "complete" }, tab(7));
+    await waitFor(() => {
+      expect(toTab).toHaveBeenCalledTimes(2);
+    });
+    expect(toTab.mock.calls.map(([id]) => id)).toEqual([7, 7]);
+  });
 });
