@@ -17,10 +17,12 @@
 }
 
 .editor {
-  /* Room for a whole 180-word letter at 320px without scrolling much. */
-  --editor-min-height: 24rem;
+  /* Grows with the letter, so the whole text is editable without an inner
+     scroll; the minimum keeps a short letter from collapsing. */
+  --editor-min-height: 12rem;
 
   min-height: var(--editor-min-height);
+  field-sizing: content;
   padding: 0;
   border: none;
   background: transparent;
