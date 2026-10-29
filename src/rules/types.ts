@@ -104,7 +104,7 @@ export interface Listing {
   wbsRequired?: boolean;
   contactPerson?: ContactPerson;
   features: Feature[];
-  /** Names of the fields above the page did not show. */
+  /** Keys of the fields above the page did not show, e.g. `kaltmieteCents`. */
   missing: string[];
 }
 
