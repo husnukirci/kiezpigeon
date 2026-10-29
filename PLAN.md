@@ -112,7 +112,8 @@ form asks for email and phone).
 ### Tier 2: follow-ups
 
 - [ ] A second listing adapter (candidates: Immowelt, Kleinanzeigen,
-      WG-Gesucht), proving the adapter interface with a second real site
+      WG-Gesucht, deutsche-wohnen.com), proving the adapter interface with
+      a second real site
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"
