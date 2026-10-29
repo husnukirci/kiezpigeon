@@ -4,8 +4,11 @@ import {
   defaultProfile,
   exportData,
   importData,
+  defaultSettings,
+  parseApiKey,
   parseApplication,
   parseProfile,
+  parseSettings,
 } from "./profile";
 import type { Application } from "./types";
 
@@ -231,5 +234,41 @@ describe("export and import", () => {
         "applications[1].status: must be one of sent, viewing, closed",
       ],
     });
+  });
+});
+
+describe("parseSettings", () => {
+  it("defaults to Sonnet", () => {
+    expect(defaultSettings()).toEqual({ model: "claude-sonnet-5-5" });
+  });
+
+  it("accepts Haiku as the cheaper model and keeps only known keys", () => {
+    expect(parseSettings({ model: "claude-haiku-5-5", theme: "dark" })).toEqual(
+      { ok: true, value: { model: "claude-haiku-5-5" } },
+    );
+  });
+
+  it("names an unknown model", () => {
+    expect(parseSettings({ model: "gpt" })).toEqual({
+      ok: false,
+      problems: ["model: must be one of claude-sonnet-5-5, claude-haiku-5-5"],
+    });
+  });
+});
+
+describe("parseApiKey", () => {
+  it("trims the key", () => {
+    expect(parseApiKey("  FAKE-KEY-123\n")).toEqual({
+      ok: true,
+      value: "FAKE-KEY-123",
+    });
+  });
+
+  it("rejects an empty key or one with spaces inside, without echoing it", () => {
+    for (const input of ["", "   ", "FAKE KEY", 42]) {
+      const result = parseApiKey(input);
+      expect(result.ok).toBe(false);
+      expect(JSON.stringify(result)).not.toContain("FAKE");
+    }
   });
 });

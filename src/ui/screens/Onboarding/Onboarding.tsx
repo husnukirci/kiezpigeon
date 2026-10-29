@@ -1,6 +1,7 @@
-// Onboarding (design system screen 1, "Profile setup"): four steps with
-// progress segments and one teal Continue each. Errors show for a step once
-// the user tries to leave it; the profile is stored only after the last.
+// Onboarding (design system screen 1, "Profile setup"): four profile steps
+// and an optional "connect Claude" step (ADR 4), with progress segments and
+// one teal Continue each. Errors show for a step once the user tries to
+// leave it; the profile is stored only after the last.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { defaultProfile } from "../../../rules/profile";
 import { write } from "../../../storage/storage";
@@ -15,6 +16,7 @@ import {
   type SectionProps,
 } from "../profileForm/ProfileSections";
 import screen from "../Screen.module.css";
+import { ClaudeCard } from "../Settings/ClaudeCard";
 import styles from "./Onboarding.module.css";
 
 interface Step {
@@ -48,6 +50,13 @@ const STEPS: readonly Step[] = [
     title: "Your letters",
     lead: "How I write for you. You can switch per listing.",
     Section: LetterDefaultsSection,
+    owns: () => false,
+  },
+  {
+    title: "Connect Claude",
+    lead: "I write your letters with Claude. Connect it now, or later in settings.",
+    // Saves the key on its own; the profile draft is not involved.
+    Section: ClaudeCard,
     owns: () => false,
   },
 ];

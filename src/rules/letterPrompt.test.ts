@@ -166,6 +166,16 @@ describe("buildLetterPrompt", () => {
     expect(tones[2]).toContain("Tone: short");
   });
 
+  it("gives every tone a word target well inside the length", () => {
+    const targets = (["warm", "formal", "short"] as const).map((tone) => {
+      const { system } = buildLetterPrompt({ ...strong, tone });
+      expect(system).not.toContain("lower end");
+      const match = /aim for about (\d+) words/.exec(system);
+      return Number(match?.[1]);
+    });
+    expect(targets).toEqual([150, 150, 140]);
+  });
+
   it("asks for the chosen features by name", () => {
     expect(buildLetterPrompt(strong).system).toContain(
       "Mention these features of the flat by name: Balkon, Altbau.",
@@ -193,5 +203,28 @@ describe("buildLetterPrompt", () => {
         features: ["Balkon", "Altbau", "Garten"],
       }),
     ).toThrow(RangeError);
+  });
+
+  it("forbids a move-in date the applicants did not give", () => {
+    const solo = createLetterRequest(soloStudent, kreuzbergListing, {
+      tone: "short",
+      features: ["Balkon"],
+    });
+    expect(buildLetterPrompt(solo).system).toContain(
+      "- The applicants gave no move-in date. Do not say when they want to move in or that the listing's date suits them.",
+    );
+    expect(buildLetterPrompt(strong).system).not.toContain(
+      "gave no move-in date",
+    );
+  });
+
+  it("writes without features when the listing names none", () => {
+    const bare = createLetterRequest(coupleWithDog, sparseListing, {
+      tone: "warm",
+      features: [],
+    });
+    const { system, user } = buildLetterPrompt(bare);
+    expect(system).not.toContain("Mention these features");
+    expect(user).not.toContain("Ausgewählte Merkmale");
   });
 });

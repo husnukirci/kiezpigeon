@@ -25,7 +25,7 @@ function next(): void {
 }
 
 describe("Onboarding", () => {
-  it("walks the four steps and stores the profile only at the end", async () => {
+  it("walks the five steps and stores the profile only at the end", async () => {
     const { container } = render(<Onboarding />);
     expect(screen.getByRole("heading", { name: "About you" })).toBeDefined();
 
@@ -58,6 +58,13 @@ describe("Onboarding", () => {
     next();
 
     fireEvent.click(screen.getByRole("button", { name: "Formal" }));
+    next();
+
+    // Connecting Claude is offered, and can be left for later.
+    expect(
+      screen.getByRole("heading", { name: "Connect Claude" }),
+    ).toBeDefined();
+    expect(await screen.findByLabelText("API key")).toBeDefined();
     expect(await read("profile")).toEqual({ ok: true, value: undefined });
     next();
 
