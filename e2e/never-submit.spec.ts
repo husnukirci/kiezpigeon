@@ -26,19 +26,17 @@ const FIXTURE = readFileSync(
 function recordSendAttempts(): void {
   const record: string[] = [];
   Object.assign(window, { sendAttempts: record });
-  document.addEventListener("submit", () => record.push("submit"), true);
-  document.addEventListener(
+  for (const type of [
+    "submit",
+    "reset",
     "click",
-    (e) => {
-      if ((e.target as Element | null)?.closest("button")) record.push("click");
-    },
-    true,
-  );
-  document.addEventListener(
     "keydown",
-    (e) => record.push(`key ${e.key}`),
-    true,
-  );
+    "keyup",
+    "keypress",
+    "focusin",
+  ]) {
+    document.addEventListener(type, () => record.push(type), true);
+  }
 }
 
 let context: BrowserContext;
@@ -116,12 +114,12 @@ test("Fill the form fills the contact form and never sends it", async () => {
     `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
   );
   await expect(panel.getByText(/Listing detected/)).toBeVisible();
-  const highlights = panel.getByRole("group", {
-    name: "Highlights to mention",
-  });
-  if (await highlights.isVisible()) {
-    await highlights.getByRole("button").first().click();
-  }
+  // The fixture names features, so one must be picked to write.
+  await panel
+    .getByRole("group", { name: "Highlights to mention" })
+    .getByRole("button")
+    .first()
+    .click();
   await panel.getByRole("button", { name: "Write my letter" }).click();
   await expect(panel.getByText("14 of 15 matched")).toBeVisible();
   await expect(

@@ -91,11 +91,10 @@ describe("fillForm on the ImmoScout24 contact form", () => {
       attempts.push("submit event");
     });
     page.addEventListener("click", () => attempts.push("click"), true);
-    page.addEventListener(
-      "keydown",
-      (e) => attempts.push(`key ${e.key}`),
-      true,
-    );
+    form.addEventListener("reset", () => attempts.push("reset"));
+    for (const type of ["keydown", "keyup", "keypress", "focusin"]) {
+      page.addEventListener(type, () => attempts.push(type), true);
+    }
     vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(() => {
       attempts.push("form.submit()");
     });
@@ -175,6 +174,23 @@ describe("fillForm on the ImmoScout24 contact form", () => {
     expect(optIn.checked).toBe(true);
     expect(valueOf("emailAddress")).toBe("jonas.vorbelegt@example.org");
     expect(attempts).toEqual([]);
+  });
+
+  it("refuses an opt-in checkbox whatever kind the plan claims", () => {
+    const report = fillForm(form, [
+      { key: "name:followAnAgent", kind: "pets", value: false },
+      {
+        key: "id:is24-checkbox-isRelocationOfferChecked-input",
+        kind: "smoker",
+        value: true,
+      },
+    ]);
+    expect(report.filled).toEqual([]);
+    const optIn = form.elements.namedItem("followAnAgent") as HTMLInputElement;
+    expect(optIn.checked).toBe(true);
+    expect(
+      page.getElementById("is24-checkbox-isRelocationOfferChecked-input"),
+    ).toHaveProperty("checked", false);
   });
 
   it("never writes a file input or presses a button", () => {
