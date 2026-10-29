@@ -229,7 +229,7 @@ describe("buildLetterPrompt", () => {
       return { ...strong, household };
     };
     const noGender =
-      " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband.";
+      " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband (Freundin, Freund, Partnerin, Lebensgefährtin, Ehefrau, Ehemann).";
 
     it.each([
       [
@@ -245,12 +245,12 @@ describe("buildLetterPrompt", () => {
       [
         "flatmates",
         "Beziehung: Wohngemeinschaft",
-        "- Say once, briefly, that the applicants share the flat as flatmates.",
+        "- Say once, briefly, that the applicants share the flat as flatmates. Do not describe either applicant's gender.",
       ],
       [
         "family",
         "Beziehung: Familie",
-        "- Say once, briefly, that the applicants are family.",
+        "- Say once, briefly, that the applicants are family. Do not name the family relation (such as Schwester, Bruder, Sohn or Tochter) or describe either applicant's gender.",
       ],
     ] as const)(
       "states %s once, without gender",
@@ -316,6 +316,18 @@ describe("buildLetterPrompt", () => {
       expect(
         buildLetterPrompt(withAvailability({ kind: "by_arrangement" })).user,
       ).toContain("- Frei ab: nach Vereinbarung");
+    });
+
+    it("calls a move-in date fitting only when it is close after the free date", () => {
+      const signal = (date: string): boolean =>
+        buildLetterPrompt(withMoveIn({ kind: "date", date })).user.includes(
+          "passend zum Bezugstermin",
+        );
+      // The flat is free from 01.03.2027.
+      expect(signal("2027-03-01")).toBe(true);
+      expect(signal("2027-03-20")).toBe(true);
+      expect(signal("2027-02-15")).toBe(false);
+      expect(signal("2027-05-01")).toBe(false);
     });
 
     it("counts moving in now or flexibly as a strong signal", () => {

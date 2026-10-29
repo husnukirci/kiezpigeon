@@ -282,6 +282,13 @@ describe("validateLetter", () => {
       ["Eheleute", "married", []],
       ["mehr", undefined, []],
       ["ehemalige Nachbarn", undefined, []],
+      ["ein Akademikerehepaar", "partners", ["Akademikerehepaar"]],
+      ["als Lehrer-Ehepaar", undefined, ["LehrerEhepaar"]],
+      ["seit Jahren in einer Ehe", "partners", ["Ehe"]],
+      ["wir haben geheiratet", undefined, ["geheiratet"]],
+      ["nach unserer Hochzeit", "partners", ["Hochzeit"]],
+      ["mit meiner Gattin", undefined, ["Gattin"]],
+      ["eher ruhig, ehrlich, unverheiratet, eheähnlich", undefined, []],
     ] as const)("%j with %s", (text, relationship, flagged) => {
       expect(claims(text, related(relationship))).toEqual(
         flagged.map((word) => ({ code: "relationship_invented", text: word })),

@@ -2,6 +2,7 @@
 // states what the profile and listing say, in the order a landlord weighs
 // it, and nothing else. The validator (letterValidate.ts) is the guarantee;
 // this prompt is the first attempt at meeting it.
+import { isCloseMoveIn } from "./dates";
 import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
 import { sumCents } from "./money";
 import type {
@@ -70,14 +71,15 @@ const RELATIONSHIP_FACTS: Record<Relationship, string> = {
 };
 
 const NO_GENDER =
-  " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband.";
+  " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband (Freundin, Freund, Partnerin, Lebensgefährtin, Ehefrau, Ehemann).";
 
 const RELATIONSHIP_RULES: Record<Relationship, string> = {
   partners: `- Say once, briefly, that the applicants are a couple.${NO_GENDER}`,
   married: `- Say once, briefly, that the applicants are married.${NO_GENDER}`,
   flatmates:
-    "- Say once, briefly, that the applicants share the flat as flatmates.",
-  family: "- Say once, briefly, that the applicants are family.",
+    "- Say once, briefly, that the applicants share the flat as flatmates. Do not describe either applicant's gender.",
+  family:
+    "- Say once, briefly, that the applicants are family. Do not name the family relation (such as Schwester, Bruder, Sohn or Tochter) or describe either applicant's gender.",
 };
 
 /** The relationship rule for the system prompt, if the request has two applicants. */
@@ -297,7 +299,7 @@ function signals(request: LetterRequest): string[] {
   if (
     moveInDate !== undefined &&
     availableFrom !== undefined &&
-    moveInDate <= availableFrom
+    isCloseMoveIn(availableFrom, moveInDate)
   ) {
     result.push(
       `Einzug zum ${formatDate(moveInDate)}, passend zum Bezugstermin`,
