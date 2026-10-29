@@ -414,6 +414,18 @@ describe("natural letters", () => {
     }
   });
 
+  it("forbids self-praise and claims about fitting the flat", () => {
+    const { system } = buildLetterPrompt(strong);
+    expect(system).toContain("Do not praise the applicants");
+    expect(system).toContain("zuverlässig");
+  });
+
+  it("forbids offers the facts do not hold, and talk of affordability", () => {
+    const { system } = buildLetterPrompt(strong);
+    expect(system).toContain("Do not offer anything the facts do not contain");
+    expect(system).toContain("Bürgschaft");
+  });
+
   it("gives the income only as the band, never per person or exact", () => {
     const { system, user } = buildLetterPrompt(strong);
     expect(user).not.toMatch(/2\.600|2\.000 €|4\.600/);
