@@ -45,12 +45,15 @@ describe("replaceAll", () => {
 describe("suspicious", () => {
   it("flags emails, phone shapes, long ids and street addresses", () => {
     expect(
-      suspicious("a@example.org, 030 5550123, id 100000003, Musterweg 5"),
+      suspicious(
+        "a@example.org, 030 5550123, id 100000003, Musterweg 5, Beispieler Straße 91",
+      ),
     ).toEqual([
       "email: a@example.org",
       "phone: 030 5550123",
       "long number (id?): 100000003",
       "street: Musterweg 5",
+      "street: Beispieler Straße 91",
     ]);
   });
 });

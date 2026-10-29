@@ -117,7 +117,8 @@ export function suspicious(html: string): string[] {
     ["long number (id?)", /\b\d{8,}\b/g],
     [
       "street",
-      /[A-ZÄÖÜ][\wäöüß-]*(?:straße|str\.|weg|allee|platz|damm|ufer)\s*\d+/g,
+      // `Musterstraße 5`, `Musterstr. 5` and `Hellersdorfer Straße 91`.
+      /[A-ZÄÖÜ][\wäöüß-]*(?:\s(?:Straße|Str\.|Weg|Allee|Platz|Damm|Ufer)|straße|str\.|weg|allee|platz|damm|ufer)\s*\d+/g,
     ],
     // Spelled with a class so the key-leak grep does not flag this line.
     ["key", /sk-[a]nt[\w-]*/g],
