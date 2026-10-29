@@ -94,6 +94,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P5 | Reading the Phase 1 matcher before filling with it: a text field labelled `Beruf` would have received the code `permanent`, and `Nettoeinkommen` the cents `460000`; the tests pinned both, because Phase 1 values were never meant to be written into a page. | Values are now ready to write (the job, whole euros, a German date); the old expectations were changed test-first. 14 new or changed tests seen failing, then green in one pass, so the pass was not taken as proof.
 - P5 | Mutation check on the new matcher code: `>` to `>=` on the income range and dropping the `!NO` guard (so `Nicht vorhanden` reads as yes) both survived, because every test listed options in ascending, yes-first order and `find` stopped at the right one by luck. | A test with the options reversed kills both; the opt-in, replaces and WBS-documents mutants failed tests from the start.
 
+- P5 | Mutation check on `fillForm`: adding `requestSubmit()`, `submit()`, a button click, a synthetic Enter, a plain assignment instead of the prototype setter, or dropping the consent or file guard each failed at least one test. | Recorded for the PR; the never-submit test is the one that fails if a submit is introduced.
+- P5 | The commit hook's lint rejected the React probe test: the ADR 6 boundary forbids React anywhere in `src/fill/`, tests included. | Adapter and fill tests may import React and Testing Library to stand in for a page; a probe import of `src/ui/` from a fill test still fails lint.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.

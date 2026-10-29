@@ -196,7 +196,8 @@ Expected during the build:
 10. Never submit: how filling works on framework-driven forms (P5)
 11. Fallback field classification for unknown sites (P6)
 
-ADR 10 (move-in as a choice, schema 2) was added after Phase 4.
+ADR 10 (move-in as a choice, schema 2) was added after Phase 4, which
+moved the two after it up by one, as PHASES.md already numbers them.
 
 ## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 
