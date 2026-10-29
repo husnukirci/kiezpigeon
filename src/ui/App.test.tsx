@@ -44,7 +44,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeDefined();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(
-      screen.getByRole("heading", { name: "Ready when you are, Mara" }),
+      await screen.findByRole("heading", { name: "Ready when you are, Mara" }),
     ).toBeDefined();
   });
 });
