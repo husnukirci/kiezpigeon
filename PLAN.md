@@ -97,7 +97,7 @@ form asks for email and phone).
 - [x] Listing detection: adapter interface; ImmoScout24 adapter tested
       against scrubbed saved HTML; "Listing detected" screen with stat
       tiles and the fit check card
-- [ ] Letter generation: Claude client per ADR 4; validate and retry once;
+- [x] Letter generation: Claude client per ADR 4; validate and retry once;
       "Letter ready" screen with tone switch, highlight chips, rewrite,
       edit, copy
 - [ ] Form filling: ImmoScout24 contact form mapping, "X of Y matched",
