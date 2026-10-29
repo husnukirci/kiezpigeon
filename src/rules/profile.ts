@@ -60,9 +60,11 @@ const DOCUMENT_TYPES: readonly DocumentType[] = [
   "wbs",
 ];
 const DOCUMENT_STATUSES: readonly DocumentStatus[] = ["ready", "pending"];
-/** Sonnet first: the default. */
+/** Sonnet first: the default. Then stronger, then cheaper. */
 export const CLAUDE_MODELS: readonly ClaudeModel[] = [
   "claude-sonnet-5-5",
+  "claude-opus-5-5",
+  "claude-fable-5-1",
   "claude-haiku-5-5",
 ];
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [

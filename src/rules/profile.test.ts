@@ -248,10 +248,18 @@ describe("parseSettings", () => {
     );
   });
 
+  it("accepts Opus and Fable for stronger letters", () => {
+    for (const model of ["claude-opus-5-5", "claude-fable-5-1"]) {
+      expect(parseSettings({ model })).toEqual({ ok: true, value: { model } });
+    }
+  });
+
   it("names an unknown model", () => {
     expect(parseSettings({ model: "gpt" })).toEqual({
       ok: false,
-      problems: ["model: must be one of claude-sonnet-5-5, claude-haiku-5-5"],
+      problems: [
+        "model: must be one of claude-sonnet-5-5, claude-opus-5-5, claude-fable-5-1, claude-haiku-5-5",
+      ],
     });
   });
 });

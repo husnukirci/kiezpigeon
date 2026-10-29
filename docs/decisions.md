@@ -159,6 +159,21 @@ not enabled: a refusal on a rental letter is unlikely, and a fallback
 would silently bill the user's key for a different model; a refusal shows
 as an error instead. The running probe is `src/claude/claude.test.ts`.
 
+**Amendment (2026-10-29, after Phase 4).** Two stronger models join the
+setting: `claude-opus-5-5` and `claude-fable-5-1`. Sonnet stays the
+default; Haiku stays the cheap option. The author asked for both after a
+comparison of the same six acceptance letters (one run each, effort low):
+Opus passed every check on the first call at about 2.7 cents and 12 s a
+letter; Fable passed all six after retries at 3 to 14 cents and up to 25 s,
+with no visible gain over Opus at this length; Sonnet passed all six at
+0.5 to 1.1 cents and 4 to 6 s; Haiku passed four. The request is the same
+for every model (Fable runs adaptive thinking on its own, which the client
+never configures), and every letter still goes through the validator.
+Fable needs 30-day data retention on the user's Anthropic organisation;
+settings says so when it is picked, because a refusal there arrives as a
+generic failure. The picker becomes a labelled select: four options with
+their trade-offs do not fit a segmented control at 320px.
+
 ## ADR 5: Vitest + happy-dom + Testing Library, Playwright for e2e
 
 **Status.** Accepted.
