@@ -119,7 +119,8 @@ From ADRs 1 to 7 in `docs/decisions.md`.
 - `src/claude/` is the only code that talks to `https://api.anthropic.com`,
   and only from the service worker. The user's own key never enters a
   content script, a log, an error message or an export. Default model
-  `claude-sonnet-5-5`, `claude-haiku-5-5` as the cheaper setting.
+  `claude-sonnet-5-5`; `claude-opus-5-5` and `claude-fable-5-1` as stronger
+  settings, `claude-haiku-5-5` as the cheaper one (ADR 4 amendment).
 - Tests: Vitest with WXT's Vitest plugin and fake browser, happy-dom,
   `@testing-library/react`; Playwright in `e2e/` for the never-submit run.
   `npm test` typechecks before it runs Vitest.
