@@ -65,7 +65,9 @@ profile value or the letter and reports how many matched. An
 
 **Profile fields added beyond the brief, confirmed by the author:** budget (the fit check
 needs it), WBS flag (the WBS rule needs it), contact details (every contact
-form asks for email and phone).
+form asks for email and phone). Added after Phase 4 (ADR 10): the move-in
+as a choice of a date, now or flexible (a landlord signal the letter can
+use), and how two applicants are related (so the letter stops guessing).
 
 ## 3. Tiers
 
