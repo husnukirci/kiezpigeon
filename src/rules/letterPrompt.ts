@@ -276,10 +276,13 @@ function factsBlock(request: LetterRequest): string {
   ].join("\n");
 }
 
-export function buildLetterPrompt(request: LetterRequest): {
+/** What the model gets: the rules as the system prompt, the facts as the user turn. */
+export interface LetterPrompt {
   system: string;
   user: string;
-} {
+}
+
+export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
   const { household, features, listing } = request;
   assertFeatureCount(features, listing);
   const system = [
