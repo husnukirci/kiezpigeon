@@ -10,7 +10,7 @@ import {
   createLetterRequest,
   salutationFor,
 } from "./letterPrompt";
-import type { LetterRequest } from "./types";
+import type { LetterRequest, Listing } from "./types";
 
 const strong: LetterRequest = createLetterRequest(
   coupleWithDog,
@@ -216,6 +216,59 @@ describe("buildLetterPrompt", () => {
     expect(buildLetterPrompt(strong).system).not.toContain(
       "gave no move-in date",
     );
+  });
+
+  describe("move-in and availability", () => {
+    const withMoveIn = (moveIn: LetterRequest["moveIn"]): LetterRequest => ({
+      ...strong,
+      moveIn,
+    });
+    const withAvailability = (
+      availability: Listing["availability"],
+    ): LetterRequest => ({
+      ...strong,
+      listing: { ...strong.listing, availability },
+    });
+
+    it("states each move-in kind among the facts", () => {
+      expect(buildLetterPrompt(strong).user).toContain(
+        "Gewünschter Einzug: 01.03.2027",
+      );
+      expect(buildLetterPrompt(withMoveIn({ kind: "asap" })).user).toContain(
+        "Einzug: ab sofort möglich",
+      );
+      expect(
+        buildLetterPrompt(withMoveIn({ kind: "flexible" })).user,
+      ).toContain("Einzug: beim Termin flexibel");
+    });
+
+    it("says when the flat is free in the listing's own words", () => {
+      expect(
+        buildLetterPrompt(withAvailability({ kind: "immediately" })).user,
+      ).toContain("- Frei ab: sofort");
+      expect(
+        buildLetterPrompt(withAvailability({ kind: "by_arrangement" })).user,
+      ).toContain("- Frei ab: nach Vereinbarung");
+    });
+
+    it("counts moving in now or flexibly as a strong signal", () => {
+      const lastSignal = (request: LetterRequest): string | undefined =>
+        buildLetterPrompt(request).user.split("\n").at(-1);
+      expect(lastSignal(withMoveIn({ kind: "asap" }))).toBe(
+        "4. Einzug ab sofort möglich",
+      );
+      expect(lastSignal(withMoveIn({ kind: "flexible" }))).toBe(
+        "4. Beim Einzugstermin flexibel",
+      );
+    });
+
+    it("forbids a move-in claim only when no move-in is stated", () => {
+      for (const kind of ["asap", "flexible"] as const) {
+        expect(buildLetterPrompt(withMoveIn({ kind })).system).not.toContain(
+          "gave no move-in date",
+        );
+      }
+    });
   });
 
   it("writes without features when the listing names none", () => {

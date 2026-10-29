@@ -249,6 +249,19 @@ describe("validateLetter", () => {
     expect(validateLetter(passingLetter, bare)).toEqual([]);
   });
 
+  it("still allows the listing's free-from date when the move-in is not a date", () => {
+    expect(
+      validateLetter(passingLetter, { ...request, moveIn: { kind: "asap" } }),
+    ).toEqual([]);
+    expect(
+      validateLetter(passingLetter, {
+        ...request,
+        moveIn: { kind: "asap" },
+        listing: { ...request.listing, availability: { kind: "immediately" } },
+      }),
+    ).toEqual([{ code: "unknown_number", text: "01.03.2027" }]);
+  });
+
   it("lists problems in code order", () => {
     const emDash = String.fromCodePoint(0x2014);
     const letter = ["Liebe Leute,", `wir zahlen 999 € ${emDash} sofort.`].join(
