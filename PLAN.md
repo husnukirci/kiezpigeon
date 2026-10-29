@@ -233,7 +233,7 @@ No `tabs`, `history`, `webRequest`, `cookies` or `<all_urls>`.
 
 Fresh clone → install → build → "Load unpacked" works per the README; CI
 green; a user can complete onboarding, open an ImmoScout24 listing, see the
-fit check with reasons, generate a German letter of 120 to 180 words that
+fit check with reasons, generate a German letter of at most 180 words that
 passes the validator, switch tone and rewrite, edit and copy it, fill the
 contact form and see "X of Y fields matched", find the form unsubmitted
 with the send reminder visible, use the fallback on an unknown site only

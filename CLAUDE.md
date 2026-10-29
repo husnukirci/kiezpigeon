@@ -70,7 +70,7 @@ Optimize for legibility over cleverness.
   matching and stats take plain data and return plain data: no `chrome.*`,
   no DOM, no network, no clock or randomness except passed in.
 - **Letters obey the letter rules by validation, not by hope.** German by
-  default, 120 to 180 words, contact person by name when known, strongest
+  default, at most 180 words, contact person by name when known, strongest
   landlord signals first, 1 or 2 chosen listing features, honest about pets,
   no em dashes, no fact that is not in the profile or the listing. A
   validator checks every generated letter; the prompt alone is not the

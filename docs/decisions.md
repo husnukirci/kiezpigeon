@@ -388,6 +388,22 @@ must still review it, which they do anyway. Rules the validator does not
 check (invented prose details) stay the user's job, as PLAN.md risks
 says. The running probe is `src/rules/writeLetter.test.ts`.
 
+**Amendment (2026-10-29): no minimum length, at most 180 words.** After
+the prompt stopped allowing stock phrases, self-praise, repeated listing
+facts and invented offers, honest letters got short. Ten first drafts
+for two-person profiles (Sonnet) came out at 77 to 99 words, whether the
+target was 125 or 140, so the minimum of 120 sent nearly every letter to
+the retry, and the retry's "add about N words", with no facts left,
+made the model invent details (hobbies, comments on the rent, "Das sagen
+wir Ihnen offen"). The author first lowered the minimum to 100; the
+drafts still fell under it, so the author removed it. Only `too_long`
+remains; `too_short` is gone from the problem codes. The prompt says
+"at most 180 words", keeps a target (125 warm and formal, 115 short) and
+says a shorter letter is better than an invented sentence; a too-long
+letter is cut toward 125 on the retry. CLAUDE.md's invariant changed
+with it. Consequence: a very sparse profile can produce a thin letter
+with no warning; the user reviews every letter anyway.
+
 ## ADR 10: Move-in as a choice and how two applicants are related, schema 2
 
 **Status.** Accepted.
