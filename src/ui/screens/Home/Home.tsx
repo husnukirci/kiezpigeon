@@ -1,12 +1,13 @@
 // What a user with a profile sees: the listing in the active tab and, after
 // "Write my letter", its letter; or a calm screen that says what Kiezpigeon
 // needs when the tab is not a listing.
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { panelTabId } from "../../../messaging/panel";
 import { createLetterRequest } from "../../../rules/letterPrompt";
 import type { Listing, Profile } from "../../../rules/types";
 import { cx } from "../../cx";
 import { useActiveListing } from "../../hooks/useActiveListing";
+import { useContactForm } from "../../hooks/useContactForm";
 import { useLetter } from "../../hooks/useLetter";
 import { LetterReady } from "../LetterReady/LetterReady";
 import {
@@ -16,11 +17,13 @@ import {
 import screen from "../Screen.module.css";
 
 export function Home({ profile }: { profile: Profile }) {
-  const active = useActiveListing(panelTabId(window.location.search));
+  const ownTab = panelTabId(window.location.search);
+  const active = useActiveListing(ownTab);
   if (active.kind === "loading") return null;
   if (active.kind === "listing") {
     return (
       <ListingFlow
+        ownTab={ownTab}
         profile={profile}
         siteName={active.siteName}
         listing={active.listing}
@@ -31,12 +34,13 @@ export function Home({ profile }: { profile: Profile }) {
 }
 
 interface ListingFlowProps {
+  ownTab: number | undefined;
   profile: Profile;
   siteName: string;
   listing: Listing;
 }
 
-function ListingFlow({ profile, siteName, listing }: ListingFlowProps) {
+function ListingFlow({ ownTab, profile, siteName, listing }: ListingFlowProps) {
   const letter = useLetter();
   const [letterOpen, setLetterOpen] = useState(false);
   const { state } = letter;
@@ -49,8 +53,10 @@ function ListingFlow({ profile, siteName, listing }: ListingFlowProps) {
 
   if (ours && letterOpen) {
     return (
-      <LetterReady
+      <LetterScreen
+        ownTab={ownTab}
         state={ours}
+        profile={profile}
         listingTitle={listing.title}
         onTone={(tone) => {
           letter.write({ ...ours.request, tone });
@@ -80,6 +86,24 @@ function ListingFlow({ profile, siteName, listing }: ListingFlowProps) {
         letter.write(createLetterRequest(profile, listing, choice));
         setLetterOpen(true);
       }}
+    />
+  );
+}
+
+type LetterScreenProps = Omit<
+  ComponentProps<typeof LetterReady>,
+  "form" | "onCheckForm" | "onFill"
+> & { ownTab: number | undefined };
+
+/** The letter screen with its tab's contact form, read when it opens. */
+function LetterScreen({ ownTab, ...props }: LetterScreenProps) {
+  const form = useContactForm(ownTab);
+  return (
+    <LetterReady
+      {...props}
+      form={form.state}
+      onCheckForm={form.check}
+      onFill={form.fill}
     />
   );
 }

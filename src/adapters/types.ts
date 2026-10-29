@@ -11,5 +11,8 @@ export interface SiteAdapter {
   matches(url: string): boolean;
   /** `undefined` when the page is not a listing. */
   readListing(document: Document, url: string): Listing | undefined;
+  /** The open contact form, the root that filling works inside. */
+  contactForm(document: Document): HTMLFormElement | undefined;
+  /** Its fields as plain data; empty while no form is open. */
   readContactForm(document: Document): FormField[];
 }

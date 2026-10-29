@@ -170,4 +170,30 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Their tests may render a small React form as a stand-in for a
+    // framework-driven page (the ADR 11 probe); the folder rule still holds.
+    files: ["src/adapters/**/*.test.{ts,tsx}", "src/fill/**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/ui",
+                "**/ui/**",
+                "**/storage",
+                "**/storage/**",
+                "**/claude",
+                "**/claude/**",
+              ],
+              message:
+                "src/adapters/ and src/fill/ may import src/rules/, never ui, storage or claude (ADR 6).",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

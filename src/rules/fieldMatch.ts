@@ -1,11 +1,15 @@
 // Form field matching: classify each field of a contact form from its
 // plain-data description, pair it with a profile value or the letter, and
-// score "X of Y matched". Consent and privacy fields never get a value.
-import { moveInDateOf } from "./letterPrompt";
+// score "X of Y matched". Consent fields and opt-in checkboxes are left
+// alone and not counted (ADR 11).
+import { formatDate } from "./format";
 import { sumCents } from "./money";
 import type {
+  DocumentType,
+  EmploymentType,
   FieldKind,
   FieldMapping,
+  FieldOption,
   FieldValue,
   FormField,
   Profile,
@@ -53,7 +57,14 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
     pattern({ within: "anrede|salutation|geschlecht", whole: "gender" }),
   ],
   ["email", pattern({ within: "e ?mail" })],
-  ["phone", pattern({ within: "telefon|phone|handy|mobil", whole: "tel" })],
+  // `mobil` only as its own word or a known compound, not in `Immobilie`.
+  [
+    "phone",
+    pattern({
+      within: "telefon|phone|handy|mobilnummer|mobilfunk",
+      whole: "tel|mobil|mobile",
+    }),
+  ],
   [
     "firstName",
     pattern({ within: "vorname|first ?name|given ?name|forename" }),
@@ -99,7 +110,20 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
   ],
   ["moveInDate", pattern({ within: "einzug|move ?in|bezugstermin|moving" })],
   ["wbs", pattern({ within: "wohnberechtigungsschein", whole: "wbs" })],
+  [
+    "householdSize",
+    pattern({
+      within: "haushaltsgr|household ?size|number of persons|personenzahl",
+    }),
+  ],
+  [
+    "documents",
+    pattern({ within: "bewerbungsunterlagen|unterlagen|documents" }),
+  ],
 ];
+
+/** The only checkboxes Kiezpigeon ticks: facts about the household. */
+const CHECKBOX_FACTS = new Set<FieldKind>(["pets", "smoker", "wbs"]);
 
 const CAPTCHA = /captcha/u;
 const NON_SMOKER = /nichtraucher|non ?smok/u;
@@ -111,6 +135,8 @@ const NOT_COUNTED_TYPES = new Set([
   "image",
   "file",
   "password",
+  // Fill never writes a radio (ADR 11), so it is not counted either.
+  "radio",
 ]);
 
 /** Name, id, label and placeholder as lower-case words. */
@@ -129,6 +155,14 @@ function matches(kind: FieldKind, hay: string): boolean {
 }
 
 export function classifyField(field: FormField): FieldKind {
+  const kind = classifyByText(field);
+  // Any other checkbox is an opt-in (profile sharing, newsletters, offers).
+  return field.type === "checkbox" && !CHECKBOX_FACTS.has(kind)
+    ? "consent"
+    : kind;
+}
+
+function classifyByText(field: FormField): FieldKind {
   const fromAutocomplete = field.autocomplete
     ? AUTOCOMPLETE[field.autocomplete.trim().toLowerCase()]
     : undefined;
@@ -166,8 +200,11 @@ function valueFor(
   profile: Profile,
   letter: string,
 ): FieldValue | undefined {
+  if (field.type === "select") {
+    return optionFor(kind, field, profile);
+  }
   const applicant = profile.applicants[0];
-  const { contact, household } = profile;
+  const { contact, household, moveIn } = profile;
   const hay = haystack(field);
   switch (kind) {
     case "firstName":
@@ -196,39 +233,258 @@ function valueFor(
       return household.adults;
     case "children":
       return household.children;
+    case "householdSize":
+      return household.adults + household.children;
     case "pets":
-      return household.pets.some((pet) => pet.count > 0);
     case "smoker":
-      return NON_SMOKER.test(hay) ? !household.smoker : household.smoker;
-    case "income":
-      return sumCents(profile.applicants.map((a) => a.netIncomeCents));
-    case "employment":
-      return applicant?.employment;
-    case "moveInDate":
-      return moveInDateOf(profile.moveIn);
     case "wbs":
-      return profile.hasWbs;
-    // No profile field holds a salutation yet; consent is never filled.
+      return yesNoFor(kind, hay, profile);
+    case "income":
+      return String(Math.floor(householdIncomeCents(profile) / 100));
+    case "employment":
+      // A text field asks for the job itself ("Beruf").
+      return applicant?.job;
+    case "moveInDate":
+      if (moveIn?.kind === "date") {
+        return field.type === "date" ? moveIn.date : formatDate(moveIn.date);
+      }
+      if (field.type === "date") return undefined;
+      return moveIn && MOVE_IN_TEXT[moveIn.kind];
+    // No profile field holds a salutation; consent is never filled; the
+    // documents question is only asked as a choice.
     case "salutation":
+    case "documents":
     case "consent":
     case "unknown":
       return undefined;
   }
 }
 
+const MOVE_IN_TEXT = { asap: "ab sofort", flexible: "flexibel" } as const;
+
+function householdIncomeCents(profile: Profile): number {
+  return sumCents(profile.applicants.map((a) => a.netIncomeCents));
+}
+
+function yesNoFor(
+  kind: "pets" | "smoker" | "wbs",
+  hay: string,
+  profile: Profile,
+): boolean {
+  const { household } = profile;
+  switch (kind) {
+    case "pets":
+      return household.pets.some((pet) => pet.count > 0);
+    case "smoker":
+      return NON_SMOKER.test(hay) ? !household.smoker : household.smoker;
+    case "wbs":
+      return profile.hasWbs;
+  }
+}
+
+/** An option's visible text in lower-case words, or its value if blank. */
+function optionText(option: FieldOption): string {
+  const text = option.label.trim() === "" ? option.value : option.label;
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function optionWhere(
+  field: FormField,
+  test: (text: string) => boolean,
+): string | undefined {
+  return field.options?.find(
+    (option) => option.value !== "" && test(optionText(option)),
+  )?.value;
+}
+
+const NO = new RegExp(word("nein|no|false|nicht|keine?|n|0"), "u");
+const YES = new RegExp(word("ja|yes|true|vorhanden|j|y|1"), "u");
+
+function yesNoOption(field: FormField, answer: boolean): string | undefined {
+  return optionWhere(field, (text) =>
+    answer ? YES.test(text) && !NO.test(text) : NO.test(text),
+  );
+}
+
+const MOVE_IN_OPTIONS = {
+  date: /genau|datum|date|concrete|termin/u,
+  asap: /sofort|now|asap|immediately|schnellstm/u,
+  flexible: /flexib/u,
+} as const;
+
+const EMPLOYMENT_OPTIONS: Record<EmploymentType, RegExp> = {
+  permanent: /angestellt|arbeitnehmer|employee/u,
+  fixed_term: /angestellt|arbeitnehmer|employee/u,
+  civil_servant: /beamt|civil servant|officer/u,
+  self_employed:
+    /selbst ?st[äa]ndig|selbständig|freiberuf|self employed|freelanc/u,
+  trainee: /auszubild|azubi|ausbildung|trainee|apprentic/u,
+  student: /student|studier/u,
+  other: /sonstig|other|andere/u,
+};
+
+const HOUSEHOLD_OPTIONS = {
+  family: /famil|kinder|children/u,
+  flatshare: new RegExp(word("wohngemeinschaft|wg|flatshare|shared"), "u"),
+  one: /einperson|single|allein|(?:1|one|eine) person/u,
+  two: /(?:zwei|2|two) (?:erwachsene|personen|adults|persons)|paar|couple/u,
+} as const;
+
+function householdOption(field: FormField, profile: Profile) {
+  const { adults, children, relationship } = profile.household;
+  if (children > 0)
+    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.family.test(t));
+  if (profile.applicants.length === 2 && relationship === "flatmates") {
+    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.flatshare.test(t));
+  }
+  if (adults === 1)
+    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.one.test(t));
+  if (adults === 2)
+    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.two.test(t));
+  return undefined;
+}
+
+const UP_TO = new RegExp(word("unter|bis|below|under|less"), "u");
+const ABOVE = new RegExp(word("über|ueber|ab|over|more|mehr"), "u");
+
+/** Euro bounds of an income option such as `500 - 1.000 €` or `> 5.000 €`. */
+function incomeRange(
+  text: string,
+): { above: number; upTo: number } | undefined {
+  const amounts = (text.match(/\d{1,3}(?:\.\d{3})+|\d+/gu) ?? []).map(
+    (amount) => Number(amount.replaceAll(".", "")),
+  );
+  const [first, second] = amounts;
+  if (first === undefined) return undefined;
+  if (second !== undefined) return { above: first, upTo: second };
+  if (/</u.test(text) || UP_TO.test(text)) {
+    return { above: -Infinity, upTo: first };
+  }
+  if (/>/u.test(text) || ABOVE.test(text)) {
+    return { above: first, upTo: Infinity };
+  }
+  return undefined;
+}
+
+function incomeOption(field: FormField, profile: Profile): string | undefined {
+  const euros = householdIncomeCents(profile) / 100;
+  return field.options?.find((option) => {
+    const range = incomeRange(option.label);
+    return range !== undefined && euros > range.above && euros <= range.upTo;
+  })?.value;
+}
+
+const DOCUMENTS: DocumentType[] = [
+  "schufa",
+  "mietschuldenfreiheit",
+  "incomeProof",
+  "id",
+  "wbs",
+];
+
+/** Every document ready; the WBS only for someone who has one. */
+function allDocumentsReady(profile: Profile): boolean {
+  return DOCUMENTS.filter((type) => type !== "wbs" || profile.hasWbs).every(
+    (type) => profile.documents[type] === "ready",
+  );
+}
+
+function optionFor(
+  kind: FieldKind,
+  field: FormField,
+  profile: Profile,
+): string | undefined {
+  const applicant = profile.applicants[0];
+  switch (kind) {
+    case "pets":
+    case "smoker":
+    case "wbs":
+      return yesNoOption(field, yesNoFor(kind, haystack(field), profile));
+    case "moveInDate": {
+      const moveIn = profile.moveIn;
+      return (
+        moveIn &&
+        optionWhere(field, (t) => MOVE_IN_OPTIONS[moveIn.kind].test(t))
+      );
+    }
+    case "income":
+      return incomeOption(field, profile);
+    case "employment":
+      return (
+        applicant &&
+        optionWhere(field, (t) =>
+          EMPLOYMENT_OPTIONS[applicant.employment].test(t),
+        )
+      );
+    case "householdSize":
+      return householdOption(field, profile);
+    // Saying the documents are missing would only hurt; the user decides.
+    case "documents":
+      return allDocumentsReady(profile) ? yesNoOption(field, true) : undefined;
+    // A choice the profile cannot make (salutation, city lists, ...).
+    default:
+      return undefined;
+  }
+}
+
+/** Whether filling `value` would change something already in the field. */
+function replacesCurrent(
+  kind: FieldKind,
+  field: FormField,
+  value: FieldValue | undefined,
+) {
+  if (value === undefined) return false;
+  // Only a tick can have been set by someone; unticked is the default.
+  if (field.type === "checkbox") {
+    return field.checked === true && value === false;
+  }
+  const current = field.value ?? "";
+  if (current === "") return false;
+  // The same number written another way is not a replacement.
+  if (kind === "phone") {
+    return phoneDigits(current) !== phoneDigits(String(value));
+  }
+  return current !== String(value);
+}
+
+/** A German phone number as digits, `+49` and `0049` read as `0`. */
+function phoneDigits(text: string): string {
+  return text.replace(/[^\d+]/gu, "").replace(/^(?:\+|00)49/u, "0");
+}
+
 export function mapFields(
   fields: readonly FormField[],
   profile: Profile,
   letter: string,
-): { mappings: FieldMapping[]; matched: number; total: number } {
-  const mappings = fields.filter(isFillable).map((field) => {
-    const kind = classifyField(field);
-    const value = valueFor(kind, field, profile, letter);
-    return { field, kind, value: value === "" ? undefined : value };
-  });
+): {
+  mappings: FieldMapping[];
+  matched: number;
+  total: number;
+  /** Consent fields and opt-ins: never filled and not counted. */
+  leftAlone: FormField[];
+} {
+  const fillable = fields.filter(isFillable);
+  const leftAlone = fillable.filter((f) => classifyField(f) === "consent");
+  const mappings = fillable
+    .filter((field) => !leftAlone.includes(field))
+    .map((field) => {
+      const kind = classifyField(field);
+      const found = valueFor(kind, field, profile, letter);
+      const value = found === "" ? undefined : found;
+      return {
+        field,
+        kind,
+        value,
+        replaces: replacesCurrent(kind, field, value),
+      };
+    });
   return {
     mappings,
     matched: mappings.filter((m) => m.value !== undefined).length,
     total: mappings.length,
+    leftAlone,
   };
 }
