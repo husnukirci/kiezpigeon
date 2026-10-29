@@ -454,7 +454,9 @@ never send, and the user must see what will change before it does.
 element's prototype, never the instance, then dispatches bubbling `input`
 and `change` events. It never focuses, clicks, submits or sends a key; it
 refuses consent fields, disabled fields, radios, file, password, hidden and
-button-like inputs, and a select value that is not one of its options.
+button-like inputs, and a select value that is not one of its options. It
+classifies each element again itself rather than trusting the plan's kind,
+so no message can talk it into ticking an opt-in.
 `src/fill/describe.ts` reads a form into the rules core's `FormField`s,
 now with a select's options, a field's current value and a checkbox's
 tick; site adapters and the Phase 6 fallback share it. `SiteAdapter`

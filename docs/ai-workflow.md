@@ -100,6 +100,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P5 | First e2e run: `getByRole("dialog")` matched six elements, because the exposé page carries popovers and a map with `role="dialog"`. The adapter was not affected (its selector needs the contact form inside the dialog). | The test names the dialog (`Kontaktanfrage`). Playwright's `context.route` also caught the service worker's Claude call, so the run needs no key and no network.
 - P5 | Mutation check (acceptance): `form.requestSubmit()` and `form.submit()` added to the content script's fill handler each failed the e2e run, but first on a field value, because the sent form reloaded the page. | The "nothing was sent" checks now run first; the failure names the second page load and shows the query string the form would have sent.
 
+- P5 | Branch review (a fresh reviewer agent, no shell) found no submit path but seven real gaps: fill trusted the plan's `kind`, so a step calling an opt-in `pets` would have ticked it; `mobil` matched inside `Immobilie` (phone number into a message field); radios counted but never filled; `ab`/`bis` matched inside words in income labels; describe read hidden, file and password values; duplicate names made two fields share a key; the recorders missed focus, keyup, keypress, reset and non-button clicks, and the e2e highlight click was conditional. | All fixed with tests seen failing first; the opt-in guard was mutation-checked. Not changed: React checkboxes listen to `click`, which fill never sends; already a consequence in ADR 11, and ImmoScout24 asks those questions as selects.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.

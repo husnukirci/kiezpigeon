@@ -213,4 +213,24 @@ describe("immoscout24.readContactForm", () => {
       "Erhalte Angebote von Umzugsfirmen",
     ]);
   });
+
+  it("keeps keys unique and reads no value from hidden, file or password inputs", () => {
+    const page = contactPage();
+    page
+      .querySelector("[data-testid='contact-form']")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<input type="hidden" name="followAnAgent" value="tracking-token">' +
+          '<input type="password" name="pw" value="secret">' +
+          '<input type="file" name="cv">',
+      );
+    const fields = immoscout24.readContactForm(page);
+    const keys = fields.map((f) => f.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(fields.filter((f) => f.name === "followAnAgent")).toHaveLength(2);
+    for (const name of ["followAnAgent", "pw", "cv"]) {
+      const last = fields.filter((f) => f.name === name).at(-1);
+      expect(last?.value).toBeUndefined();
+    }
+  });
 });

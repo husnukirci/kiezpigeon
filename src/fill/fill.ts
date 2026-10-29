@@ -2,8 +2,9 @@
 // accepts them (ADR 11): the element's native value setter, then `input`
 // and `change`. It never submits, never clicks, never focuses, never ticks
 // a consent box and never touches a file input (CLAUDE.md "Never submit").
+import { classifyField } from "../rules/fieldMatch";
 import type { FieldKind, FieldMapping, FieldValue } from "../rules/types";
-import { findField } from "./describe";
+import { describeField, findField } from "./describe";
 
 export interface FillStep {
   key: string;
@@ -59,7 +60,15 @@ function announce(element: HTMLElement): void {
 function fillOne(root: ParentNode, step: FillStep): SkipReason | undefined {
   const element = findField(root, step.key);
   if (!element) return "missing";
-  if (step.kind === "consent" || element.disabled) return "refused";
+  // The element is classified again here, so a plan can never talk fill
+  // into ticking an opt-in: the page's own field has the last word.
+  if (
+    step.kind === "consent" ||
+    element.disabled ||
+    classifyField(describeField(element, step.key)) === "consent"
+  ) {
+    return "refused";
+  }
   if (element instanceof HTMLInputElement && NEVER_TYPES.has(element.type)) {
     return "refused";
   }

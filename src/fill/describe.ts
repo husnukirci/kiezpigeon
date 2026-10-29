@@ -12,11 +12,32 @@ function text(value: string | null | undefined): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
-function keyOf(element: FieldElement, index: number): string {
-  if (element.name) return `name:${element.name}`;
-  if (element.id) return `id:${element.id}`;
-  return `index:${index}`;
+/**
+ * `name:<name>` when the name is unique in the form, else `id:<id>`, else
+ * the position, so every key finds exactly one element again.
+ */
+function keysOf(elements: FieldElement[]): string[] {
+  const count = (attribute: "name" | "id", value: string): number =>
+    elements.filter((e) => e[attribute] === value).length;
+  return elements.map((element, index) => {
+    if (element.name && count("name", element.name) === 1) {
+      return `name:${element.name}`;
+    }
+    if (element.id && count("id", element.id) === 1) return `id:${element.id}`;
+    return `index:${index}`;
+  });
 }
+
+/** Inputs whose value is never read: secrets, files, tracking tokens. */
+const UNREAD_TYPES = new Set([
+  "hidden",
+  "password",
+  "file",
+  "submit",
+  "button",
+  "reset",
+  "image",
+]);
 
 /**
  * The field's label: its `<label for>`, then `aria-labelledby` and
@@ -51,9 +72,10 @@ function isVisible(element: FieldElement): boolean {
   );
 }
 
-function describe(element: FieldElement, index: number): FormField {
+/** One element as plain data; `key` is the handle `findField` takes. */
+export function describeField(element: FieldElement, key: string): FormField {
   const field: FormField = {
-    key: keyOf(element, index),
+    key,
     type:
       element instanceof HTMLInputElement
         ? element.type
@@ -74,7 +96,9 @@ function describe(element: FieldElement, index: number): FormField {
   }
   if (element instanceof HTMLInputElement && element.type === "checkbox") {
     field.checked = element.checked;
-  } else {
+  } else if (!(
+    element instanceof HTMLInputElement && UNREAD_TYPES.has(element.type)
+  )) {
     field.value = element.value;
   }
   return field;
@@ -85,7 +109,11 @@ function fieldsIn(root: ParentNode): FieldElement[] {
 }
 
 export function describeFields(root: ParentNode): FormField[] {
-  return fieldsIn(root).map(describe);
+  const elements = fieldsIn(root);
+  const keys = keysOf(elements);
+  return elements.map((element, index) =>
+    describeField(element, keys[index] ?? `index:${index}`),
+  );
 }
 
 /** The element `describeFields` gave this key, if it is still there. */
@@ -93,5 +121,7 @@ export function findField(
   root: ParentNode,
   key: string,
 ): FieldElement | undefined {
-  return fieldsIn(root).find((element, index) => keyOf(element, index) === key);
+  const elements = fieldsIn(root);
+  const keys = keysOf(elements);
+  return elements.find((_, index) => keys[index] === key);
 }
