@@ -194,4 +194,14 @@ describe("buildLetterPrompt", () => {
       }),
     ).toThrow(RangeError);
   });
+
+  it("writes without features when the listing names none", () => {
+    const bare = createLetterRequest(coupleWithDog, sparseListing, {
+      tone: "warm",
+      features: [],
+    });
+    const { system, user } = buildLetterPrompt(bare);
+    expect(system).not.toContain("Mention these features");
+    expect(user).not.toContain("Ausgewählte Merkmale");
+  });
 });
