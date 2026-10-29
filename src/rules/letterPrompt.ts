@@ -45,8 +45,17 @@ const PET_POLICY_LABELS: Record<PetPolicy, string> = {
 const TONE_INSTRUCTIONS: Record<Tone, string> = {
   warm: "Tone: warm and personal, friendly and polite, addressing the reader as Sie.",
   formal: "Tone: formal and businesslike, addressing the reader as Sie.",
-  short:
-    "Tone: short and direct, addressing the reader as Sie; stay near the lower end of the length.",
+  short: "Tone: short and direct, addressing the reader as Sie.",
+};
+
+/**
+ * Where each tone aims inside the length. Models land below a target more
+ * often than above it, so even the short tone aims well over the minimum.
+ */
+const TONE_WORD_TARGETS: Record<Tone, number> = {
+  warm: 150,
+  formal: 150,
+  short: 140,
 };
 
 export const MIN_WORDS = 120;
@@ -291,7 +300,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     "Rules:",
     "- Write in German.",
     `- ${TONE_INSTRUCTIONS[request.tone]}`,
-    `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included.`,
+    `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words.`,
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",
