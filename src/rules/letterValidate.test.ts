@@ -45,27 +45,24 @@ describe("validateLetter", () => {
     expect(validateLetter(passingLetter, request)).toEqual([]);
   });
 
-  it("flags a letter under 120 words", () => {
+  it("accepts a short letter: there is no minimum length", () => {
     const short = [
       "Sehr geehrte Frau Weber,",
       "wir mögen den Balkon und den Altbau, unser Hund auch.",
       "Mara Testmann",
     ].join("\n\n");
-    expect(validateLetter(short, request)).toEqual([
-      { code: "too_short", text: "16 words" },
-    ]);
+    expect(validateLetter(short, request)).toEqual([]);
   });
 
-  it("accepts exactly 120 and 180 words", () => {
+  it("accepts up to 180 words", () => {
     const words = (n: number) =>
       Array.from({ length: n }, () => "wort").join(" ");
     const letter = (n: number) =>
       `Sehr geehrte Frau Weber,\nBalkon Altbau Hund ${words(n - 7)}`;
-    expect(countWords(letter(120))).toBe(120);
-    expect(validateLetter(letter(120), request)).toEqual([]);
+    expect(countWords(letter(180))).toBe(180);
     expect(validateLetter(letter(180), request)).toEqual([]);
-    expect(validateLetter(letter(119), request)).toEqual([
-      { code: "too_short", text: "119 words" },
+    expect(validateLetter(letter(181), request)).toEqual([
+      { code: "too_long", text: "181 words" },
     ]);
   });
 
@@ -195,6 +192,24 @@ describe("validateLetter", () => {
     ]);
   });
 
+  it("reads a kein that ends the clause after the pet word as a denial", () => {
+    const noPets = replaced(
+      "Offen möchten wir Ihnen sagen, dass unser ruhiger Hund mit einziehen würde.",
+      "Haustiere haben wir keine.",
+    );
+    expect(
+      validateLetter(noPets, noPetsRequest).filter((p) =>
+        p.code.startsWith("pets"),
+      ),
+    ).toEqual([]);
+    // A kein that goes on to another noun says nothing about the pet.
+    const withDog = replaced(
+      "dass unser ruhiger Hund mit einziehen würde.",
+      "dass unser Hund keine Probleme mit Treppen hat.",
+    );
+    expect(validateLetter(withDog, request)).toEqual([]);
+  });
+
   it("accepts the general word Haustier for any pet", () => {
     const letter = replaced("unser ruhiger Hund", "unser ruhiges Haustier");
     expect(validateLetter(letter, request)).toEqual([]);
@@ -310,7 +325,6 @@ describe("validateLetter", () => {
       "\n",
     );
     expect(validateLetter(letter, request).map((p) => p.code)).toEqual([
-      "too_short",
       "em_dash",
       "unknown_number",
       "wrong_salutation",
