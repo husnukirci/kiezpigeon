@@ -174,8 +174,21 @@ function householdLine(household: Household): string {
   return `Haushalt: ${adults}, ${children}, ${smoking}`;
 }
 
+/** The listing's "Frei ab" in German, as the page would say it. */
+function freeFrom(availability: Availability | undefined): string | undefined {
+  switch (availability?.kind) {
+    case undefined:
+      return undefined;
+    case "date":
+      return formatDate(availability.date);
+    case "immediately":
+      return "sofort";
+    case "by_arrangement":
+      return "nach Vereinbarung";
+  }
+}
+
 function listingLines(listing: Listing): string[] {
-  const availableFrom = availableDateOf(listing.availability);
   const facts: [string, string | undefined][] = [
     ["Bezirk", listing.district],
     [
@@ -205,10 +218,7 @@ function listingLines(listing: Listing): string[] {
       listing.rooms === undefined ? undefined : formatNumber(listing.rooms, 1),
     ],
     ["Etage", listing.floor === undefined ? undefined : String(listing.floor)],
-    [
-      "Frei ab",
-      availableFrom === undefined ? undefined : formatDate(availableFrom),
-    ],
+    ["Frei ab", freeFrom(listing.availability)],
     [
       "Baujahr",
       listing.yearBuilt === undefined ? undefined : String(listing.yearBuilt),
@@ -260,12 +270,28 @@ function signals(request: LetterRequest): string[] {
       `Einzug zum ${formatDate(moveInDate)}, passend zum Bezugstermin`,
     );
   }
+  if (request.moveIn?.kind === "asap") result.push("Einzug ab sofort möglich");
+  if (request.moveIn?.kind === "flexible") {
+    result.push("Beim Einzugstermin flexibel");
+  }
   return result;
+}
+
+function moveInFacts(moveIn: MoveIn | undefined): string[] {
+  switch (moveIn?.kind) {
+    case undefined:
+      return [];
+    case "date":
+      return [`Gewünschter Einzug: ${formatDate(moveIn.date)}`];
+    case "asap":
+      return ["Einzug: ab sofort möglich"];
+    case "flexible":
+      return ["Einzug: beim Termin flexibel"];
+  }
 }
 
 function factsBlock(request: LetterRequest): string {
   const { applicants, household, listing, features } = request;
-  const moveInDate = moveInDateOf(request.moveIn);
   const income = sumCents(applicants.map((a) => a.netIncomeCents));
   const applicantLines = applicants.map((a) =>
     [
@@ -287,7 +313,7 @@ function factsBlock(request: LetterRequest): string {
     householdLine(household),
     `Haustiere: ${hasPets(household) ? petsPhrase(household) : "keine"}`,
     ...(request.allDocumentsReady ? ["Unterlagen: alle vollständig"] : []),
-    ...(moveInDate ? [`Gewünschter Einzug: ${formatDate(moveInDate)}`] : []),
+    ...moveInFacts(request.moveIn),
     ...listingLines(listing),
     ...(features.length === 0
       ? []
