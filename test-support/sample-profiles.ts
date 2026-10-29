@@ -106,9 +106,9 @@ export const sparseListing: Listing = {
   url: "https://www.immobilienscout24.de/expose/100000002",
   features: [],
   missing: [
-    "kaltmiete",
-    "nebenkosten",
-    "warmmiete",
+    "kaltmieteCents",
+    "nebenkostenCents",
+    "warmmieteCents",
     "petPolicy",
     "wbsRequired",
     "contactPerson",

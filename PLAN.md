@@ -94,7 +94,7 @@ form asks for email and phone).
 - [x] Profile and onboarding: step flow (applicants, household, move-in and
       budget, documents checklist, letter defaults), settings with export,
       import and delete all data
-- [ ] Listing detection: adapter interface; ImmoScout24 adapter tested
+- [x] Listing detection: adapter interface; ImmoScout24 adapter tested
       against scrubbed saved HTML; "Listing detected" screen with stat
       tiles and the fit check card
 - [ ] Letter generation: Claude client per ADR 4; validate and retry once;
@@ -112,7 +112,8 @@ form asks for email and phone).
 ### Tier 2: follow-ups
 
 - [ ] A second listing adapter (candidates: Immowelt, Kleinanzeigen,
-      WG-Gesucht), proving the adapter interface with a second real site
+      WG-Gesucht, deutsche-wohnen.com), proving the adapter interface with
+      a second real site
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"

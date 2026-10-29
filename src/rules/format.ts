@@ -41,3 +41,10 @@ export function formatDate(iso: IsoDate): string {
   const [, year, month, day] = match;
   return `${day ?? ""}.${month ?? ""}.${year ?? ""}`;
 }
+
+/** `0` → `EG`, `2` → `2. OG`, below ground → `UG`. */
+export function formatFloor(floor: number): string {
+  if (floor < 0) return "UG";
+  if (floor === 0) return "EG";
+  return `${floor}. OG`;
+}

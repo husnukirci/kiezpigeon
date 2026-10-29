@@ -53,7 +53,7 @@ const DOCUMENTS: readonly { type: DocumentType; label: string }[] = [
   { type: "wbs", label: "WBS" },
 ];
 
-const TONES: readonly { value: Tone; label: string }[] = [
+export const TONES: readonly { value: Tone; label: string }[] = [
   { value: "warm", label: "Warm" },
   { value: "formal", label: "Formal" },
   { value: "short", label: "Short" },
