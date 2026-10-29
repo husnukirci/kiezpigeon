@@ -81,7 +81,11 @@ function petsLine(profile: Profile, listing: Listing): FitLine {
 
 function wbsLine(profile: Profile, listing: Listing): FitLine {
   if (listing.wbsRequired === undefined) {
-    return { rule: "wbs", status: "unknown", reason: "Listing doesn't say" };
+    return {
+      rule: "wbs",
+      status: "unknown",
+      reason: "No WBS mentioned in the listing",
+    };
   }
   if (!listing.wbsRequired) {
     return { rule: "wbs", status: "ok", reason: "No WBS needed" };
