@@ -2,8 +2,13 @@
 // `data-qa` attributes the site uses for its own tests, then parses the
 // German text inside them. The page's tracking data and inline scripts are
 // never read.
-import type { FormField, Listing } from "../../rules/types";
-import { parseContactName, parseEuroText, parseNumberText } from "../parse";
+import type { Feature, FormField, Listing, PetPolicy } from "../../rules/types";
+import {
+  parseContactName,
+  parseEuroText,
+  parseGermanDate,
+  parseNumberText,
+} from "../parse";
 import type { SiteAdapter } from "../types";
 
 const EXPOSE_URL = /^https:\/\/www\.immobilienscout24\.de\/expose\/\d+/;
@@ -18,6 +23,11 @@ const FIELDS = [
   "warmmieteCents",
   "areaM2",
   "rooms",
+  "floor",
+  "availableFrom",
+  "yearBuilt",
+  "petPolicy",
+  "wbsRequired",
   "contactPerson",
 ] as const satisfies readonly (keyof Listing)[];
 
@@ -57,6 +67,48 @@ function districtOf(address: string): string | undefined {
   if (postcodeIndex < 1 || district === undefined) return undefined;
   if (/\d/.test(district)) return undefined;
   return district.replace(/\s*\(.*\)$/, "") || undefined;
+}
+
+/** `1 von 5` → 1, `EG` → 0, `UG` → -1. */
+function floorOf(text: string): number | undefined {
+  if (/^(EG|Erdgeschoss)\b/i.test(text)) return 0;
+  if (/^(UG|Untergeschoss|Souterrain)\b/i.test(text)) return -1;
+  const match = /^-?\d+/.exec(text);
+  return match ? Number(match[0]) : undefined;
+}
+
+function petPolicyOf(text: string): PetPolicy | undefined {
+  if (/^ja\b/i.test(text)) return "allowed";
+  if (/^nein\b/i.test(text)) return "not_allowed";
+  if (/vereinbarung/i.test(text)) return "by_arrangement";
+  return undefined;
+}
+
+/**
+ * Neither probe page showed a WBS field, so this reads any criteria row
+ * labelled Wohnberechtigungsschein or WBS by its label text rather than by
+ * a class name nobody has seen.
+ */
+function wbsOf(document: Document): boolean | undefined {
+  for (const label of document.querySelectorAll("dl dt")) {
+    if (!/wohnberechtigungsschein|\bWBS\b/i.test(label.textContent)) continue;
+    const value = label.nextElementSibling?.textContent.trim() ?? "";
+    if (/nicht erforderlich|^nein\b/i.test(value)) return false;
+    if (/erforderlich|^ja\b/i.test(value)) return true;
+  }
+  return undefined;
+}
+
+/** The feature tags under the key numbers: `Balkon/ Terrasse` → `Balkon`. */
+function featuresOf(document: Document): Feature[] {
+  const features: Feature[] = [];
+  for (const tag of document.querySelectorAll(
+    '#is24-boolean-criteria [data-qa$="-label"]',
+  )) {
+    const name = tag.textContent.split("/")[0]?.replace(/\s+/g, " ").trim();
+    if (name && !features.includes(name)) features.push(name);
+  }
+  return features;
 }
 
 function readListing(document: Document, url: string): Listing | undefined {
@@ -104,13 +156,26 @@ function readListing(document: Document, url: string): Listing | undefined {
       ),
       parseNumberText,
     ),
+    floor: map(textOf(document, ".is24qa-etage"), floorOf),
+    availableFrom: map(
+      textOf(document, ".is24qa-bezugsfrei-ab"),
+      parseGermanDate,
+    ),
+    yearBuilt: map(textOf(document, ".is24qa-baujahr"), parseNumberText),
+    petPolicy: map(textOf(document, ".is24qa-haustiere"), petPolicyOf),
+    wbsRequired: wbsOf(document),
+    // A company is not named: the letter then greets "Damen und Herren".
     contactPerson: map(
       textOf(document, '[data-qa="contactName"]'),
       parseContactName,
     ),
   };
 
-  const listing: Listing = { url, features: [], missing: [] };
+  const listing: Listing = {
+    url,
+    features: featuresOf(document),
+    missing: [],
+  };
   for (const field of FIELDS) {
     const value = found[field];
     if (value === undefined) listing.missing.push(field);

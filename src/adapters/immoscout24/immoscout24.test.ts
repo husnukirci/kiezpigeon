@@ -40,7 +40,55 @@ describe("immoscout24.readListing", () => {
       // Near the end of the page: proves the whole fixture parsed.
       contactPerson: { firstName: "Lena", lastName: "Beispiel" },
       features: [],
-      missing: [],
+      missing: [
+        "floor",
+        "availableFrom",
+        "yearBuilt",
+        "petPolicy",
+        "wbsRequired",
+      ],
     });
+  });
+
+  it("reads a complete listing, with a company as the contact", () => {
+    const listing = immoscout24.readListing(
+      loadFixture("immoscout24", "listing-complete.html"),
+      URL,
+    );
+    expect(listing).toEqual({
+      url: URL,
+      title: "Singlewohnung!",
+      address: "Musterallee 9, Reinickendorf (Ortsteil), 13401 Berlin",
+      district: "Reinickendorf",
+      kaltmieteCents: 102829,
+      nebenkostenCents: 12000,
+      warmmieteCents: 121829,
+      areaM2: 51.44,
+      rooms: 1,
+      floor: 1,
+      availableFrom: "2027-02-01",
+      yearBuilt: 2016,
+      petPolicy: "allowed",
+      features: ["Balkon", "Keller", "Personenaufzug", "Stufenloser Zugang"],
+      // Neither saved page showed a WBS field; a company gets no name.
+      missing: ["wbsRequired", "contactPerson"],
+    });
+  });
+
+  it("reads a WBS row by its label", () => {
+    // Invented markup in the shape of the page's criteria rows: no saved
+    // page had a WBS field (docs/ai-workflow.md, Phase 3).
+    const page = (value: string): Document =>
+      new DOMParser().parseFromString(
+        `<h1 data-qa="expose-title">Wohnung</h1>
+         <dl><dt>Wohnberechtigungsschein</dt><dd>${value}</dd></dl>`,
+        "text/html",
+      );
+    expect(
+      immoscout24.readListing(page("erforderlich"), URL)?.wbsRequired,
+    ).toBe(true);
+    expect(
+      immoscout24.readListing(page("nicht erforderlich"), URL)?.wbsRequired,
+    ).toBe(false);
   });
 });
