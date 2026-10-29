@@ -78,6 +78,8 @@ describe("send and handle", () => {
 describe("isMessage", () => {
   it("accepts known types and nothing else", () => {
     expect(isMessage({ type: "getListing" })).toBe(true);
+    expect(isMessage({ type: "getContactForm" })).toBe(true);
+    expect(isMessage({ type: "fillForm", steps: [] })).toBe(true);
     expect(isMessage({ type: "submit" })).toBe(false);
     expect(isMessage("ping")).toBe(false);
     expect(isMessage(null)).toBe(false);

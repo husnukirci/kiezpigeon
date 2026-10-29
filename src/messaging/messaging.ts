@@ -1,14 +1,22 @@
 // Typed messages between the side panel, the service worker and content
 // scripts (ADR 6, ADR 8). Each message type names its request and its
-// response; later phases add getContactForm and fill here.
+// response.
 import { browser } from "wxt/browser";
 import type { ClaudeErrorCode } from "../claude/claude";
-import type { LetterRequest, Listing } from "../rules/types";
+import type { FillReport, FillStep } from "../fill/fill";
+import type { FormField, LetterRequest, Listing } from "../rules/types";
 import type { LetterDraft } from "../rules/writeLetter";
 
 export type ListingResult =
   | { kind: "listing"; siteName: string; listing: Listing }
   | { kind: "not_listing" };
+
+/** `no_form` until the user opens the site's contact form. */
+export type ContactFormResult =
+  { kind: "form"; fields: FormField[] } | { kind: "no_form" };
+
+export type FillResult =
+  { kind: "filled"; report: FillReport } | { kind: "no_form" };
 
 export type LetterResult =
   | { kind: "letter"; draft: LetterDraft }
@@ -17,6 +25,15 @@ export type LetterResult =
 interface Messages {
   ping: { request: { type: "ping" }; response: { type: "pong" } };
   getListing: { request: { type: "getListing" }; response: ListingResult };
+  getContactForm: {
+    request: { type: "getContactForm" };
+    response: ContactFormResult;
+  };
+  /** Panel to content script, on the user's click only. Never submits. */
+  fillForm: {
+    request: { type: "fillForm"; steps: FillStep[] };
+    response: FillResult;
+  };
   /** Panel to service worker: the only way a letter is requested. */
   generateLetter: {
     request: { type: "generateLetter"; request: LetterRequest };
@@ -40,6 +57,8 @@ type Envelope = { ok: true; value: unknown } | { ok: false; error: string };
 const TYPES: readonly string[] = [
   "ping",
   "getListing",
+  "getContactForm",
+  "fillForm",
   "generateLetter",
 ] satisfies MessageType[];
 
