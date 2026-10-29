@@ -1,5 +1,5 @@
 // "Claude" (ADR 4): connect your own API key, remove it, and pick the
-// model. The key is saved straight to storage and never shown again; the
+// model, each named with its trade-off. The key is saved straight to storage and never shown again; the
 // panel only ever says whether one is saved.
 import { useState } from "react";
 import { defaultSettings, parseApiKey } from "../../../rules/profile";
@@ -9,16 +9,30 @@ import { cx } from "../../cx";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
 import { TickIcon } from "../../components/Icons/Icons";
-import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
-import { TextField } from "../../components/TextField/TextField";
+import { SelectField, TextField } from "../../components/TextField/TextField";
 import { useStored } from "../../hooks/useStored";
 import styles from "./ClaudeCard.module.css";
 
 const KEYS_URL = "https://platform.claude.com/settings/keys";
 
+// Costs and behaviour from the six-letter comparison in the ADR 4 amendment.
 const MODELS: readonly { value: ClaudeModel; label: string }[] = [
-  { value: "claude-sonnet-5-5", label: "Sonnet" },
-  { value: "claude-haiku-5-5", label: "Haiku, cheaper" },
+  {
+    value: "claude-sonnet-5-5",
+    label: "Sonnet 5.5: fast, about 1 cent a letter",
+  },
+  {
+    value: "claude-opus-5-5",
+    label: "Opus 5.5: strongest letters, about 3 cents",
+  },
+  {
+    value: "claude-fable-5-1",
+    label: "Fable 5.1: most capable, up to 15 cents",
+  },
+  {
+    value: "claude-haiku-5-5",
+    label: "Haiku 5.5: cheapest, misses more checks",
+  },
 ];
 
 export function ClaudeCard() {
@@ -92,7 +106,7 @@ export function ClaudeCard() {
           <Button onClick={onSave}>Save key</Button>
         </>
       )}
-      <SegmentedControl
+      <SelectField
         label="Model"
         options={MODELS}
         value={model}
@@ -100,6 +114,12 @@ export function ClaudeCard() {
           void write("settings", { model: next });
         }}
       />
+      {model === "claude-fable-5-1" && (
+        <p className={cx(styles.text, "type-body-sm")}>
+          Fable needs 30-day data retention on your Anthropic organisation.
+          Without it, every letter fails. Slower too: up to half a minute.
+        </p>
+      )}
     </Card>
   );
 }
