@@ -54,11 +54,12 @@ describe("ClaudeCard", () => {
     const select = await screen.findByLabelText("Model");
     expect((select as HTMLSelectElement).value).toBe("claude-sonnet-5-5");
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
-      "Sonnet 5.5: fast, about 1 cent a letter",
-      "Opus 5.5: strongest letters, about 3 cents",
-      "Fable 5.1: most capable, up to 15 cents",
-      "Haiku 5.5: cheapest, misses more checks",
+      "Sonnet 5.5 (default)",
+      "Opus 5.5 (best letters)",
+      "Fable 5.1 (most capable)",
+      "Haiku 5.5 (cheapest)",
     ]);
+    expect(screen.getByText("Fast, about 1 cent a letter.")).toBeDefined();
     expect(screen.queryByText(/30-day data retention/)).toBeNull();
 
     fireEvent.change(select, { target: { value: "claude-fable-5-1" } });
