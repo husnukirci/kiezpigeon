@@ -2,6 +2,7 @@
 // "Write my letter", its letter; or a calm screen that says what Kiezpigeon
 // needs when the tab is not a listing.
 import { useState } from "react";
+import { panelTabId } from "../../../messaging/panel";
 import { createLetterRequest } from "../../../rules/letterPrompt";
 import type { Listing, Profile } from "../../../rules/types";
 import { cx } from "../../cx";
@@ -15,7 +16,7 @@ import {
 import screen from "../Screen.module.css";
 
 export function Home({ profile }: { profile: Profile }) {
-  const active = useActiveListing();
+  const active = useActiveListing(panelTabId(window.location.search));
   if (active.kind === "loading") return null;
   if (active.kind === "listing") {
     return (
