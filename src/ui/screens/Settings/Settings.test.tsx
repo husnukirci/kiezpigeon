@@ -57,6 +57,24 @@ describe("Settings", () => {
     );
   });
 
+  it("shows how you two are related, and forgets it with the co-applicant", async () => {
+    render(<Settings profile={coupleWithDog} onClose={vi.fn()} />);
+    expect(screen.getByLabelText<HTMLSelectElement>("You are").value).toBe(
+      "partners",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove co-applicant" }),
+    );
+    expect(screen.queryByLabelText("You are")).toBeNull();
+    await waitFor(async () => {
+      const stored = await read("profile");
+      expect(stored.ok && stored.value?.applicants).toHaveLength(1);
+      expect(
+        stored.ok && stored.value && "relationship" in stored.value.household,
+      ).toBe(false);
+    });
+  });
+
   it("deletes everything after a confirm", async () => {
     const onClose = vi.fn();
     render(<Settings profile={coupleWithDog} onClose={onClose} />);
@@ -119,7 +137,7 @@ describe("Settings", () => {
     });
     const text = await (blobs[0] as Blob).text();
     expect(JSON.parse(text)).toMatchObject({
-      kiezpigeon: 1,
+      kiezpigeon: 2,
       profile: coupleWithDog,
     });
     expect(text).not.toContain("FAKE-KEY");

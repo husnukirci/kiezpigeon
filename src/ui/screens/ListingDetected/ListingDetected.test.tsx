@@ -29,13 +29,15 @@ describe("ListingDetected", () => {
         name: "Helle 2-Zimmer-Altbauwohnung mit Balkon",
       }),
     ).toBeDefined();
-    expect(screen.getByText("Kreuzberg · 62 m² · 3. OG")).toBeDefined();
+    expect(
+      screen.getByText("Kreuzberg · 62 m² · 3. OG · Free from 01.03.2027"),
+    ).toBeDefined();
     expect(screen.getByText("1.180 €")).toBeDefined();
     expect(screen.getByText("1.400 €")).toBeDefined();
     expect(screen.getByText("2")).toBeDefined();
 
     const fit = screen.getByRole("region", { name: "Fit check" });
-    expect(fit.querySelectorAll("li")).toHaveLength(4);
+    expect(fit.querySelectorAll("li")).toHaveLength(5);
     expect(fit.textContent).toContain("over your budget");
 
     expect(

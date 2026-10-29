@@ -45,6 +45,8 @@ export function describeProblem({ code, text }: LetterProblem): string {
       return `${text} is mentioned, but the household has no pets.`;
     case "feature_missing":
       return `The highlight ${text} is not mentioned.`;
+    case "relationship_invented":
+      return `"${text}" says the applicants are married, but your profile does not.`;
   }
 }
 

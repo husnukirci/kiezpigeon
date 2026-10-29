@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseAvailability,
   parseContactName,
   parseEuroText,
   parseGermanDate,
@@ -58,5 +59,20 @@ describe("parseContactName", () => {
     expect(parseContactName("Beispiel Wohnen GmbH")).toBeUndefined();
     expect(parseContactName("Kundenservice")).toBeUndefined();
     expect(parseContactName("")).toBeUndefined();
+  });
+});
+
+describe("parseAvailability", () => {
+  it.each([
+    ["01.03.2027", { kind: "date", date: "2027-03-01" }],
+    ["ab 1.3.2027", { kind: "date", date: "2027-03-01" }],
+    ["sofort", { kind: "immediately" }],
+    ["ab sofort", { kind: "immediately" }],
+    ["Sofort", { kind: "immediately" }],
+    ["nach Vereinbarung", { kind: "by_arrangement" }],
+    ["nach Absprache", { kind: "by_arrangement" }],
+    ["bald", undefined],
+  ])("reads %j", (text, expected) => {
+    expect(parseAvailability(text)).toEqual(expected);
   });
 });

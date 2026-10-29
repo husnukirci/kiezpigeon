@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   formatArea,
+  formatAvailability,
   formatDate,
   formatEuro,
   formatFloor,
@@ -65,5 +66,17 @@ describe.each([
     expect(formatFloor(1)).toBe("1. OG");
     expect(formatFloor(12)).toBe("12. OG");
     expect(formatFloor(-1)).toBe("UG");
+  });
+});
+
+describe("formatAvailability", () => {
+  it("words availability for the UI", () => {
+    expect(formatAvailability({ kind: "date", date: "2027-03-01" })).toBe(
+      "Free from 01.03.2027",
+    );
+    expect(formatAvailability({ kind: "immediately" })).toBe("Free now");
+    expect(formatAvailability({ kind: "by_arrangement" })).toBe(
+      "Free by arrangement",
+    );
   });
 });

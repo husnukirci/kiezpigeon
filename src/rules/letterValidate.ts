@@ -6,7 +6,9 @@ import {
   MIN_WORDS,
   PET_NOUNS,
   assertFeatureCount,
+  availableDateOf,
   incomeRatioTenths,
+  moveInDateOf,
   namedContact,
   salutationFor,
 } from "./letterPrompt";
@@ -91,8 +93,8 @@ function allowedNumbers(request: LetterRequest): Set<number> {
     household.adults + household.children,
     ...petCounts,
     sumCents(petCounts),
-    ...dateParts(request.moveInDate),
-    ...dateParts(listing.availableFrom),
+    ...dateParts(moveInDateOf(request.moveIn)),
+    ...dateParts(availableDateOf(listing.availability)),
     tenths === undefined ? undefined : tenths / 10,
     ...[
       contact.phone,
@@ -187,6 +189,28 @@ function petProblems(text: string, request: LetterRequest): LetterProblem[] {
     .map((kind) => ({ code: "pets_missing", text: PET_NOUNS[kind][0] }));
 }
 
+// Words that say the applicants are married. Compounds match anywhere in
+// the word (Akademikerehepaar, Lehrer-Ehepaar once hyphens are stripped);
+// the rest only as a whole word or its start, so mehr, eher, ehemalig,
+// ehrlich, eheähnlich and unverheiratet stay clean.
+const MARRIED =
+  /ehe(paar|leute|mann|männer|frau|partner|gatt)|^ehe$|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
+
+function relationshipProblems(
+  text: string,
+  request: LetterRequest,
+): LetterProblem[] {
+  if (request.household.relationship === "married") return [];
+  const words = text
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}]/gu, ""))
+    .filter((w) => MARRIED.test(w.toLowerCase()));
+  return [...new Set(words)].map((word) => ({
+    code: "relationship_invented",
+    text: word,
+  }));
+}
+
 function featureProblems(
   text: string,
   request: LetterRequest,
@@ -209,5 +233,6 @@ export function validateLetter(
     ...salutationProblems(text, request),
     ...petProblems(text, request),
     ...featureProblems(text, request),
+    ...relationshipProblems(text, request),
   ];
 }
