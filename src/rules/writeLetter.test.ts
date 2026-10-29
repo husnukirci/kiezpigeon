@@ -38,10 +38,10 @@ function scripted(...letters: string[]) {
 describe("describeProblem", () => {
   it("says each problem in one plain sentence", () => {
     expect(describeProblem({ code: "too_short", text: "98 words" })).toBe(
-      "The letter has 98 words; it needs 120 to 180.",
+      "The letter has 98 words; it needs 120 to 180. Add about 52 words.",
     );
     expect(describeProblem({ code: "too_long", text: "201 words" })).toBe(
-      "The letter has 201 words; it needs 120 to 180.",
+      "The letter has 201 words; it needs 120 to 180. Cut about 51 words.",
     );
     expect(describeProblem({ code: "em_dash", text: "Altbau – sofort" })).toBe(
       'A dash is used as punctuation in "Altbau – sofort". Use a comma or a full stop.',
@@ -73,7 +73,7 @@ describe("buildRetryPrompt", () => {
     expect(retry.system).toBe(first.system);
     expect(retry.user.startsWith(first.user)).toBe(true);
     expect(retry.user).toContain(
-      "Your previous letter broke these rules:\n- The letter has 12 words; it needs 120 to 180.",
+      "Your previous letter broke these rules:\n- The letter has 12 words; it needs 120 to 180. Add about 138 words.",
     );
     expect(retry.user).toContain(`Previous letter:\n${tooShort}`);
     expect(retry.user.trimEnd()).toMatch(/Write the whole letter again.*\.$/);
