@@ -81,6 +81,7 @@ describe("buildLetterPrompt", () => {
         "- Jonas Beispiel, Lehrer, verbeamtet, 2.000 € netto im Monat",
         "Haushaltsnettoeinkommen: 4.600 € im Monat",
         "Haushalt: 2 Erwachsene, keine Kinder, Nichtraucher",
+        "Beziehung: ein Paar",
         "Haustiere: 1 Hund",
         "Unterlagen: alle vollständig",
         "Gewünschter Einzug: 01.03.2027",
@@ -216,6 +217,72 @@ describe("buildLetterPrompt", () => {
     expect(buildLetterPrompt(strong).system).not.toContain(
       "gave no move-in date",
     );
+  });
+
+  describe("how the applicants are related", () => {
+    const couple = (
+      relationship: LetterRequest["household"]["relationship"],
+    ): LetterRequest => {
+      const household = { ...strong.household };
+      if (relationship) household.relationship = relationship;
+      else delete household.relationship;
+      return { ...strong, household };
+    };
+    const noGender =
+      " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband.";
+
+    it.each([
+      [
+        "partners",
+        "Beziehung: ein Paar",
+        `- Say once, briefly, that the applicants are a couple.${noGender}`,
+      ],
+      [
+        "married",
+        "Beziehung: verheiratet",
+        `- Say once, briefly, that the applicants are married.${noGender}`,
+      ],
+      [
+        "flatmates",
+        "Beziehung: Wohngemeinschaft",
+        "- Say once, briefly, that the applicants share the flat as flatmates.",
+      ],
+      [
+        "family",
+        "Beziehung: Familie",
+        "- Say once, briefly, that the applicants are family.",
+      ],
+    ] as const)(
+      "states %s once, without gender",
+      (relationship, fact, rule) => {
+        const { system, user } = buildLetterPrompt(couple(relationship));
+        expect(user).toContain(fact);
+        expect(system).toContain(rule);
+      },
+    );
+
+    it("forbids guessing when two applicants leave it unsaid", () => {
+      const { system, user } = buildLetterPrompt(couple(undefined));
+      expect(user).not.toContain("Beziehung");
+      expect(system).toContain(
+        "- Do not say how the applicants are related to each other.",
+      );
+    });
+
+    it("drops a relationship a single applicant cannot have", () => {
+      const solo = createLetterRequest(
+        {
+          ...soloStudent,
+          household: { ...soloStudent.household, relationship: "married" },
+        },
+        kreuzbergListing,
+        { tone: "short", features: ["Balkon"] },
+      );
+      expect(solo.household.relationship).toBeUndefined();
+      const { system, user } = buildLetterPrompt(solo);
+      expect(user).not.toContain("Beziehung");
+      expect(system).not.toContain("related to each other");
+    });
   });
 
   describe("move-in and availability", () => {

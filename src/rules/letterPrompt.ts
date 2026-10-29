@@ -17,6 +17,7 @@ import type {
   PetKind,
   PetPolicy,
   Profile,
+  Relationship,
   Tone,
 } from "./types";
 
@@ -60,6 +61,35 @@ const TONE_WORD_TARGETS: Record<Tone, number> = {
   formal: 150,
   short: 140,
 };
+
+const RELATIONSHIP_FACTS: Record<Relationship, string> = {
+  partners: "ein Paar",
+  married: "verheiratet",
+  flatmates: "Wohngemeinschaft",
+  family: "Familie",
+};
+
+const NO_GENDER =
+  " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband.";
+
+const RELATIONSHIP_RULES: Record<Relationship, string> = {
+  partners: `- Say once, briefly, that the applicants are a couple.${NO_GENDER}`,
+  married: `- Say once, briefly, that the applicants are married.${NO_GENDER}`,
+  flatmates:
+    "- Say once, briefly, that the applicants share the flat as flatmates.",
+  family: "- Say once, briefly, that the applicants are family.",
+};
+
+/** The relationship rule for the system prompt, if the request has two applicants. */
+function relationshipRule(request: LetterRequest): string[] {
+  if (request.applicants.length < 2) return [];
+  const { relationship } = request.household;
+  return [
+    relationship
+      ? RELATIONSHIP_RULES[relationship]
+      : "- Do not say how the applicants are related to each other.",
+  ];
+}
 
 export const MIN_WORDS = 120;
 export const MAX_WORDS = 180;
@@ -147,9 +177,12 @@ export function createLetterRequest(
     documents.incomeProof === "ready" &&
     documents.id === "ready" &&
     (!profile.hasWbs || documents.wbs === "ready");
+  const household = { ...profile.household };
+  // A relationship needs two people; a leftover one is never mentioned.
+  if (profile.applicants.length < 2) delete household.relationship;
   return {
     applicants: profile.applicants,
-    household: profile.household,
+    household,
     moveIn: profile.moveIn,
     allDocumentsReady,
     contact: profile.contact,
@@ -311,6 +344,9 @@ function factsBlock(request: LetterRequest): string {
     ...applicantLines,
     `Haushaltsnettoeinkommen: ${formatEuro(income)} im Monat`,
     householdLine(household),
+    ...(household.relationship
+      ? [`Beziehung: ${RELATIONSHIP_FACTS[household.relationship]}`]
+      : []),
     `Haustiere: ${hasPets(household) ? petsPhrase(household) : "keine"}`,
     ...(request.allDocumentsReady ? ["Unterlagen: alle vollständig"] : []),
     ...moveInFacts(request.moveIn),
@@ -361,6 +397,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
       ? `- Mention the pets honestly in one sentence: ${petsPhrase(household)}.`
       : "- The household has no pets. You may say so; never suggest any.",
     "- Never use a dash as punctuation: no em dash (U+2014) and no en dash with spaces around it. Use a comma or a full stop instead.",
+    ...relationshipRule(request),
     "- Sign off with the applicants' full names.",
     "- Reply with the letter text only.",
   ].join("\n");

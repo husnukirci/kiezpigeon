@@ -31,11 +31,16 @@ export interface Pet {
   count: number;
 }
 
+/** How two applicants are related; absent means the letter says nothing. */
+export type Relationship = "partners" | "married" | "flatmates" | "family";
+
 export interface Household {
   adults: number;
   children: number;
   pets: Pet[];
   smoker: boolean;
+  /** Only meaningful with two applicants. */
+  relationship?: Relationship;
 }
 
 export interface ContactDetails {
@@ -162,7 +167,8 @@ export type LetterProblemCode =
   | "wrong_salutation"
   | "pets_missing"
   | "pets_invented"
-  | "feature_missing";
+  | "feature_missing"
+  | "relationship_invented";
 
 export interface LetterProblem {
   code: LetterProblemCode;
