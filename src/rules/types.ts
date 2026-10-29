@@ -129,7 +129,7 @@ export interface Settings {
   model: ClaudeModel;
 }
 
-export type FitRule = "budget" | "income" | "pets" | "wbs";
+export type FitRule = "budget" | "income" | "pets" | "wbs" | "moveIn";
 export type FitStatus = "ok" | "warn" | "no" | "unknown";
 
 export interface FitLine {

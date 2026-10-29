@@ -1,8 +1,8 @@
 // The fit check: one line per rule, in a fixed order. It informs; it never
 // blocks writing a letter. Reasons are UI copy (PHASES.md, Phase 1).
-import { formatEuro } from "./format";
+import { formatAvailability, formatDate, formatEuro } from "./format";
 import { sumCents } from "./money";
-import type { Cents, FitLine, Listing, Profile } from "./types";
+import type { Cents, FitLine, IsoDate, Listing, Profile } from "./types";
 
 function rentOf(listing: Listing): Cents | undefined {
   if (listing.warmmieteCents !== undefined) return listing.warmmieteCents;
@@ -90,11 +90,69 @@ function wbsLine(profile: Profile, listing: Listing): FitLine {
     : { rule: "wbs", status: "no", reason: "This flat needs a WBS" };
 }
 
+/** A move-in this many days after the free-from date still counts as close. */
+const CLOSE_DAYS = 31;
+
+/** Whole days from `from` to `to`, both ISO dates; no clock involved. */
+function daysBetween(from: IsoDate, to: IsoDate): number {
+  const utc = (iso: IsoDate): number => {
+    const [year = 0, month = 1, day = 1] = iso.split("-").map(Number);
+    return Date.UTC(year, month - 1, day);
+  };
+  return Math.round((utc(to) - utc(from)) / 86_400_000);
+}
+
+function moveInLine(profile: Profile, listing: Listing): FitLine {
+  const { availability } = listing;
+  const { moveIn } = profile;
+  const line = (status: FitLine["status"], reason: string): FitLine => ({
+    rule: "moveIn",
+    status,
+    reason,
+  });
+  if (!availability) {
+    return line("unknown", "The listing does not say when the flat is free");
+  }
+  const free = formatAvailability(availability);
+  if (!moveIn) {
+    return line("unknown", `${free}. Add when you can move in to compare.`);
+  }
+  if (availability.kind === "by_arrangement") {
+    return line("ok", `${free}, so the date can be agreed`);
+  }
+  if (availability.kind === "immediately") {
+    return moveIn.kind === "date"
+      ? line(
+          "warn",
+          `${free}. You want to move in on ${formatDate(moveIn.date)}; check the landlord can wait.`,
+        )
+      : line("ok", `${free}. You can move in right away.`);
+  }
+  if (moveIn.kind === "asap") {
+    return line("ok", `${free}. You can move in as soon as it is free.`);
+  }
+  if (moveIn.kind === "flexible") {
+    return line("ok", `${free}. Your move-in date is flexible.`);
+  }
+  const yours = formatDate(moveIn.date);
+  const days = daysBetween(availability.date, moveIn.date);
+  if (days === 0) return line("ok", `${free}, your move-in date`);
+  if (days < 0)
+    return line("warn", `${free}, after your move-in date ${yours}`);
+  return days <= CLOSE_DAYS
+    ? line("ok", `${free}, close to your move-in date ${yours}`)
+    : line(
+        "warn",
+        `${free}, more than a month before your move-in date ${yours}`,
+      );
+}
+
 export function checkFit(profile: Profile, listing: Listing): FitLine[] {
   return [
     budgetLine(profile, listing),
     incomeLine(profile, listing),
     petsLine(profile, listing),
     wbsLine(profile, listing),
+    moveInLine(profile, listing),
   ];
 }
