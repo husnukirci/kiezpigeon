@@ -338,6 +338,22 @@ for "not a listing"; its `FormFieldDescriptor` is the existing `FormField`.
 A tab opened before the extension was installed or updated has no content
 script until it is reloaded; the not-a-listing screen says so.
 
+**Amendment (2026-10-29): the panel belongs to one tab.** The panel was
+opened window-wide, so it followed the user from a listing into any other
+tab, where it could only say "not a listing". Now the background worker
+switches the global panel off (`sidePanel.setOptions({ enabled: false })`,
+`openPanelOnActionClick: false`), and a click on the icon switches it on
+for that tab only, with the path `sidepanel.html?tabId=<id>`, and opens it
+there (`openPanelOn` in `src/messaging/panel.ts`). Chrome hides the panel
+on other tabs and shows it again on return. The panel reads its tab from
+its path and asks only that tab, when it opens and whenever that tab
+finishes loading a page; it no longer listens to tab switches. A panel
+without a tab in its path (one opened before this change) falls back to
+the active tab. No new permission. The probe (`docs/ai-workflow.md`)
+confirmed the per-tab options in Chromium; the running probes are
+`src/messaging/panel.test.ts` and the own-tab test in
+`src/ui/hooks/useActiveListing.test.tsx`.
+
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
 **Status.** Accepted.
