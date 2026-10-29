@@ -65,7 +65,9 @@ profile value or the letter and reports how many matched. An
 
 **Profile fields added beyond the brief, confirmed by the author:** budget (the fit check
 needs it), WBS flag (the WBS rule needs it), contact details (every contact
-form asks for email and phone).
+form asks for email and phone). Added after Phase 4 (ADR 10): the move-in
+as a choice of a date, now or flexible (a landlord signal the letter can
+use), and how two applicants are related (so the letter stops guessing).
 
 ## 3. Tiers
 
@@ -193,6 +195,8 @@ Expected during the build:
 9. Letter validation as the guarantee; generate, validate, retry once (P4)
 10. Never submit: how filling works on framework-driven forms (P5)
 11. Fallback field classification for unknown sites (P6)
+
+ADR 10 (move-in as a choice, schema 2) was added after Phase 4.
 
 ## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 

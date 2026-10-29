@@ -10,7 +10,7 @@ import {
   createLetterRequest,
   salutationFor,
 } from "./letterPrompt";
-import type { LetterRequest } from "./types";
+import type { LetterRequest, Listing } from "./types";
 
 const strong: LetterRequest = createLetterRequest(
   coupleWithDog,
@@ -27,7 +27,7 @@ describe("createLetterRequest", () => {
       "features",
       "household",
       "listing",
-      "moveInDate",
+      "moveIn",
       "tone",
     ]);
   });
@@ -81,6 +81,7 @@ describe("buildLetterPrompt", () => {
         "- Jonas Beispiel, Lehrer, verbeamtet, 2.000 € netto im Monat",
         "Haushaltsnettoeinkommen: 4.600 € im Monat",
         "Haushalt: 2 Erwachsene, keine Kinder, Nichtraucher",
+        "Beziehung: ein Paar",
         "Haustiere: 1 Hund",
         "Unterlagen: alle vollständig",
         "Gewünschter Einzug: 01.03.2027",
@@ -216,6 +217,137 @@ describe("buildLetterPrompt", () => {
     expect(buildLetterPrompt(strong).system).not.toContain(
       "gave no move-in date",
     );
+  });
+
+  describe("how the applicants are related", () => {
+    const couple = (
+      relationship: LetterRequest["household"]["relationship"],
+    ): LetterRequest => {
+      const household = { ...strong.household };
+      if (relationship) household.relationship = relationship;
+      else delete household.relationship;
+      return { ...strong, household };
+    };
+    const noGender =
+      " Do not describe either applicant's gender or call one the other's girlfriend, boyfriend, wife or husband (Freundin, Freund, Partnerin, Lebensgefährtin, Ehefrau, Ehemann).";
+
+    it.each([
+      [
+        "partners",
+        "Beziehung: ein Paar",
+        `- Say once, briefly, that the applicants are a couple.${noGender}`,
+      ],
+      [
+        "married",
+        "Beziehung: verheiratet",
+        `- Say once, briefly, that the applicants are married.${noGender}`,
+      ],
+      [
+        "flatmates",
+        "Beziehung: Wohngemeinschaft",
+        "- Say once, briefly, that the applicants share the flat as flatmates. Do not describe either applicant's gender.",
+      ],
+      [
+        "family",
+        "Beziehung: Familie",
+        "- Say once, briefly, that the applicants are family. Do not name the family relation (such as Schwester, Bruder, Sohn or Tochter) or describe either applicant's gender.",
+      ],
+    ] as const)(
+      "states %s once, without gender",
+      (relationship, fact, rule) => {
+        const { system, user } = buildLetterPrompt(couple(relationship));
+        expect(user).toContain(fact);
+        expect(system).toContain(rule);
+      },
+    );
+
+    it("forbids guessing when two applicants leave it unsaid", () => {
+      const { system, user } = buildLetterPrompt(couple(undefined));
+      expect(user).not.toContain("Beziehung");
+      expect(system).toContain(
+        "- Do not say how the applicants are related to each other.",
+      );
+    });
+
+    it("drops a relationship a single applicant cannot have", () => {
+      const solo = createLetterRequest(
+        {
+          ...soloStudent,
+          household: { ...soloStudent.household, relationship: "married" },
+        },
+        kreuzbergListing,
+        { tone: "short", features: ["Balkon"] },
+      );
+      expect(solo.household.relationship).toBeUndefined();
+      const { system, user } = buildLetterPrompt(solo);
+      expect(user).not.toContain("Beziehung");
+      expect(system).not.toContain("related to each other");
+    });
+  });
+
+  describe("move-in and availability", () => {
+    const withMoveIn = (moveIn: LetterRequest["moveIn"]): LetterRequest => ({
+      ...strong,
+      moveIn,
+    });
+    const withAvailability = (
+      availability: Listing["availability"],
+    ): LetterRequest => ({
+      ...strong,
+      listing: { ...strong.listing, availability },
+    });
+
+    it("states each move-in kind among the facts", () => {
+      expect(buildLetterPrompt(strong).user).toContain(
+        "Gewünschter Einzug: 01.03.2027",
+      );
+      expect(buildLetterPrompt(withMoveIn({ kind: "asap" })).user).toContain(
+        "Einzug: ab sofort möglich",
+      );
+      expect(
+        buildLetterPrompt(withMoveIn({ kind: "flexible" })).user,
+      ).toContain("Einzug: beim Termin flexibel");
+    });
+
+    it("says when the flat is free in the listing's own words", () => {
+      expect(
+        buildLetterPrompt(withAvailability({ kind: "immediately" })).user,
+      ).toContain("- Frei ab: sofort");
+      expect(
+        buildLetterPrompt(withAvailability({ kind: "by_arrangement" })).user,
+      ).toContain("- Frei ab: nach Vereinbarung");
+    });
+
+    it("calls a move-in date fitting only when it is close after the free date", () => {
+      const signal = (date: string): boolean =>
+        buildLetterPrompt(withMoveIn({ kind: "date", date })).user.includes(
+          "passend zum Bezugstermin",
+        );
+      // The flat is free from 01.03.2027.
+      expect(signal("2027-03-01")).toBe(true);
+      expect(signal("2027-03-20")).toBe(true);
+      expect(signal("2027-02-15")).toBe(false);
+      expect(signal("2027-05-01")).toBe(false);
+    });
+
+    it("counts moving in now or flexibly as a strong signal", () => {
+      const lastSignal = (request: LetterRequest): string | undefined =>
+        buildLetterPrompt(request).user.split("\n").at(-1);
+      expect(lastSignal(withMoveIn({ kind: "asap" }))).toBe(
+        "4. Einzug ab sofort möglich",
+      );
+      expect(lastSignal(withMoveIn({ kind: "flexible" }))).toBe(
+        "4. Beim Einzugstermin flexibel",
+      );
+    });
+
+    it("forbids a move-in claim only when no move-in is stated", () => {
+      for (const kind of ["asap", "flexible"] as const) {
+        expect(buildLetterPrompt(withMoveIn({ kind })).system).not.toContain(
+          "gave no move-in date",
+        );
+      }
+    });
   });
 
   it("writes without features when the listing names none", () => {

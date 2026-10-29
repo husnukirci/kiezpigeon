@@ -31,11 +31,16 @@ export interface Pet {
   count: number;
 }
 
+/** How two applicants are related; absent means the letter says nothing. */
+export type Relationship = "partners" | "married" | "flatmates" | "family";
+
 export interface Household {
   adults: number;
   children: number;
   pets: Pet[];
   smoker: boolean;
+  /** Only meaningful with two applicants. */
+  relationship?: Relationship;
 }
 
 export interface ContactDetails {
@@ -59,11 +64,15 @@ export type DocumentType =
   "schufa" | "mietschuldenfreiheit" | "incomeProof" | "id" | "wbs";
 export type DocumentStatus = "ready" | "pending";
 
+/** When the applicants can move in. */
+export type MoveIn =
+  { kind: "date"; date: IsoDate } | { kind: "asap" } | { kind: "flexible" };
+
 export interface Profile {
   /** One or two. */
   applicants: Applicant[];
   household: Household;
-  moveInDate?: IsoDate;
+  moveIn?: MoveIn;
   contact: ContactDetails;
   /** Maximum Warmmiete. */
   budgetWarmCents?: Cents;
@@ -86,6 +95,12 @@ export interface ContactPerson {
  */
 export type Feature = string;
 
+/** When the flat is free, as the listing says it. */
+export type Availability =
+  | { kind: "date"; date: IsoDate }
+  | { kind: "immediately" }
+  | { kind: "by_arrangement" };
+
 /** What an adapter read from one listing page. */
 export interface Listing {
   url: string;
@@ -98,7 +113,7 @@ export interface Listing {
   areaM2?: number;
   rooms?: number;
   floor?: number;
-  availableFrom?: IsoDate;
+  availability?: Availability;
   yearBuilt?: number;
   petPolicy?: PetPolicy;
   wbsRequired?: boolean;
@@ -119,7 +134,7 @@ export interface Settings {
   model: ClaudeModel;
 }
 
-export type FitRule = "budget" | "income" | "pets" | "wbs";
+export type FitRule = "budget" | "income" | "pets" | "wbs" | "moveIn";
 export type FitStatus = "ok" | "warn" | "no" | "unknown";
 
 export interface FitLine {
@@ -135,7 +150,7 @@ export interface FitLine {
 export interface LetterRequest {
   applicants: Applicant[];
   household: Household;
-  moveInDate?: IsoDate;
+  moveIn?: MoveIn;
   allDocumentsReady: boolean;
   contact: ContactDetails;
   listing: Listing;
@@ -152,7 +167,8 @@ export type LetterProblemCode =
   | "wrong_salutation"
   | "pets_missing"
   | "pets_invented"
-  | "feature_missing";
+  | "feature_missing"
+  | "relationship_invented";
 
 export interface LetterProblem {
   code: LetterProblemCode;
