@@ -20,6 +20,7 @@ entry keeps one line per rejected option so the cut stays visible.
 |   8 | One adapter per site: DOM in, `Listing` and form out           | P3    | accepted |
 |   9 | The validator is the guarantee: generate, validate, retry once | P4    | accepted |
 |  10 | Move-in as a choice, schema 2                                  | P4+   | accepted |
+|  11 | Never submit: filling a framework-driven form                  | P5    | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -434,3 +435,67 @@ because the validator cannot know who is who.
 Rejected: free text (it cannot be validated and invites details a
 landlord does not need); recording each applicant's gender to allow
 "meine Freundin" (a stored personal field for a single phrase).
+
+## ADR 11: Never submit: filling a framework-driven form
+
+**Status.** Accepted.
+
+**Context.** ImmoScout24's contact form is a React dialog that exists only
+after the user clicks "Nachricht". React keeps each field's value in its
+own state and tracks the last value it saw on the element; a value set
+from outside that React does not notice is dropped on the next render or
+on Send, while the page still shows it. Most of the form's questions are
+selects with the site's own option codes (`FROM_NOW`, `OVER_4000_UPTO_5000`),
+it carries three pre-ticked opt-in toggles, and a signed-in user finds
+their account's name, phone and address already filled in. Filling must
+never send, and the user must see what will change before it does.
+
+**Decision.** `src/fill/fill.ts` writes each value with the setter from the
+element's prototype, never the instance, then dispatches bubbling `input`
+and `change` events. It never focuses, clicks, submits or sends a key; it
+refuses consent fields, disabled fields, radios, file, password, hidden and
+button-like inputs, and a select value that is not one of its options. It
+classifies each element again itself rather than trusting the plan's kind,
+so no message can talk it into ticking an opt-in.
+`src/fill/describe.ts` reads a form into the rules core's `FormField`s,
+now with a select's options, a field's current value and a checkbox's
+tick; site adapters and the Phase 6 fallback share it. `SiteAdapter`
+gains `contactForm(document)`, the root that filling works inside; the
+content script fills only within it, by the keys `describeFields` gave.
+
+The matcher (`mapFields`) picks a select's option by kind (yes/no, move-in
+kind, income range, employment, household, documents ready) and gives
+text fields values ready to write (the job, whole euros, a German date,
+"ab sofort" or "flexibel" for a move-in without a date, as ADR 10 left
+open). A checkbox is ticked only when it states a household fact (pets,
+smoker, WBS); every other checkbox is an opt-in, left as the page has it
+and not counted in "X of Y", so the count only names fields Kiezpigeon
+could fill. A mapping says when it `replaces` a different value already
+in the field, and the panel names those fields before the user fills.
+The documents question is answered only when every document is ready;
+otherwise the user decides.
+
+The panel never opens the dialog: clicking the site's own button would
+break the never-click rule. It asks the user to open it and reads it again
+on "Check the form".
+
+Rejected: a plain `el.value = x` plus events (the probe showed React keeps
+its old state); simulating typing key by key (slow, and synthetic key
+events are on the never-submit list for good reason); reading React's
+props from the element to call its `onChange` (internal, and the content
+script's isolated world cannot see the page's JavaScript objects anyway);
+leaving prefilled fields alone (the account data may be stale, and the
+user sees the list of replaced fields before filling).
+
+**Consequences.** Any framework that listens to `input` or `change` takes
+the values; one that only reads on blur may not, which the live check
+watches for. In a content script's isolated world React's instance tracker
+is not visible at all, so the prototype setter is belt and braces there;
+the happy-dom probe exercises the case where it matters. A React checkbox
+listens to `click`, which fill never sends, so a ticked fact checkbox on
+such a page may not reach its state; ImmoScout24 asks these questions as
+selects, and the Phase 6 fallback must look at it again. The Anrede select
+stays unmatched until a profile field holds a salutation. The running
+probes are `src/fill/fill.test.tsx` (React state reached, plain assignment
+not; no submit, click or key event during a fill on the fixture) and
+`e2e/never-submit.spec.ts`.

@@ -8,3 +8,7 @@ stats.html
 # Local secrets such as a test API key; never committed.
 .env
 .env.*
+
+# Playwright output
+test-results/
+playwright-report/

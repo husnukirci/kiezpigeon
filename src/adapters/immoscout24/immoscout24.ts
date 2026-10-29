@@ -2,7 +2,8 @@
 // `data-qa` attributes the site uses for its own tests, then parses the
 // German text inside them. The page's tracking data and inline scripts are
 // never read.
-import type { Feature, FormField, Listing, PetPolicy } from "../../rules/types";
+import { describeFields } from "../../fill/describe";
+import type { Feature, Listing, PetPolicy } from "../../rules/types";
 import {
   parseContactName,
   parseEuroText,
@@ -184,11 +185,26 @@ function readListing(document: Document, url: string): Listing | undefined {
   return listing;
 }
 
+/**
+ * The form in the dialog "Nachricht" opens. It is not in the page until
+ * the user opens it; Kiezpigeon never opens it for them.
+ */
+function contactForm(document: Document): HTMLFormElement | undefined {
+  return (
+    document.querySelector<HTMLFormElement>(
+      "[role='dialog'] form[data-testid='contact-form']",
+    ) ?? undefined
+  );
+}
+
 export const immoscout24: SiteAdapter = {
   id: "immoscout24",
   siteName: "ImmoScout24",
   matches: (url) => EXPOSE_URL.test(url),
   readListing,
-  // The contact form opens in a dialog after "Nachricht"; Phase 5 reads it.
-  readContactForm: (): FormField[] => [],
+  contactForm,
+  readContactForm: (document) => {
+    const form = contactForm(document);
+    return form ? describeFields(form) : [];
+  },
 };

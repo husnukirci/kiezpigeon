@@ -26,3 +26,21 @@ jobs:
           name: kiezpigeon-chrome-mv3
           path: .output/chrome-mv3/
           if-no-files-found: error
+
+  e2e:
+    # The never-submit run against the built extension (PLAN.md section 5).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/
