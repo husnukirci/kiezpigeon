@@ -6,6 +6,7 @@ import {
   clearAll,
   migrate,
   read,
+  remove,
   resetForTests,
   SCHEMA_VERSION,
   subscribe,
@@ -33,6 +34,24 @@ describe("read and write", () => {
     expect(await read("profile")).toEqual({ ok: true, value: coupleWithDog });
     expect(await browser.storage.local.get("schemaVersion")).toEqual({
       schemaVersion: SCHEMA_VERSION,
+    });
+  });
+
+  it("round-trips settings and a trimmed api key, and removes the key", async () => {
+    await writeAll({
+      settings: { model: "claude-haiku-5-5" },
+      apiKey: " FAKE-KEY-1 ",
+    });
+    expect(await read("settings")).toEqual({
+      ok: true,
+      value: { model: "claude-haiku-5-5" },
+    });
+    expect(await read("apiKey")).toEqual({ ok: true, value: "FAKE-KEY-1" });
+    await remove("apiKey");
+    expect(await read("apiKey")).toEqual({ ok: true, value: undefined });
+    expect(await read("settings")).toEqual({
+      ok: true,
+      value: { model: "claude-haiku-5-5" },
     });
   });
 
