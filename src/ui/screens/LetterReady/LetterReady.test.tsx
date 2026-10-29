@@ -81,6 +81,10 @@ describe("LetterReady", () => {
     fireEvent.click(edit);
     expect(edit.getAttribute("aria-pressed")).toBe("true");
     const field = screen.getByLabelText("Edit your letter");
+    // Typing must not make a screen reader read the checks every keystroke.
+    expect(
+      screen.getByText("150 words").parentElement?.getAttribute("aria-live"),
+    ).toBe("off");
     const edited = "Sehr geehrte Frau Weber,\n\nwir zahlen 999 €.";
     const words = countWords(edited);
     fireEvent.change(field, { target: { value: edited } });

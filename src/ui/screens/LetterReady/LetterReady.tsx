@@ -141,7 +141,11 @@ function ReadyLetter({ draft, request, onRewrite }: ReadyLetterProps) {
         )}
       </LetterCard>
 
-      <div className={styles.checks} aria-live="polite">
+      <div
+        className={styles.checks}
+        // Announced when a new letter arrives, not on every keystroke.
+        aria-live={editing ? "off" : "polite"}
+      >
         <p className={cx(styles.count, "type-caption")}>{words} words</p>
         <ul className={styles.lines}>
           {problems.length === 0 ? (
