@@ -472,6 +472,7 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
       : "- The household has no pets. You may say so; never suggest any.",
     "- Never use a dash as punctuation: no em dash (U+2014) and no en dash with spaces around it. Use a comma or a full stop instead.",
     ...relationshipRule(request),
+    '- Close with one short sentence asking for a viewing, such as "Über eine Einladung zur Besichtigung freuen wir uns." No further offers to answer questions or to be contacted.',
     "- Sign off with the applicants' full names.",
     "- Reply with the letter text only.",
   ].join("\n");

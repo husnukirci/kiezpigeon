@@ -431,6 +431,12 @@ describe("natural letters", () => {
     expect(system).toContain("Do not repeat the listing's facts");
   });
 
+  it("asks for a one-sentence close before the sign-off", () => {
+    expect(buildLetterPrompt(strong).system).toContain(
+      "Close with one short sentence asking for a viewing",
+    );
+  });
+
   it("gives the income only rounded, never per person or exact", () => {
     const { system, user } = buildLetterPrompt(strong);
     expect(user).not.toMatch(/2\.600|2\.000 €|4\.600/);
