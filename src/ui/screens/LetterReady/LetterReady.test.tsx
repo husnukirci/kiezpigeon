@@ -90,7 +90,9 @@ describe("LetterReady", () => {
     fireEvent.change(field, { target: { value: edited } });
     expect(screen.getByText(`${words} words`)).toBeDefined();
     expect(
-      screen.getByText(`The letter has ${words} words; it needs 120 to 180.`),
+      screen.getByText(
+        `The letter has ${words} words; it needs 120 to 180. Add about ${150 - words} words.`,
+      ),
     ).toBeDefined();
     expect(
       screen.getByText("The number 999 is not in the facts."),

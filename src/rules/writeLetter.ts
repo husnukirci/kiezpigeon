@@ -12,6 +12,8 @@ import {
 import { validateLetter } from "./letterValidate";
 import type { LetterProblem, LetterRequest } from "./types";
 
+const MIDDLE_WORDS = (MIN_WORDS + MAX_WORDS) / 2;
+
 export type Generate = (prompt: LetterPrompt) => Promise<string>;
 
 export interface LetterDraft {
@@ -24,8 +26,13 @@ export interface LetterDraft {
 export function describeProblem({ code, text }: LetterProblem): string {
   switch (code) {
     case "too_short":
-    case "too_long":
-      return `The letter has ${text}; it needs ${MIN_WORDS} to ${MAX_WORDS}.`;
+    case "too_long": {
+      // The validator writes the count as `98 words`. Aiming at the middle
+      // gets a retry clear of the edge it missed.
+      const off = Math.abs(MIDDLE_WORDS - Number.parseInt(text, 10));
+      const fix = code === "too_short" ? "Add" : "Cut";
+      return `The letter has ${text}; it needs ${MIN_WORDS} to ${MAX_WORDS}. ${fix} about ${off} words.`;
+    }
     case "em_dash":
       return `A dash is used as punctuation in "${text}". Use a comma or a full stop.`;
     case "unknown_number":
