@@ -5,6 +5,7 @@
 import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
 import { sumCents } from "./money";
 import type {
+  Availability,
   ContactPerson,
   EmploymentType,
   Feature,
@@ -82,6 +83,13 @@ export function assertFeatureCount(
 /** The move-in date, when the applicants gave one rather than a choice. */
 export function moveInDateOf(moveIn: MoveIn | undefined): IsoDate | undefined {
   return moveIn?.kind === "date" ? moveIn.date : undefined;
+}
+
+/** The listing's free-from date, when it gives a date. */
+export function availableDateOf(
+  availability: Availability | undefined,
+): IsoDate | undefined {
+  return availability?.kind === "date" ? availability.date : undefined;
 }
 
 /** The contact person, or undefined when the listing gives no surname. */
@@ -167,6 +175,7 @@ function householdLine(household: Household): string {
 }
 
 function listingLines(listing: Listing): string[] {
+  const availableFrom = availableDateOf(listing.availability);
   const facts: [string, string | undefined][] = [
     ["Bezirk", listing.district],
     [
@@ -198,9 +207,7 @@ function listingLines(listing: Listing): string[] {
     ["Etage", listing.floor === undefined ? undefined : String(listing.floor)],
     [
       "Frei ab",
-      listing.availableFrom === undefined
-        ? undefined
-        : formatDate(listing.availableFrom),
+      availableFrom === undefined ? undefined : formatDate(availableFrom),
     ],
     [
       "Baujahr",
@@ -223,6 +230,7 @@ function listingLines(listing: Listing): string[] {
 function signals(request: LetterRequest): string[] {
   const { applicants, household, listing } = request;
   const moveInDate = moveInDateOf(request.moveIn);
+  const availableFrom = availableDateOf(listing.availability);
   const result: string[] = [];
   if (
     applicants.some(
@@ -245,8 +253,8 @@ function signals(request: LetterRequest): string[] {
   }
   if (
     moveInDate !== undefined &&
-    listing.availableFrom !== undefined &&
-    moveInDate <= listing.availableFrom
+    availableFrom !== undefined &&
+    moveInDate <= availableFrom
   ) {
     result.push(
       `Einzug zum ${formatDate(moveInDate)}, passend zum Bezugstermin`,

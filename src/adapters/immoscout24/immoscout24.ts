@@ -6,7 +6,7 @@ import type { Feature, FormField, Listing, PetPolicy } from "../../rules/types";
 import {
   parseContactName,
   parseEuroText,
-  parseGermanDate,
+  parseAvailability,
   parseNumberText,
 } from "../parse";
 import type { SiteAdapter } from "../types";
@@ -24,7 +24,7 @@ const FIELDS = [
   "areaM2",
   "rooms",
   "floor",
-  "availableFrom",
+  "availability",
   "yearBuilt",
   "petPolicy",
   "wbsRequired",
@@ -157,9 +157,9 @@ function readListing(document: Document, url: string): Listing | undefined {
       parseNumberText,
     ),
     floor: map(textOf(document, ".is24qa-etage"), floorOf),
-    availableFrom: map(
+    availability: map(
       textOf(document, ".is24qa-bezugsfrei-ab"),
-      parseGermanDate,
+      parseAvailability,
     ),
     yearBuilt: map(textOf(document, ".is24qa-baujahr"), parseNumberText),
     petPolicy: map(textOf(document, ".is24qa-haustiere"), petPolicyOf),
