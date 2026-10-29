@@ -166,6 +166,16 @@ describe("buildLetterPrompt", () => {
     expect(tones[2]).toContain("Tone: short");
   });
 
+  it("gives every tone a word target well inside the length", () => {
+    const targets = (["warm", "formal", "short"] as const).map((tone) => {
+      const { system } = buildLetterPrompt({ ...strong, tone });
+      expect(system).not.toContain("lower end");
+      const match = /aim for about (\d+) words/.exec(system);
+      return Number(match?.[1]);
+    });
+    expect(targets).toEqual([150, 150, 140]);
+  });
+
   it("asks for the chosen features by name", () => {
     expect(buildLetterPrompt(strong).system).toContain(
       "Mention these features of the flat by name: Balkon, Altbau.",
