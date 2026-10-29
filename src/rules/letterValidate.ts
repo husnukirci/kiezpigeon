@@ -201,7 +201,7 @@ export function validateLetter(
   text: string,
   request: LetterRequest,
 ): LetterProblem[] {
-  assertFeatureCount(request.features);
+  assertFeatureCount(request.features, request.listing);
   return [
     ...lengthProblems(text),
     ...dashProblems(text),

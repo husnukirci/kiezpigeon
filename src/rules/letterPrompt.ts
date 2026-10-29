@@ -45,17 +45,34 @@ const PET_POLICY_LABELS: Record<PetPolicy, string> = {
 const TONE_INSTRUCTIONS: Record<Tone, string> = {
   warm: "Tone: warm and personal, friendly and polite, addressing the reader as Sie.",
   formal: "Tone: formal and businesslike, addressing the reader as Sie.",
-  short:
-    "Tone: short and direct, addressing the reader as Sie; stay near the lower end of the length.",
+  short: "Tone: short and direct, addressing the reader as Sie.",
+};
+
+/**
+ * Where each tone aims inside the length. Models land below a target more
+ * often than above it, so even the short tone aims well over the minimum.
+ */
+const TONE_WORD_TARGETS: Record<Tone, number> = {
+  warm: 150,
+  formal: 150,
+  short: 140,
 };
 
 export const MIN_WORDS = 120;
 export const MAX_WORDS = 180;
 
-export function assertFeatureCount(features: readonly Feature[]): void {
-  if (features.length < 1 || features.length > 2) {
+/**
+ * A letter mentions 1 or 2 of the listing's features, or none when the
+ * listing names none.
+ */
+export function assertFeatureCount(
+  features: readonly Feature[],
+  listing: Listing,
+): void {
+  const fewest = listing.features.length === 0 ? 0 : 1;
+  if (features.length < fewest || features.length > 2) {
     throw new RangeError(
-      `A letter needs 1 or 2 chosen features, got ${features.length}`,
+      `A letter needs ${fewest} to 2 chosen features, got ${features.length}`,
     );
   }
 }
@@ -255,8 +272,9 @@ function factsBlock(request: LetterRequest): string {
     ...(request.allDocumentsReady ? ["Unterlagen: alle vollständig"] : []),
     ...(moveInDate ? [`Gewünschter Einzug: ${formatDate(moveInDate)}`] : []),
     ...listingLines(listing),
-    "",
-    `Ausgewählte Merkmale: ${features.join(", ")}`,
+    ...(features.length === 0
+      ? []
+      : ["", `Ausgewählte Merkmale: ${features.join(", ")}`]),
     ...(ordered.length === 0
       ? []
       : [
@@ -267,23 +285,35 @@ function factsBlock(request: LetterRequest): string {
   ].join("\n");
 }
 
-export function buildLetterPrompt(request: LetterRequest): {
+/** What the model gets: the rules as the system prompt, the facts as the user turn. */
+export interface LetterPrompt {
   system: string;
   user: string;
-} {
-  assertFeatureCount(request.features);
+}
+
+export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
   const { household, features, listing } = request;
+  assertFeatureCount(features, listing);
   const system = [
     "You write a short application letter for a rental flat in Berlin on behalf of the applicants in the facts. The applicants review the letter and send it themselves.",
     "",
     "Rules:",
     "- Write in German.",
     `- ${TONE_INSTRUCTIONS[request.tone]}`,
-    `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included.`,
+    `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words.`,
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",
-    `- Mention these features of the flat by name: ${features.join(", ")}.`,
+    ...(features.length === 0
+      ? []
+      : [
+          `- Mention these features of the flat by name: ${features.join(", ")}.`,
+        ]),
+    ...(request.moveInDate === undefined
+      ? [
+          "- The applicants gave no move-in date. Do not say when they want to move in or that the listing's date suits them.",
+        ]
+      : []),
     hasPets(household)
       ? `- Mention the pets honestly in one sentence: ${petsPhrase(household)}.`
       : "- The household has no pets. You may say so; never suggest any.",

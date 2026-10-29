@@ -2,8 +2,14 @@
 // in `storage.local`; every read is validated by the rules core, so a
 // damaged or hand-edited value never reaches a screen as if it were fine.
 import { browser } from "wxt/browser";
-import { parseApplication, parseProfile, type Parsed } from "../rules/profile";
-import type { Application, Profile } from "../rules/types";
+import {
+  parseApiKey,
+  parseApplication,
+  parseProfile,
+  parseSettings,
+  type Parsed,
+} from "../rules/profile";
+import type { Application, Profile, Settings } from "../rules/types";
 
 export const SCHEMA_VERSION = 1;
 
@@ -11,6 +17,9 @@ export const SCHEMA_VERSION = 1;
 export interface StoredData {
   profile: Profile;
   applications: Application[];
+  settings: Settings;
+  /** The user's own Claude key (ADR 4): never exported, never logged. */
+  apiKey: string;
 }
 
 export type StoredKey = keyof StoredData;
@@ -31,6 +40,8 @@ const PARSERS: { [K in StoredKey]: (input: unknown) => Parsed<StoredData[K]> } =
   {
     profile: parseProfile,
     applications: parseApplications,
+    settings: parseSettings,
+    apiKey: parseApiKey,
   };
 
 function parseApplications(input: unknown): Parsed<Application[]> {
@@ -128,6 +139,12 @@ export async function writeAll(values: Partial<StoredData>): Promise<void> {
     clean[key] = parsed.value;
   }
   await browser.storage.local.set(clean);
+}
+
+/** Removes one key, e.g. when the user disconnects Claude. */
+export async function remove(key: StoredKey): Promise<void> {
+  await ready();
+  await browser.storage.local.remove(key);
 }
 
 /** "Delete all data": one call, nothing left behind, not even the version. */

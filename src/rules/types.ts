@@ -108,6 +108,13 @@ export interface Listing {
   missing: string[];
 }
 
+/** The models a letter can be written with (ADR 4). */
+export type ClaudeModel = "claude-sonnet-5-5" | "claude-haiku-5-5";
+
+export interface Settings {
+  model: ClaudeModel;
+}
+
 export type FitRule = "budget" | "income" | "pets" | "wbs";
 export type FitStatus = "ok" | "warn" | "no" | "unknown";
 
