@@ -1,0 +1,39 @@
+/* Two fields side by side; they stack below the 320px panel's room. */
+.pair,
+.wideNarrow,
+.narrowWide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.wideNarrow {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+}
+
+.narrowWide {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.error {
+  /* Matches TextField's helper line. */
+  --icon-gap: 6px;
+
+  display: flex;
+  align-items: center;
+  gap: var(--icon-gap);
+  margin: 0;
+  color: var(--sun-soft);
+}
+
+/* Household tiles: two or three across, one column when the panel is narrow. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  gap: var(--space-2);
+}
