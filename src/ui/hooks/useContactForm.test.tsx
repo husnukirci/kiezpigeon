@@ -10,6 +10,7 @@ import {
 } from "vitest";
 import { browser } from "wxt/browser";
 import { fakeBrowser } from "wxt/testing/fake-browser";
+import type { FillStep } from "../../fill/fill";
 import type { FormField } from "../../rules/types";
 import { useContactForm } from "./useContactForm";
 
@@ -46,11 +47,11 @@ describe("useContactForm", () => {
     });
     expect(toTab).toHaveBeenCalledWith(7, { type: "getContactForm" });
 
-    const steps = [{ key: "name:firstName", kind: "firstName", value: "Mara" }];
+    const steps: FillStep[] = [
+      { key: "name:firstName", kind: "firstName", value: "Mara" },
+    ];
     act(() => {
-      result.current.fill([
-        { key: "name:firstName", kind: "firstName", value: "Mara" },
-      ]);
+      result.current.fill(steps);
     });
     await waitFor(() => {
       expect(result.current.state).toEqual({
