@@ -97,6 +97,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P5 | Mutation check on `fillForm`: adding `requestSubmit()`, `submit()`, a button click, a synthetic Enter, a plain assignment instead of the prototype setter, or dropping the consent or file guard each failed at least one test. | Recorded for the PR; the never-submit test is the one that fails if a submit is introduced.
 - P5 | The commit hook's lint rejected the React probe test: the ADR 6 boundary forbids React anywhere in `src/fill/`, tests included. | Adapter and fill tests may import React and Testing Library to stand in for a page; a probe import of `src/ui/` from a fill test still fails lint.
 
+- P5 | First e2e run: `getByRole("dialog")` matched six elements, because the exposé page carries popovers and a map with `role="dialog"`. The adapter was not affected (its selector needs the contact form inside the dialog). | The test names the dialog (`Kontaktanfrage`). Playwright's `context.route` also caught the service worker's Claude call, so the run needs no key and no network.
+- P5 | Mutation check (acceptance): `form.requestSubmit()` and `form.submit()` added to the content script's fill handler each failed the e2e run, but first on a field value, because the sent form reloaded the page. | The "nothing was sent" checks now run first; the failure names the second page load and shows the query string the form would have sent.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.

@@ -2,7 +2,7 @@
 // accepts them (ADR 11): the element's native value setter, then `input`
 // and `change`. It never submits, never clicks, never focuses, never ticks
 // a consent box and never touches a file input (CLAUDE.md "Never submit").
-import type { FieldKind, FieldValue } from "../rules/types";
+import type { FieldKind, FieldMapping, FieldValue } from "../rules/types";
 import { findField } from "./describe";
 
 export interface FillStep {
@@ -90,4 +90,13 @@ export function fillForm(
     else report.filled.push(step.key);
   }
   return report;
+}
+
+/** The steps for every mapping that has a value; the rest stay untouched. */
+export function fillSteps(mappings: readonly FieldMapping[]): FillStep[] {
+  return mappings.flatMap((m) =>
+    m.value === undefined
+      ? []
+      : [{ key: m.field.key, kind: m.kind, value: m.value }],
+  );
 }

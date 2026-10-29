@@ -7,7 +7,7 @@ import { loadFixture } from "../../test-support/fixtures";
 import { coupleWithDog } from "../../test-support/sample-profiles";
 import { immoscout24 } from "../adapters/immoscout24/immoscout24";
 import { mapFields } from "../rules/fieldMatch";
-import { fillForm, type FillStep } from "./fill";
+import { fillForm, fillSteps, type FillStep } from "./fill";
 
 describe("fillForm on a React form (the ADR 11 probe)", () => {
   const state: Record<string, string> = {};
@@ -116,11 +116,7 @@ describe("fillForm on the ImmoScout24 contact form", () => {
       coupleWithDog,
       "Sehr geehrte Frau Beispiel, ...",
     );
-    return mappings.flatMap((m) =>
-      m.value === undefined
-        ? []
-        : [{ key: m.field.key, kind: m.kind, value: m.value }],
-    );
+    return fillSteps(mappings);
   }
 
   const valueOf = (name: string) =>

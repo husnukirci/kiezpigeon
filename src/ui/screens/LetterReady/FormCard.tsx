@@ -18,7 +18,7 @@ export interface FormMatch {
 }
 
 /** The field's label without the site's required star. */
-export function fieldName(field: FormField): string {
+function fieldName(field: FormField): string {
   const label = field.label?.replace(/\s*\*$/, "");
   return label ?? field.name ?? field.key;
 }
