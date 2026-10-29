@@ -1,0 +1,31 @@
+.pill {
+  /* README: padding 4px 10px; the detected variant 6px 12px. */
+  --pill-padding-y: 6px;
+  --pill-padding-x: 12px;
+
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--pill-padding-y) var(--pill-padding-x);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+
+.detected {
+  /* README: a leading 8px teal dot, 6px before the words. */
+  --dot-size: 8px;
+  --dot-gap: 6px;
+
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--dot-gap);
+  background: var(--teal-deep);
+  color: var(--teal-soft);
+}
+
+.dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: var(--radius-pill);
+  background: var(--teal);
+}
