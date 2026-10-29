@@ -365,6 +365,7 @@ describe("mapFields on select fields", () => {
       ["OFFICER", "Beamter:Beamtin"],
       ["TRAINEE", "Auszubildende:r"],
       ["STUDENT", "Student:in"],
+      ["UNEMPLOYED", "Arbeitssuchende:r"],
       ["OTHER", "Sonstiges"],
     );
     const as = (employment: EmploymentType): Profile => ({
@@ -380,6 +381,7 @@ describe("mapFields on select fields", () => {
     expect(valueOf(as("trainee"), employment)).toBe("TRAINEE");
     expect(valueOf(as("student"), employment)).toBe("STUDENT");
     expect(valueOf(as("other"), employment)).toBe("OTHER");
+    expect(valueOf(as("job_seeking"), employment)).toBe("UNEMPLOYED");
   });
 
   it("picks the household option from adults, children and relationship", () => {

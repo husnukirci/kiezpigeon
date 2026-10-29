@@ -29,6 +29,7 @@ const EMPLOYMENT_LABELS: Record<EmploymentType, string | undefined> = {
   self_employed: "selbstständig",
   trainee: "in Ausbildung",
   student: "im Studium",
+  job_seeking: "derzeit auf Stellensuche",
   other: undefined,
 };
 
@@ -46,6 +47,15 @@ const PET_POLICY_LABELS: Record<PetPolicy, string> = {
   by_arrangement: "nach Absprache",
   not_allowed: "nicht erlaubt",
 };
+
+/** Stock phrases that make a letter read like a template. */
+const CLICHES = [
+  "hiermit bewerbe ich mich",
+  "mit großem Interesse",
+  "mit großer Freude",
+  "ich würde mich riesig freuen",
+  "Ihre Anzeige hat mich sofort angesprochen",
+];
 
 const TONE_INSTRUCTIONS: Record<Tone, string> = {
   warm: "Tone: warm and personal, friendly and polite, addressing the reader as Sie.",
@@ -143,6 +153,58 @@ export function salutationFor(contact: ContactPerson | undefined): string {
     case undefined:
       return `Guten Tag ${[person.firstName, person.lastName].filter(Boolean).join(" ")},`;
   }
+}
+
+/** The bands ImmoScout24's contact form uses, in euros (ADR 11). */
+const INCOME_BANDS = [500, 1000, 1500, 2000, 3000, 4000, 5000];
+
+/**
+ * The household income as a band, never the exact sum: "zwischen 4.000
+ * und 5.000 €". A band's upper edge belongs to it, as on the form.
+ */
+export function incomeBand(cents: number): {
+  phrase: string;
+  euros: number[];
+} {
+  const euros = cents / 100;
+  const upper = INCOME_BANDS.findIndex((edge) => euros <= edge);
+  const top = INCOME_BANDS.at(-1) ?? 0;
+  if (upper === -1) {
+    return { phrase: `über ${formatNumber(top)} €`, euros: [top] };
+  }
+  const high = INCOME_BANDS[upper] ?? top;
+  const low = INCOME_BANDS[upper - 1];
+  if (low === undefined) {
+    return { phrase: `unter ${formatNumber(high)} €`, euros: [high] };
+  }
+  return {
+    phrase: `zwischen ${formatNumber(low)} und ${formatNumber(high)} €`,
+    euros: [low, high],
+  };
+}
+
+const MULTIPLES = [
+  "Dreifache",
+  "Vierfache",
+  "Fünffache",
+  "Sechsfache",
+  "Siebenfache",
+  "Achtfache",
+  "Neunfache",
+  "Zehnfache",
+];
+
+/**
+ * "mehr als das Dreifache": income over Kaltmiete in words, rounded down,
+ * from three times up; undefined below that or without a rent.
+ */
+export function incomeRatioPhrase(request: LetterRequest): string | undefined {
+  const tenths = incomeRatioTenths(request);
+  if (tenths === undefined || tenths < 30) return undefined;
+  const whole = Math.min(Math.floor(tenths / 10), 10);
+  const word = MULTIPLES[whole - 3];
+  if (word === undefined) return undefined;
+  return tenths === whole * 10 ? `das ${word}` : `mehr als das ${word}`;
 }
 
 /** Income divided by Kaltmiete in tenths, floored; undefined without rent. */
@@ -286,9 +348,9 @@ function signals(request: LetterRequest): string[] {
       "Sichere Anstellung (unbefristete Festanstellung oder verbeamtet)",
     );
   }
-  const tenths = incomeRatioTenths(request);
-  if (tenths !== undefined && tenths >= 30) {
-    result.push(`Einkommen ${formatNumber(tenths / 10, 1)} × Kaltmiete`);
+  const ratio = incomeRatioPhrase(request);
+  if (ratio !== undefined) {
+    result.push(`Einkommen ${ratio} der Kaltmiete`);
   }
   if (request.allDocumentsReady) {
     result.push("Alle Unterlagen liegen vollständig vor");
@@ -328,12 +390,13 @@ function moveInFacts(moveIn: MoveIn | undefined): string[] {
 function factsBlock(request: LetterRequest): string {
   const { applicants, household, listing, features } = request;
   const income = sumCents(applicants.map((a) => a.netIncomeCents));
+  // No one's own income: the household's band says enough, and exact
+  // sums read oddly in a letter.
   const applicantLines = applicants.map((a) =>
     [
       `- ${a.firstName} ${a.lastName}`,
-      a.job,
+      a.employment === "job_seeking" && a.job ? `zuletzt ${a.job}` : a.job,
       EMPLOYMENT_LABELS[a.employment],
-      `${formatEuro(a.netIncomeCents)} netto im Monat`,
     ]
       .filter((part) => part)
       .join(", "),
@@ -344,7 +407,7 @@ function factsBlock(request: LetterRequest): string {
     "",
     "Bewerber:",
     ...applicantLines,
-    `Haushaltsnettoeinkommen: ${formatEuro(income)} im Monat`,
+    `Haushaltsnettoeinkommen: ${incomeBand(income).phrase} im Monat`,
     householdLine(household),
     ...(household.relationship
       ? [`Beziehung: ${RELATIONSHIP_FACTS[household.relationship]}`]
@@ -372,6 +435,17 @@ export interface LetterPrompt {
   user: string;
 }
 
+/** One rule per applicant who is looking for work. */
+function jobSearchRules(request: LetterRequest): string[] {
+  return request.applicants
+    .filter((a) => a.employment === "job_seeking")
+    .map((a) => {
+      const name = `${a.firstName} ${a.lastName}`;
+      const last = a.job ? ` ${a.job} was the last role.` : "";
+      return `- ${name} is looking for a new job;${last} Say this once, plainly and confidently. Do not suggest a current job or employer.`;
+    });
+}
+
 export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
   const { household, features, listing } = request;
   assertFeatureCount(features, listing);
@@ -381,10 +455,14 @@ export function buildLetterPrompt(request: LetterRequest): LetterPrompt {
     "Rules:",
     "- Write in German.",
     `- ${TONE_INSTRUCTIONS[request.tone]}`,
+    "- Write the way a native speaker writes to a landlord: natural, confident and friendly. Short, clear sentences. Not flowery, not stiff, no template phrases.",
+    `- Avoid stock phrases such as ${CLICHES.map((c) => `"${c}"`).join(", ")}. Say the same thing plainly.`,
     `- Length: ${MIN_WORDS} to ${MAX_WORDS} words in total, salutation and sign-off included; aim for about ${TONE_WORD_TARGETS[request.tone]} words.`,
     `- Begin with exactly this line: ${salutationFor(listing.contactPerson)}`,
     "- Use only the facts given. Do not invent any detail, name, date or number; write no number that is not in the facts.",
     "- Open with the strongest signals, in the order listed.",
+    "- State the household income only as the range given, never per person or as an exact sum.",
+    ...jobSearchRules(request),
     ...(features.length === 0
       ? []
       : [

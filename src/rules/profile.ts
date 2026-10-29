@@ -42,6 +42,7 @@ export interface ExportFile {
 const EMPLOYMENT_TYPES: readonly EmploymentType[] = [
   "permanent",
   "civil_servant",
+  "job_seeking",
   "fixed_term",
   "self_employed",
   "trainee",

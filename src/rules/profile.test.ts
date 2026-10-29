@@ -46,6 +46,15 @@ describe("parseProfile", () => {
     });
   });
 
+  it("accepts an applicant who is looking for work", () => {
+    const seeking = withChanges({
+      applicants: [
+        { ...coupleWithDog.applicants[0], employment: "job_seeking" },
+      ],
+    });
+    expect(parseProfile(seeking)).toMatchObject({ ok: true });
+  });
+
   it("drops keys it does not know", () => {
     const result = parseProfile({ ...coupleWithDog, apiKey: "secret" });
     expect(result.ok && "apiKey" in result.value).toBe(false);
