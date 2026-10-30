@@ -30,6 +30,22 @@
   font-weight: 700;
 }
 
+.filter {
+  /* README preview: 16px side padding, no border. */
+  --chip-padding-x: 16px;
+
+  border: none;
+  background: var(--night-600);
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.filter[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--on-teal);
+  font-weight: 700;
+}
+
 .document {
   /* README preview: 6px between icon and label. */
   --icon-gap: 6px;
