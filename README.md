@@ -44,7 +44,7 @@ screenshots` regenerates them.
 ## Install (load unpacked)
 
 Needs Node 24 (`nvm use` reads `.nvmrc`), Chrome, and a Claude API key from
-the [Claude Console](https://console.anthropic.com/settings/keys).
+the [Claude Console](https://platform.claude.com/settings/keys).
 
 1. `git clone` this repository, then `npm ci`
 2. `npm run build`
@@ -116,7 +116,7 @@ request. Read in this order:
 
 - [PLAN.md](PLAN.md): goals, tiers, test tiers, definition of done
 - [CLAUDE.md](CLAUDE.md): the working agreement and product invariants
-- [docs/decisions.md](docs/decisions.md): twelve ADRs
+- [docs/decisions.md](docs/decisions.md): thirteen ADRs
 - [docs/ai-workflow.md](docs/ai-workflow.md): every place the AI got it
   wrong, and a narrative per phase
 - [PHASES.md](PHASES.md): the phase specs

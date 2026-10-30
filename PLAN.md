@@ -198,6 +198,8 @@ Expected during the build:
 
 ADR 10 (move-in as a choice, schema 2) was added after Phase 4, which
 moved the two after it up by one, as PHASES.md already numbers them.
+ADR 13 (applications and the export file) was recorded in the Phase 8
+audit for shapes that had shipped without an entry.
 
 ## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 
