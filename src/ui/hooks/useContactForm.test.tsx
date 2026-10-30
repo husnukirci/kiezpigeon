@@ -78,4 +78,48 @@ describe("useContactForm", () => {
       expect(result.current.state).toEqual({ status: "no_form" });
     });
   });
+
+  it("prepares the tab before every read and fill on an unknown site", async () => {
+    const order: string[] = [];
+    const prepare = vi.fn((tabId: number) => {
+      order.push(`prepare ${tabId}`);
+      return Promise.resolve();
+    });
+    toTab.mockImplementation((_tab, message) => {
+      const { type } = message as { type: string };
+      order.push(type);
+      return Promise.resolve(
+        type === "fillForm"
+          ? ok({ kind: "filled", report: { filled: [], skipped: [] } })
+          : ok({ kind: "form", fields }),
+      );
+    });
+    const { result } = renderHook(() => useContactForm(7, prepare));
+    await waitFor(() => {
+      expect(result.current.state).toEqual({ status: "form", fields });
+    });
+    act(() => {
+      result.current.fill([]);
+    });
+    await waitFor(() => {
+      expect(order).toHaveLength(6);
+    });
+    expect(order).toEqual([
+      "prepare 7",
+      "getContactForm",
+      "prepare 7",
+      "fillForm",
+      "prepare 7",
+      "getContactForm",
+    ]);
+  });
+
+  it("says the page cannot be reached when preparing it fails", async () => {
+    const prepare = () => Promise.reject(new Error("Cannot access contents"));
+    const { result } = renderHook(() => useContactForm(7, prepare));
+    await waitFor(() => {
+      expect(result.current.state).toEqual({ status: "unreachable" });
+    });
+    expect(toTab).not.toHaveBeenCalled();
+  });
 });
