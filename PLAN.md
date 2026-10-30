@@ -107,7 +107,7 @@ use), and how two applicants are related (so the letter stops guessing).
       unknown sites with a confirm step before filling
 - [x] Tracker: save an application when the user confirms they sent it;
       statuses Sent, Viewing, Closed; stat tiles; filters
-- [ ] Docs: README (what it does, install unpacked, privacy section,
+- [x] Docs: README (what it does, install unpacked, privacy section,
       screenshots), `docs/decisions.md`, `CLAUDE.md`, `docs/ai-workflow.md`;
       personal data scrub; `v1.0.0` tag
 
