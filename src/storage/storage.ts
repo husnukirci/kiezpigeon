@@ -160,24 +160,45 @@ async function readApplications(): Promise<Application[]> {
   return stored.value ?? [];
 }
 
-/** Adds one application to the list, e.g. after "Yes, I sent it". */
-export async function addApplication(application: Application): Promise<void> {
-  await write("applications", [...(await readApplications()), application]);
+// Changes to the list run one after another in this context, so two made
+// at once (two status clicks, a double "Yes, I sent it") both see the list
+// the other wrote. The panel is the only context that changes it.
+let applicationsQueue: Promise<unknown> = Promise.resolve();
+function queued(work: () => Promise<void>): Promise<void> {
+  const next = applicationsQueue.then(work);
+  applicationsQueue = next.catch(() => undefined);
+  return next;
+}
+
+/**
+ * Adds one application, e.g. after "Yes, I sent it". A listing already in
+ * the list keeps its record: one application per listing.
+ */
+export function addApplication(application: Application): Promise<void> {
+  return queued(async () => {
+    const applications = await readApplications();
+    if (applications.some((a) => a.listingUrl === application.listingUrl)) {
+      return;
+    }
+    await write("applications", [...applications, application]);
+  });
 }
 
 /** Replaces the application with `id` by `change(it)`; others stay as they are. */
-export async function changeApplication(
+export function changeApplication(
   id: string,
   change: (application: Application) => Application,
 ): Promise<void> {
-  const applications = await readApplications();
-  if (!applications.some((a) => a.id === id)) {
-    throw new Error(`No stored application ${id}`);
-  }
-  await write(
-    "applications",
-    applications.map((a) => (a.id === id ? change(a) : a)),
-  );
+  return queued(async () => {
+    const applications = await readApplications();
+    if (!applications.some((a) => a.id === id)) {
+      throw new Error(`No stored application ${id}`);
+    }
+    await write(
+      "applications",
+      applications.map((a) => (a.id === id ? change(a) : a)),
+    );
+  });
 }
 
 /** Removes one key, e.g. when the user disconnects Claude. */
