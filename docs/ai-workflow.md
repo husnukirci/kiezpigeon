@@ -140,6 +140,130 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P7 | I built the tracker screen (item 2) before "Did you send it?" (item 1), so the saved record had somewhere to show; the phase asks for the list in order. | Noted here and in the PR; no other effect.
 - P7 | Branch review (a fresh reviewer agent, read-only, without a shell) found three real gaps: my URL check tested only the prefix, so an imported `http://[bad` passed and its row would throw while rendering and blank the panel; the previous fill's report stays on screen while a new fill runs, so a second fill that wrote nothing could save a letter that never reached the form; adding and changing applications read then wrote with nothing in between, so two quick changes lost one and a double "Yes" could save twice. | All fixed, each with a test seen failing first: the validator parses the address, a fill click remembers the report it saw, and changes to the list run one at a time with one application per listing. Also took its copy note: the first tip names the "Did you send it?" card.
 
+- P8 | Scrub: tree, every historical version of the fixtures and all commit messages came back clean for emails, phone shapes, street patterns, ids and keys (the only `sk-ant` in history is the Phase 1 `sk-ant-not-a-real-key`). Reading the PR descriptions found the author's and their partner's real first names quoted from a real letter in PR 14's body, outside git, where no grep had looked. | Asked the author before editing a published PR description; the scrub now covers PR bodies.
+- P8 | The screenshot spec clicked "Balkon" to pick it, but the listing screen preselects the first two highlights, so the click switched Balkon off and the letter screen showed a "Keller is not mentioned" warning. Found by looking at the screenshot, since the spec only waited for elements. | The spec keeps the preselection and the invented letter names both.
+- P8 | My README draft said the key is entered in Settings and that export holds "everything except the key"; the code puts the key in the fifth onboarding step and exports only the profile and applications. | Both corrected from the code before committing.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
+
+**Planning (PR 1).** The working rules came from an earlier project's
+CLAUDE.md, separated line by line from its stack. Writing the plan against
+the product brief exposed three gaps before any code: the fit check needed a
+budget and a WBS flag nobody had listed, "Sent" could not be detected
+without touching the submit, and a validator promise ("no invented names")
+could not be kept by any simple rule. Each became a written decision rather
+than an assumption. ADRs 1 to 7 were proposed with their options and
+accepted by the author before Phase 0.
+
+**P0: scaffold (PR 2).** The first probe paid off immediately: the built
+manifest had no `action`, so the toolbar icon would not have opened the
+panel. The newest TypeScript would have broken the lint gate, so it was
+pinned. The boundary rules were proven by breaking each one on purpose, and
+CI was seen failing on a throwaway branch before it was trusted. The review
+caught a token test that confused "stale" with "changed".
+
+**P1: rules core (PR 3).** Strict TDD on eight modules, 145 tests in about
+half a second. Most friction was small and mechanical: Prettier turning an
+escape into a literal em dash, a fake key that tripped the key grep, and my
+hand-counted word totals being wrong where the code was right. The real
+findings were spec conflicts (the "no pets" signal against the "no pet
+word" rule; `Nichtraucher` meaning the opposite of `smoker`) and a blank
+surname producing `Guten Tag ,`. A mutation pass showed which rules the
+tests actually held; one mutation silently failed to apply and was noticed
+only because nothing failed.
+
+**P2: storage, onboarding, settings (PR 4).** The Settings smoke test
+caught a real bug (UI state passed into storage), which justified the
+one-test-per-screen tier. Storage tests passed on the first run, so they
+were mutation-checked before being believed. Design conflicts (40px chips
+against the 44px tap minimum, a stepper drawn invisibly on its own card
+colour) were caught while laying out, before screenshots. This phase also
+had the first of two logged Claude co-author trailers against the author's
+global rule.
+
+**P3: listing adapter (PR 5).** ImmoScout24 blocks automated browsers, so
+the author saved pages from their own session. The probe found the stable
+`is24qa-*` and `data-qa` attributes, and a happy-dom bug that silently
+parsed 213 elements of a 4 MB page. The scrub was the hardest part: the
+saved page carried the author's own name and customer number in a header
+the scrub list did not name, and a street pattern missed a two-word
+street. Both were found by reading the page text, not by the pattern
+check; that lesson shaped every later fixture.
+
+**P4: letter generation (PRs 6 and 7).** The probe established the browser
+access header the API requires from an extension, and a second probe was
+needed when the SDK turned out to send different headers than the first.
+Real letters were the real test: short letters undershot the length floor,
+a model rounded `51,44 m²` to `51,4`, and a student with no move-in date
+"confirmed" the listing's date. React's StrictMode would have billed every
+letter twice had generation started in an effect. A model comparison added
+Opus and Fable as settings.
+
+**P4 follow-ups (PRs 8 and 9).** The move-in became a choice (schema 2, ADR 10) and two applicants gained a stated relationship. A fresh reviewer found
+four gaps in "claim nothing the profile lacks", including marriage words in
+compounds. The author noticed the panel following them into YouTube; it now
+belongs to one tab (ADR 8 amendment).
+
+**P5: form filling (PR 10).** The probe showed React ignores a value set
+from outside, so fill uses the prototype setter and kept the probe as a
+running test. The real form asked seven questions as selects, which the
+Phase 1 matcher could not answer, and reading that matcher before using it
+showed it would have written `permanent` into a job field. Mutation checks
+proved the never-submit tests fail when a submit is added. The reviewer
+found seven real gaps, among them `mobil` matching inside `Immobilie`. The
+first live check failed because the tab was the site's English address.
+
+**Letter tuning (PRs 11 to 14).** The author's own letters drove four short
+rounds. Each fix exposed the next problem: removing stock phrases brought
+self-praise, removing that brought invented offers, and the plainer letters
+fell under the 120-word floor, where the retry made the model pad with
+invented hobbies. The author removed the minimum (ADR 9 amendment). The
+lesson: a length floor fights a no-invention rule, and the no-invention
+rule matters more.
+
+**P6: unknown sites (PR 15).** The `activeTab` probe found that CDP's
+icon click only works on the focused tab and only through a browser-level
+session; the e2e run depends on both facts. The reviewer found six real
+gaps, the worst being a letter surviving a page load and being written into
+the next page's form. One of my tests passed without its fix and had to be
+rewritten to fail first.
+
+**P7: tracker (PR 16).** The design system had no drawing of the tracker,
+so it was built from the README and the component previews, with the entry
+point named as a deviation. Treating imports as untrusted found a
+`javascript:` link risk; the reviewer then found that my URL check only
+tested the prefix, a stale fill report that could save an unsent letter,
+and a read-then-write race. A bug from Phase 4 surfaced too: leaving the
+letter screen threw away a paid-for letter.
+
+**P8: docs and release (this PR).** README with screenshots generated by a
+skipped-by-default Playwright spec, an ADR audit against the code, this
+narrative, and a personal data scrub of the tree, the fixture history and
+the PR descriptions.
+
+## Closing reflection
+
+The model was fastest and most reliable where the rules were pure and the
+tests came first: the rules core had the fewest surprises per line. It was
+weakest at things it could not see. A happy-dom parse that stopped
+silently, React state that ignored a set value, a site's English address,
+the length of a real letter: each was found by a probe, a real run or the
+author's own use, never by reading the code.
+
+Three habits carried the most weight. Probing the risky assumption first
+turned guesses into facts before anything was built on them. Mutation
+checks caught tests that passed for the wrong reason, several times.
+And a fresh reviewer at the end of each phase found real gaps every time,
+from P5 on between three and seven, all of them things the implementing
+session had reviewed and missed.
+
+Recurring slips are worth naming because they never fully stopped:
+hand-counted numbers in tests, a default commit trailer the author's rules
+forbid, and restoring a file with `git checkout` during a mutation check
+and losing uncommitted work. Each got a fix in the process, not a promise.
+
+Personal data was the hardest invariant. Every leak (a signed-in header, a
+two-word street, real names in a PR description) got past the pattern
+checks and was found by reading. Reading stays part of the scrub.
