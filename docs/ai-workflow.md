@@ -121,6 +121,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 
 - Follow-up (names once) | The author's next real letter named both applicants three times: in the opening, in the job lines and in the sign-off. | A prompt rule keeps names out of the opening sentence, test-first. Five real letters: no opening sentence held a name (a first check counted the whole first paragraph, which in three letters also held the job lines, and so over-reported); all passed on the first call.
 
+- P6 | Probe (ADR 12): a throwaway MV3 extension with `activeTab` and `scripting` and no host permission, in Playwright's Chromium. Its extension page could not `scripting.executeScript` into a page tab ("Cannot access contents of the page"). CDP `Extensions.triggerAction` stands in for the icon click, but only fires on the focused tab: aimed at a background tab by `targetId`, it clicked the extension's own page instead, until the site tab was brought to front. After that click the extension page could inject into the tab, also after a same-origin navigation and back; a cross-origin navigation revoked it. | The fallback injects from the panel on the user's button, under the grant the icon click gave; the panel says to click the icon again when the grant is gone. The e2e run can grant it the same way, so the fallback gets its own never-submit run.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
