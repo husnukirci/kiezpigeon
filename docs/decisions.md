@@ -8,20 +8,21 @@ ADRs 1 to 7 were proposed with their options and trade-offs, then accepted
 by the author before Phase 0; the proposals are in the git history. Each
 entry keeps one line per rejected option so the cut stays visible.
 
-| ADR | Title                                                          | Phase | Status   |
-| --: | -------------------------------------------------------------- | ----- | -------- |
-|   1 | WXT for the extension build, TypeScript strict                 | P0    | accepted |
-|   2 | React 19 for the side panel, no component library              | P0    | accepted |
-|   3 | All data in `chrome.storage.local` behind one module           | P2    | accepted |
-|   4 | The user's own Claude API key, behind a client interface       | P4    | accepted |
-|   5 | Vitest + happy-dom + Testing Library, Playwright for e2e       | P0    | accepted |
-|   6 | Single package with lint-enforced folder boundaries            | P0    | accepted |
-|   7 | Generated token variables, CSS Modules, stylelint gate         | P0    | accepted |
-|   8 | One adapter per site: DOM in, `Listing` and form out           | P3    | accepted |
-|   9 | The validator is the guarantee: generate, validate, retry once | P4    | accepted |
-|  10 | Move-in as a choice, schema 2                                  | P4+   | accepted |
-|  11 | Never submit: filling a framework-driven form                  | P5    | accepted |
-|  12 | Unknown sites: `activeTab`, an injected reader, confirm first  | P6    | accepted |
+| ADR | Title                                                            | Phase | Status   |
+| --: | ---------------------------------------------------------------- | ----- | -------- |
+|   1 | WXT for the extension build, TypeScript strict                   | P0    | accepted |
+|   2 | React 19 for the side panel, no component library                | P0    | accepted |
+|   3 | All data in `chrome.storage.local` behind one module             | P2    | accepted |
+|   4 | The user's own Claude API key, behind a client interface         | P4    | accepted |
+|   5 | Vitest + happy-dom + Testing Library, Playwright for e2e         | P0    | accepted |
+|   6 | Single package with lint-enforced folder boundaries              | P0    | accepted |
+|   7 | Generated token variables, CSS Modules, stylelint gate           | P0    | accepted |
+|   8 | One adapter per site: DOM in, `Listing` and form out             | P3    | accepted |
+|   9 | The validator is the guarantee: generate, validate, retry once   | P4    | accepted |
+|  10 | Move-in as a choice and how two applicants are related, schema 2 | P4+   | accepted |
+|  11 | Never submit: filling a framework-driven form                    | P5    | accepted |
+|  12 | Unknown sites: `activeTab`, an injected reader, confirm first    | P6    | accepted |
+|  13 | Applications and the export file                                 | P8    | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -37,7 +38,8 @@ the message contracts between contexts benefit most from types.
 **Decision.** WXT (Vite-based) with `srcDir: "src"`: entrypoints are files
 under `src/entrypoints/`, the manifest is generated from them plus
 `wxt.config.ts`. WXT is used plainly: entrypoints, the generated manifest,
-dev reload and its test helpers. Storage and messaging go through our own
+dev reload and its test helpers. Its auto-imports are off (`imports:
+false`), so every file shows where its names come from. Storage and messaging go through our own
 thin modules (ADRs 3 and 6), not WXT's optional helpers, so the code reads
 the same on any build tool. TypeScript everywhere with `"strict": true` and
 `"noUncheckedIndexedAccess": true`, extending WXT's generated tsconfig.
@@ -86,8 +88,8 @@ bugs; the hooks lint rules are the first line against them.
 
 **Context.** Persistent data is small: one profile (a few kB), settings, the
 API key (ADR 4), and applications (roughly 2 to 4 kB each; hundreds over a
-hunt). The panel, service worker and content scripts all need the profile;
-the panel must update when data changes elsewhere. Data must never leave the
+hunt). The panel and the service worker need the profile (content scripts
+get only what the panel sends them); the panel must update when data changes elsewhere. Data must never leave the
 device, must be exportable, importable and deletable in one action, and must
 survive schema changes.
 
@@ -95,8 +97,9 @@ survive schema changes.
 `schemaVersion`, `profile`, `settings`, `applications`, `apiKey`.
 `src/storage/` is the only code that touches `chrome.storage`; it validates
 on read with the rules core's hand-written validators (no schema library),
-runs migrations keyed by `schemaVersion`, and exposes a `useStored(key)`
-React hook driven by `chrome.storage.onChanged`. UI state is component
+runs migrations keyed by `schemaVersion`, and exposes `subscribe(key)` on
+`chrome.storage.onChanged`, which the `useStored(key)` hook in
+`src/ui/hooks/` turns into React state. UI state is component
 state; no global state library until a screen proves it needs one. "Delete
 all data" is one `chrome.storage.local.clear()`.
 
@@ -160,7 +163,7 @@ accept that from a service worker for both models. Every failure becomes a
 so the key cannot travel in an error. The server-side refusal fallback is
 not enabled: a refusal on a rental letter is unlikely, and a fallback
 would silently bill the user's key for a different model; a refusal shows
-as an error instead. The running probe is `src/claude/claude.test.ts`.
+as an error instead. Every request sends effort `low` and `max_tokens` 8000. The running probe is `src/claude/claude.test.ts`.
 
 **Amendment (2026-10-29, after Phase 4).** Two stronger models join the
 setting: `claude-opus-5-5` and `claude-fable-5-1`. Sonnet stays the
@@ -189,9 +192,9 @@ submits.
 
 **Decision.** Vitest for every unit, fixture and smoke test, configured
 with WXT's Vitest plugin so `chrome.*` resolves to WXT's in-memory fake
-browser. happy-dom is the default environment; adapter tests switch to
-jsdom per file only if Phase 3's probe shows a fixture parses differently,
-and that is logged. Screens render with `@testing-library/react`.
+browser. happy-dom is the only environment: the Phase 3 probe found it stops
+parsing at a `<style>` inside an inline `<svg>`, and the fixture reducer
+drops inline SVG instead of switching to jsdom. Screens render with `@testing-library/react`.
 Playwright runs the end-to-end tests in `e2e/`: Chromium launched with the
 built extension loaded, a local fixture page served, the panel page opened
 by its `chrome-extension://` URL, a fill performed, and the fixture form's
@@ -202,8 +205,8 @@ Rejected: Vitest only with no e2e (the never-submit guarantee would be
 tested only in pieces); Jest + jsdom + Puppeteer (ESM and TypeScript
 transforms, fights the Vite build).
 
-**Consequences.** Two runners. CI runs unit and fixture tests on every push
-and the Playwright run on every PR (headless Chromium with the extension
+**Consequences.** Two runners. CI runs lint, typecheck, unit and fixture
+tests, the build and the Playwright run on every push and every PR (headless Chromium with the extension
 loaded; if that proves flaky in CI, the fallback is `xvfb-run` headed, and
 the choice is logged). Fixtures are committed, scrubbed and versioned. The
 model writes both code and tests, so adapters are also checked against a
@@ -222,30 +225,35 @@ free of browser and framework imports. There is no backend in Tier 1
 ```
 src/
   entrypoints/   background.ts, sidepanel/ (index.html, main.tsx),
-                 immoscout24.content.ts
-  rules/         pure: types, money, format, profile, fit, letterPrompt,
-                 letterValidate, fieldMatch, tracker
-  adapters/      DOM in, plain data out: adapter interface, immoscout24/,
-                 generic/
+                 immoscout24.content.ts, fallback.ts (injected, ADR 12)
+  rules/         pure: types, money, format, dates, profile, profileForm,
+                 fit, letterPrompt, letterValidate, writeLetter,
+                 fieldMatch, typedListing, tracker
+  adapters/      DOM in, plain data out: types.ts (the adapter interface),
+                 parse.ts, immoscout24/, generic/
   storage/       the only chrome.storage access
-  messaging/     typed messages between panel, worker and content scripts
-  claude/        the generate() interface and its direct-key implementation
-  fill/          writes values into a page's form; never submits
-  ui/            components/, screens/, hooks/
+  messaging/     typed messages between panel, worker and content scripts;
+                 panel.ts (per-tab panel), fallback.ts (injection)
+  claude/        the generate() interface, its direct-key implementation,
+                 letterService.ts (the worker's letter handler)
+  fill/          describes and writes a page's form; never submits
+  ui/            App.tsx, cx.ts, components/, screens/, hooks/
   styles/        tokens.css (generated), fonts.css, global.css
 design/          tokens.json copied from the design system
 public/          icon/ (16, 32, 48, 128), fonts/ (Plus Jakarta Sans + OFL)
 fixtures/        immoscout24/, generic/ (scrubbed HTML)
-test-support/    sample-profiles.ts (invented people only)
-scripts/         build-tokens.ts
-e2e/             Playwright tests
+test-support/    sample-profiles.ts, sample-letters.ts (invented only),
+                 fixtures.ts (loads a fixture as a Document)
+scripts/         build-tokens.ts, reduce-fixture.ts
+e2e/             Playwright tests, including the README screenshots
 ```
 
-ESLint `no-restricted-imports` overrides enforce the edges: `src/rules/`
+ESLint overrides enforce the edges. `no-restricted-imports`: `src/rules/`
 imports only from itself; `src/adapters/` and `src/fill/` may import
-`src/rules/` but not `src/ui/`, `src/storage/` or `src/claude/`; only
-`src/storage/` references `chrome.storage`; only `src/claude/` references
-the API host.
+`src/rules/` (and adapters `src/fill/describe.ts`, ADR 11) but not
+`src/ui/`, `src/storage/` or `src/claude/`. `no-restricted-properties`:
+only `src/storage/` references `chrome.storage`. `no-restricted-syntax`:
+only `src/claude/` references the API host.
 
 Rejected: a workspaces monorepo (package edges buy nothing for one
 deliverable and cost wiring time); pnpm (an extra install for no gain at
@@ -383,7 +391,8 @@ key); hiding an invalid letter (the user loses a draft that may need one
 word changed); a third call that keeps the better of two letters (more
 cost for a choice the user makes faster by reading).
 
-**Consequences.** At most two calls per click. A letter can reach the
+**Consequences.** At most two generations per click (the SDK retries a
+transient network failure once inside each). A letter can reach the
 screen with problems, so the screen must show them plainly and the user
 must still review it, which they do anyway. Rules the validator does not
 check (invented prose details) stay the user's job, as PLAN.md risks
@@ -421,8 +430,8 @@ replaces `moveInDate`. Stored data moves to schema 2: `MIGRATIONS[1]` turns
 a stored `moveInDate` into a date move-in through the rules core's
 `upgradeProfileV1`, and leaves a store without a profile alone. Export files
 are version 2; a version 1 file still imports through the same function.
-`moveInDateOf` gives code that needs a date (the fill layer, the number
-check) the date of a date move-in only.
+`moveInDateOf` gives code that needs a date (the number check, the
+profile form) the date of a date move-in only.
 
 Rejected: a `moveInFlexible` flag beside the date (it allows "a date and as
 soon as possible" at once); free text (the letter and the fill layer could
@@ -430,8 +439,8 @@ not use it).
 
 **Consequences.** An older Kiezpigeon build refuses schema 2 data instead
 of misreading it (the existing newer-version guard). Phase 5 fills an
-Einzugstermin field only for a date move-in, and must decide how to word
-"as soon as possible" in a free-text field. The running probes are the
+Einzugstermin for every kind: a date, or "ab sofort" and "flexibel" in a
+free-text field and the matching option in a select (ADR 11). The running probes are the
 migration tests in `src/storage/storage.test.ts` and the import test in
 `src/rules/profile.test.ts`.
 
@@ -528,7 +537,8 @@ is not visible at all, so the prototype setter is belt and braces there;
 the happy-dom probe exercises the case where it matters. A React checkbox
 listens to `click`, which fill never sends, so a ticked fact checkbox on
 such a page may not reach its state; ImmoScout24 asks these questions as
-selects, and the Phase 6 fallback must look at it again. The Anrede select
+selects, and on other sites the ADR 12 preview names the checkbox for
+the user to check. The Anrede select
 stays unmatched until a profile field holds a salutation. The running
 probes are `src/fill/fill.test.tsx` (React state reached, plain assignment
 not; no submit, click or key event during a fill on the fixture) and
@@ -607,3 +617,37 @@ for the user to look at. The e2e run grants the tab with CDP
 running probes are `e2e/fallback.spec.ts` (no access before the icon
 click, the reader answers after it, once, with the right form) and the
 generic fixture block in `src/fill/fill.test.tsx`.
+
+## ADR 13: Applications and the export file
+
+**Status.** Accepted. Recorded in the Phase 8 audit: the shapes shipped in
+Phases 2 and 7 without an entry of their own, although a new stored field
+is always load-bearing (CLAUDE.md rule 4).
+
+**Context.** ADR 3 names the `applications` key but not what a record
+holds, and ADR 10 names the export version but not what the file carries.
+Both are stored or handed to the user, so changing them later means a
+migration or an import path for old files.
+
+**Decision.** An application (`Application` in `src/rules/types.ts`, built
+by `newApplication` when the user says "Yes, I sent it") holds `id`
+(`app_<random>`), `listingUrl`, the optional `listingTitle`, `district` and
+`warmmieteCents` as the listing showed them, the full `letter` text,
+`status` (`sent | viewing | closed`, any to any), `sentAt` and
+`statusChangedAt`. One application per listing: `addApplication` ignores a
+second one with the same `listingUrl`, and changes to the list run one at
+a time in the panel. `listingUrl` must parse as an http(s) address, since
+the tracker renders it as a link and imports are untrusted.
+
+The export file is `{ kiezpigeon: 2, exportedAt, profile, applications }`,
+each rebuilt from known keys. Settings and the API key are never in it.
+Import is all or nothing: any problem imports none.
+
+Rejected: letter history per listing (a Tier 2 item); exporting settings
+(one model choice is quicker to pick again than to version).
+
+**Consequences.** A new application field is optional or comes with a
+schema bump. An imported file can never carry a key or a script link into
+the panel. The running probes are the `newApplication` and
+`parseApplication` tests in `src/rules/`, the add and change tests in
+`src/storage/storage.test.ts`, and `e2e/tracker.spec.ts`.
