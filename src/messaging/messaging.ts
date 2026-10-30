@@ -15,8 +15,11 @@ export type ListingResult =
 export type ContactFormResult =
   { kind: "form"; fields: FormField[] } | { kind: "no_form" };
 
+/** `changed` when the form is no longer the one the user saw; nothing filled. */
 export type FillResult =
-  { kind: "filled"; report: FillReport } | { kind: "no_form" };
+  | { kind: "filled"; report: FillReport }
+  | { kind: "changed" }
+  | { kind: "no_form" };
 
 export type LetterResult =
   | { kind: "letter"; draft: LetterDraft }
@@ -29,9 +32,12 @@ interface Messages {
     request: { type: "getContactForm" };
     response: ContactFormResult;
   };
-  /** Panel to content script, on the user's click only. Never submits. */
+  /**
+   * Panel to content script, on the user's click only. Never submits.
+   * `formKeys` are the keys of the form as the panel last read it.
+   */
   fillForm: {
-    request: { type: "fillForm"; steps: FillStep[] };
+    request: { type: "fillForm"; steps: FillStep[]; formKeys: string[] };
     response: FillResult;
   };
   /** Panel to service worker: the only way a letter is requested. */

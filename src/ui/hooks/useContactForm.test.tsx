@@ -51,7 +51,7 @@ describe("useContactForm", () => {
       { key: "name:firstName", kind: "firstName", value: "Mara" },
     ];
     act(() => {
-      result.current.fill(steps);
+      result.current.fill(steps, ["name:firstName"]);
     });
     await waitFor(() => {
       expect(result.current.state).toEqual({
@@ -60,7 +60,11 @@ describe("useContactForm", () => {
         report: { filled: ["name:firstName"], skipped: [] },
       });
     });
-    expect(toTab).toHaveBeenCalledWith(7, { type: "fillForm", steps });
+    expect(toTab).toHaveBeenCalledWith(7, {
+      type: "fillForm",
+      steps,
+      formKeys: ["name:firstName"],
+    });
     expect(toTab).toHaveBeenCalledTimes(3);
   });
 
@@ -99,7 +103,7 @@ describe("useContactForm", () => {
       expect(result.current.state).toEqual({ status: "form", fields });
     });
     act(() => {
-      result.current.fill([]);
+      result.current.fill([], []);
     });
     await waitFor(() => {
       expect(order).toHaveLength(6);
@@ -121,5 +125,29 @@ describe("useContactForm", () => {
       expect(result.current.state).toEqual({ status: "unreachable" });
     });
     expect(toTab).not.toHaveBeenCalled();
+  });
+
+  it("reads the form again and fills nothing when it changed since shown", async () => {
+    toTab.mockImplementation((_tab, message) =>
+      Promise.resolve(
+        (message as { type: string }).type === "fillForm"
+          ? ok({ kind: "changed" })
+          : ok({ kind: "form", fields }),
+      ),
+    );
+    const { result } = renderHook(() => useContactForm(7));
+    await waitFor(() => {
+      expect(result.current.state).toEqual({ status: "form", fields });
+    });
+    act(() => {
+      result.current.fill([], ["name:old"]);
+    });
+    await waitFor(() => {
+      expect(result.current.state).toEqual({
+        status: "form",
+        fields,
+        changed: true,
+      });
+    });
   });
 });
