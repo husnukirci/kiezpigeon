@@ -48,4 +48,24 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Ready when you are, Mara" }),
     ).toBeDefined();
   });
+
+  it("keeps home, and a letter on it, while the tracker is open", async () => {
+    await write("profile", coupleWithDog);
+    render(<App />);
+    const home = await screen.findByRole("heading", {
+      name: "Ready when you are, Mara",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Your pigeons" }));
+    expect(
+      await screen.findByRole("heading", { name: "Your pigeons" }),
+    ).toBeDefined();
+    expect(
+      screen.queryByRole("heading", { name: "Ready when you are, Mara" }),
+    ).toBeNull();
+    expect(home.isConnected).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(
+      screen.getByRole("heading", { name: "Ready when you are, Mara" }),
+    ).toBe(home);
+  });
 });

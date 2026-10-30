@@ -1,5 +1,6 @@
 // The side panel: header, then onboarding until a profile is stored, then
-// home. Settings and the tracker open from the header over either.
+// home. Settings and the tracker open from the header over either, which
+// stays mounted underneath so a letter written on it is still there after.
 import { useState, type ReactNode } from "react";
 import styles from "./App.module.css";
 import { cx } from "./cx";
@@ -53,7 +54,10 @@ export function App() {
           setOpen("settings");
         }}
       />
-      {over ?? screen}
+      {over}
+      <div className={styles.under} hidden={over != null}>
+        {screen}
+      </div>
     </main>
   );
 }
