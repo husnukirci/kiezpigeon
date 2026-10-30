@@ -4,12 +4,14 @@
 import { panelTabId } from "../../../messaging/panel";
 import type { Profile } from "../../../rules/types";
 import { useActiveListing } from "../../hooks/useActiveListing";
+import { usePageLoads } from "../../hooks/usePageLoads";
 import { UnknownSite } from "../UnknownSite/UnknownSite";
 import { ListingFlow } from "./ListingFlow";
 
 export function Home({ profile }: { profile: Profile }) {
   const ownTab = panelTabId(window.location.search);
   const active = useActiveListing(ownTab);
+  const pageLoads = usePageLoads(ownTab);
   if (active.kind === "loading") return null;
   if (active.kind === "listing") {
     return (
@@ -21,5 +23,7 @@ export function Home({ profile }: { profile: Profile }) {
       />
     );
   }
-  return <UnknownSite ownTab={ownTab} profile={profile} />;
+  // Typed facts, opt-outs and the letter belong to one page: another page
+  // in the tab starts over at "Use this page".
+  return <UnknownSite key={pageLoads} ownTab={ownTab} profile={profile} />;
 }
