@@ -21,6 +21,7 @@ entry keeps one line per rejected option so the cut stays visible.
 |   9 | The validator is the guarantee: generate, validate, retry once | P4    | accepted |
 |  10 | Move-in as a choice, schema 2                                  | P4+   | accepted |
 |  11 | Never submit: filling a framework-driven form                  | P5    | accepted |
+|  12 | Unknown sites: `activeTab`, an injected reader, confirm first  | P6    | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -532,3 +533,67 @@ stays unmatched until a profile field holds a salutation. The running
 probes are `src/fill/fill.test.tsx` (React state reached, plain assignment
 not; no submit, click or key event during a fill on the fixture) and
 `e2e/never-submit.spec.ts`.
+
+## ADR 12: Unknown sites: `activeTab`, an injected reader, confirm first
+
+**Status.** Accepted.
+
+**Context.** Most listings outside ImmoScout24 come from property managers
+and housing companies, each with its own page and its own contact form.
+An adapter per site does not scale, a host permission per site or
+`<all_urls>` breaks least privilege (PLAN.md section 7), and a content
+script on every page breaks "read only what the user is looking at". ADR 8
+rejected one generic reader for prices: on an unknown page the rent, the
+contact person and the features cannot be read reliably. The product
+invariant says a fill on an unknown site is shown before it happens and
+happens only after the user confirms.
+
+**Decision.** The manifest gains `activeTab` and `scripting`, and no host
+permission. The icon click that opens the panel grants `activeTab` for
+that tab. When the tab is not a listing, the panel offers "Use this page";
+on that click it injects `fallback.js` (the WXT unlisted script
+`src/entrypoints/fallback.ts`) with `scripting.executeScript`
+(`src/messaging/fallback.ts`). The script returns the page's address
+without its query string and from then on answers `getContactForm` and
+`fillForm` like a site's content script, inside the form
+`src/adapters/generic/` picks: of the visible forms that ask for no
+password, one with a visible message box, else the one with the most typed
+fields if it has at least three, the first in the page on a tie. It
+installs its listener once per page; the panel injects again before every
+read and fill, which costs nothing and finds a page reloaded on the same
+site. `describeFields` now also treats a field a stylesheet hides as
+invisible (`checkVisibility()`), so a spam trap is neither counted nor
+filled, on any site.
+
+Nothing else is read from the page. The user types the listing facts in
+the panel (title, Kaltmiete, Warmmiete, contact person, features), and
+`listingFromFacts` in the rules core turns exactly those into a `Listing`,
+naming every other field in `missing`; the fit check and the letter then
+work as on a known site.
+
+On the letter screen the form card lists every pair the matcher made,
+"field label → value", each a toggle (`aria-pressed`) the user can switch
+off, with the fields left for the user and the opt-ins left alone named
+below. "Fill the form" under that list is the confirm: it sends
+`fillSteps(mappings, optedOut)` built from the same `mapFields` result the
+list shows, to the same fill engine and with the same refusals as ADR 11.
+
+Rejected: optional host permissions requested per site (a prompt per site
+and a grant that outlives the visit); a content script on `<all_urls>`
+(reads every page); reading rent or contact person from the page text
+(unreliable, and "nothing is guessed silently"); a separate confirm dialog
+after the preview (a second click for what the list already shows); saving
+a mapping per site (a Tier 2 candidate).
+
+**Consequences.** The grant lasts while the tab stays on the same site; a
+navigation to another site or a closed tab ends it, and the panel then asks
+the user to click the icon again. A form that is not a `<form>` element
+(some single-page apps) or sits in an iframe (`executeScript` targets the
+top frame) is not found; the panel says so and the letter can still be
+copied. The ADR 11 note on React checkboxes holds here too: a fact
+checkbox on a React page may keep its old state, so the preview names it
+for the user to look at. The e2e run grants the tab with CDP
+`Extensions.triggerAction`, which only fires on the focused tab. The
+running probes are `e2e/fallback.spec.ts` (no access before the icon
+click, the reader answers after it, once, with the right form) and the
+generic fixture block in `src/fill/fill.test.tsx`.
