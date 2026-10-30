@@ -2,13 +2,17 @@
 // until "Write my letter", then the letter with its tab's contact form. On
 // an unknown site (ADR 12) the facts were typed, so the listing screen has
 // a Back to them, the form is read through the injected reader, and the
-// form card lists every pair for the user to confirm before filling.
+// form card lists every pair for the user to confirm before filling. After
+// a fill, "Yes, I sent it" saves the application to the tracker.
 import { useState, type ComponentProps } from "react";
 import { injectFallback } from "../../../messaging/fallback";
 import { createLetterRequest } from "../../../rules/letterPrompt";
+import { newApplication } from "../../../rules/tracker";
 import type { Listing, Profile } from "../../../rules/types";
+import { addApplication } from "../../../storage/storage";
 import { useContactForm } from "../../hooks/useContactForm";
 import { useLetter } from "../../hooks/useLetter";
+import { useStored } from "../../hooks/useStored";
 import { LetterReady } from "../LetterReady/LetterReady";
 import {
   ListingDetected,
@@ -48,7 +52,7 @@ export function ListingFlow({
         unknownSite={unknownSite !== undefined}
         state={ours}
         profile={profile}
-        listingTitle={listing.title}
+        listing={listing}
         onTone={(tone) => {
           letter.write({ ...ours.request, tone });
         }}
@@ -84,19 +88,54 @@ export function ListingFlow({
 
 type LetterScreenProps = Omit<
   ComponentProps<typeof LetterReady>,
-  "form" | "onCheckForm" | "onFill" | "confirmFirst"
-> & { ownTab: number | undefined; unknownSite: boolean };
+  | "form"
+  | "onCheckForm"
+  | "onFill"
+  | "confirmFirst"
+  | "listingTitle"
+  | "saved"
+  | "saveFailed"
+  | "onSent"
+> & { ownTab: number | undefined; unknownSite: boolean; listing: Listing };
 
-/** The letter screen with its tab's contact form, read when it opens. */
-function LetterScreen({ ownTab, unknownSite, ...props }: LetterScreenProps) {
+/** The letter screen with its tab's contact form, read when it opens, and
+ *  the tracker's record for its listing. */
+function LetterScreen({
+  ownTab,
+  unknownSite,
+  listing,
+  ...props
+}: LetterScreenProps) {
   const form = useContactForm(ownTab, unknownSite ? injectFallback : undefined);
+  const applications = useStored("applications");
+  const [saveFailed, setSaveFailed] = useState<string>();
+  const saved =
+    applications.status === "ready"
+      ? applications.value?.find((a) => a.listingUrl === listing.url)
+      : undefined;
+
+  const onSent = (letter: string): void => {
+    setSaveFailed(undefined);
+    const application = newApplication(listing, letter, {
+      now: new Date().toISOString(),
+      random: crypto.randomUUID().replaceAll("-", "").slice(0, 12),
+    });
+    addApplication(application).catch((error: unknown) => {
+      setSaveFailed(`It could not be saved: ${String(error)}`);
+    });
+  };
+
   return (
     <LetterReady
       {...props}
+      listingTitle={listing.title}
       confirmFirst={unknownSite}
       form={form.state}
       onCheckForm={form.check}
       onFill={form.fill}
+      saved={saved}
+      saveFailed={saveFailed}
+      onSent={onSent}
     />
   );
 }
