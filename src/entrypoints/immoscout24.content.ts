@@ -1,6 +1,6 @@
 import { defineContentScript } from "wxt/utils/define-content-script";
 import { immoscout24 } from "../adapters/immoscout24/immoscout24";
-import { fillForm } from "../fill/fill";
+import { fillPlanned } from "../fill/fill";
 import { PAGE_ANSWERED } from "../messaging/fallback";
 import { handle } from "../messaging/messaging";
 
@@ -30,9 +30,11 @@ export default defineContentScript({
       },
       fillForm: (message) => {
         const form = immoscout24.contactForm(document);
-        return form
-          ? { kind: "filled", report: fillForm(form, message.steps) }
-          : { kind: "no_form" };
+        if (!form) return { kind: "no_form" };
+        const report = fillPlanned(form, message.steps, message.formKeys);
+        return report === "changed"
+          ? { kind: "changed" }
+          : { kind: "filled", report };
       },
     });
   },

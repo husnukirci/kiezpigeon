@@ -1,6 +1,6 @@
 import { defineUnlistedScript } from "wxt/utils/define-unlisted-script";
 import { generic } from "../adapters/generic/generic";
-import { fillForm } from "../fill/fill";
+import { fillPlanned } from "../fill/fill";
 import { PAGE_ANSWERED } from "../messaging/fallback";
 import { handle } from "../messaging/messaging";
 
@@ -23,9 +23,11 @@ export default defineUnlistedScript(() => {
       },
       fillForm: (message) => {
         const form = generic.contactForm(document);
-        return form
-          ? { kind: "filled", report: fillForm(form, message.steps) }
-          : { kind: "no_form" };
+        if (!form) return { kind: "no_form" };
+        const report = fillPlanned(form, message.steps, message.formKeys);
+        return report === "changed"
+          ? { kind: "changed" }
+          : { kind: "filled", report };
       },
     });
   }

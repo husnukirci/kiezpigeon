@@ -14,7 +14,13 @@ export type ContactFormState =
   | { status: "no_form" }
   /** No content script answered: a page from before an install or update. */
   | { status: "unreachable" }
-  | { status: "form"; fields: FormField[]; report?: FillReport };
+  | {
+      status: "form";
+      fields: FormField[];
+      report?: FillReport;
+      /** The form changed since it was shown, so nothing was filled. */
+      changed?: true;
+    };
 
 /** Runs in the tab before each read and fill; rejects if it cannot. */
 export type Prepare = (tabId: number) => Promise<unknown>;
@@ -36,14 +42,18 @@ async function fillThenRead(
   ownTab: number | undefined,
   prepare: Prepare | undefined,
   steps: FillStep[],
+  formKeys: string[],
 ): Promise<ContactFormState> {
   const tabId = await panelTab(ownTab);
   if (tabId === undefined) return { status: "unreachable" };
   await prepare?.(tabId);
-  const result = await send({ type: "fillForm", steps }, tabId);
+  const result = await send({ type: "fillForm", steps, formKeys }, tabId);
   if (result.kind === "no_form") return { status: "no_form" };
   const after = await read(ownTab, prepare);
-  return after.status === "form" ? { ...after, report: result.report } : after;
+  if (after.status !== "form") return after;
+  return result.kind === "changed"
+    ? { ...after, changed: true }
+    : { ...after, report: result.report };
 }
 
 export function useContactForm(
@@ -52,7 +62,8 @@ export function useContactForm(
 ): {
   state: ContactFormState;
   check: () => void;
-  fill: (steps: FillStep[]) => void;
+  /** Fills the form whose field keys the user saw; never sends it. */
+  fill: (steps: FillStep[], formKeys: string[]) => void;
 } {
   const [state, setState] = useState<ContactFormState>({ status: "checking" });
   const latest = useRef(0);
@@ -86,8 +97,8 @@ export function useContactForm(
   }, [run, ownTab, prepare]);
 
   const fill = useCallback(
-    (steps: FillStep[]) => {
-      run(() => fillThenRead(ownTab, prepare, steps));
+    (steps: FillStep[], formKeys: string[]) => {
+      run(() => fillThenRead(ownTab, prepare, steps, formKeys));
     },
     [run, ownTab, prepare],
   );

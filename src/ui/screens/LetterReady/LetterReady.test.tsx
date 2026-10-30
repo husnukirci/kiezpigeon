@@ -41,26 +41,28 @@ const field = (partial: Partial<FormField> & { key: string }): FormField => ({
 });
 
 /** A small contact form as the content script would describe it. */
+const contactFields: FormField[] = [
+  field({ key: "name:message", type: "textarea", label: "Nachricht" }),
+  field({
+    key: "name:salutation",
+    type: "select",
+    label: "Anrede *",
+    options: [{ value: "MALE", label: "Herr" }],
+  }),
+  field({ key: "name:firstName", label: "Vorname *", value: "Jonas" }),
+  field({ key: "name:phone", label: "Telefonnummer", value: "" }),
+  field({
+    key: "name:followAnAgent",
+    type: "checkbox",
+    label: "Anbieter:in folgen",
+    checked: true,
+  }),
+];
 const contactForm: ContactFormState = {
   status: "form",
-  fields: [
-    field({ key: "name:message", type: "textarea", label: "Nachricht" }),
-    field({
-      key: "name:salutation",
-      type: "select",
-      label: "Anrede *",
-      options: [{ value: "MALE", label: "Herr" }],
-    }),
-    field({ key: "name:firstName", label: "Vorname *", value: "Jonas" }),
-    field({ key: "name:phone", label: "Telefonnummer", value: "" }),
-    field({
-      key: "name:followAnAgent",
-      type: "checkbox",
-      label: "Anbieter:in folgen",
-      checked: true,
-    }),
-  ],
+  fields: contactFields,
 };
+const formKeys = contactFields.map((f) => f.key);
 
 function renderWith(
   state: Exclude<LetterState, { status: "idle" }>,
@@ -132,15 +134,18 @@ describe("LetterReady", () => {
       target: { value: "Sehr geehrte Frau Weber, kurz." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
-    expect(props.onFill).toHaveBeenCalledExactlyOnceWith([
-      {
-        key: "name:message",
-        kind: "message",
-        value: "Sehr geehrte Frau Weber, kurz.",
-      },
-      { key: "name:firstName", kind: "firstName", value: "Mara" },
-      { key: "name:phone", kind: "phone", value: "030 5550123" },
-    ]);
+    expect(props.onFill).toHaveBeenCalledExactlyOnceWith(
+      [
+        {
+          key: "name:message",
+          kind: "message",
+          value: "Sehr geehrte Frau Weber, kurz.",
+        },
+        { key: "name:firstName", kind: "firstName", value: "Mara" },
+        { key: "name:phone", kind: "phone", value: "030 5550123" },
+      ],
+      formKeys,
+    );
   });
 
   it("lists no pairs to confirm on a known site", () => {
@@ -169,10 +174,13 @@ describe("LetterReady", () => {
 
     expect(props.onFill).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
-    expect(props.onFill).toHaveBeenCalledExactlyOnceWith([
-      { key: "name:message", kind: "message", value: passingLetter },
-      { key: "name:phone", kind: "phone", value: "030 5550123" },
-    ]);
+    expect(props.onFill).toHaveBeenCalledExactlyOnceWith(
+      [
+        { key: "name:message", kind: "message", value: passingLetter },
+        { key: "name:phone", kind: "phone", value: "030 5550123" },
+      ],
+      formKeys,
+    );
   });
 
   it("can not fill once every pair is switched off", () => {
@@ -194,6 +202,47 @@ describe("LetterReady", () => {
     renderWith(ready, { status: "unreachable" }, true);
     expect(
       screen.getByText(/Click the Kiezpigeon icon in the toolbar/),
+    ).toBeDefined();
+  });
+
+  it("forgets what you switched off when the page's form changes", () => {
+    const view = (form: ContactFormState) => (
+      <LetterReady
+        state={ready}
+        profile={coupleWithDog}
+        listingTitle={undefined}
+        form={form}
+        confirmFirst
+        onCheckForm={vi.fn()}
+        onFill={vi.fn()}
+        onTone={vi.fn()}
+        onRewrite={vi.fn()}
+        onBack={vi.fn()}
+      />
+    );
+    const { rerender } = render(view(contactForm));
+    const vorname = () => screen.getByRole("button", { name: /^Vorname/ });
+    fireEvent.click(vorname());
+    expect(vorname().getAttribute("aria-pressed")).toBe("false");
+
+    // Read again with the same fields: the choice stays.
+    rerender(view({ ...contactForm }));
+    expect(vorname().getAttribute("aria-pressed")).toBe("false");
+
+    // The page gained a field: keys may now name other fields, so all on.
+    rerender(
+      view({
+        status: "form",
+        fields: [...contactFields, field({ key: "index:9", label: "Beruf" })],
+      }),
+    );
+    expect(vorname().getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("says nothing was filled when the form changed since it was shown", () => {
+    renderWith(ready, { ...contactForm, changed: true }, true);
+    expect(
+      screen.getByText(/The form on the page changed, so nothing was filled/),
     ).toBeDefined();
   });
 

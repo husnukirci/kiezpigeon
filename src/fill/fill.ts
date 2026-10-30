@@ -4,7 +4,7 @@
 // a consent box and never touches a file input (CLAUDE.md "Never submit").
 import { classifyField } from "../rules/fieldMatch";
 import type { FieldKind, FieldMapping, FieldValue } from "../rules/types";
-import { describeField, findField } from "./describe";
+import { describeField, describeFields, findField } from "./describe";
 
 export interface FillStep {
   key: string;
@@ -99,6 +99,22 @@ export function fillForm(
     else report.filled.push(step.key);
   }
   return report;
+}
+
+/**
+ * `fillForm`, but only into the form the plan was made from: if the form's
+ * field keys differ from the ones the user saw (a field added, removed or
+ * moved), nothing is written, because a key could now name another field.
+ */
+export function fillPlanned(
+  root: ParentNode,
+  steps: readonly FillStep[],
+  formKeys: readonly string[],
+): FillReport | "changed" {
+  const now = describeFields(root).map((field) => field.key);
+  const same =
+    now.length === formKeys.length && now.every((k, i) => k === formKeys[i]);
+  return same ? fillForm(root, steps) : "changed";
 }
 
 /**

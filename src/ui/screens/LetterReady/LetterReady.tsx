@@ -31,8 +31,8 @@ interface LetterReadyProps {
   /** An unknown site: list the pairs for the user to confirm first. */
   confirmFirst?: boolean;
   onCheckForm: () => void;
-  /** Fills the page's form; never sends it. */
-  onFill: (steps: FillStep[]) => void;
+  /** Fills the page's form, the one with these keys; never sends it. */
+  onFill: (steps: FillStep[], formKeys: string[]) => void;
   /** Writes the letter again in another tone. */
   onTone: (tone: Tone) => void;
   /** Writes the letter again in the same tone. */
@@ -61,18 +61,24 @@ export function LetterReady({
       ? mapFields(form.fields, profile, text)
       : undefined;
   // Keys of the fields the user switched off; the list and the fill both
-  // read this one set and this one mapping.
-  const [optedOut, setOptedOut] = useState<ReadonlySet<string>>(new Set());
+  // read this one set and this one mapping. The set belongs to one form:
+  // when the page's fields change, a key may name another field.
+  const formKeys =
+    form.status === "form" ? form.fields.map((field) => field.key) : [];
+  const formId = formKeys.join("\n");
+  const [choice, setChoice] = useState<{
+    of: string;
+    optedOut: ReadonlySet<string>;
+  }>();
+  const optedOut = choice?.of === formId ? choice.optedOut : new Set<string>();
   const steps = match ? fillSteps(match.mappings, optedOut) : [];
   const confirm = confirmFirst
     ? {
         optedOut,
         onToggle: (key: string) => {
-          setOptedOut((current) => {
-            const next = new Set(current);
-            if (!next.delete(key)) next.add(key);
-            return next;
-          });
+          const next = new Set(optedOut);
+          if (!next.delete(key)) next.add(key);
+          setChoice({ of: formId, optedOut: next });
         },
       }
     : undefined;
@@ -142,7 +148,7 @@ export function LetterReady({
           disabled={steps.length === 0}
           aria-describedby="send-reminder"
           onClick={() => {
-            onFill(steps);
+            onFill(steps, formKeys);
           }}
         >
           Fill the form

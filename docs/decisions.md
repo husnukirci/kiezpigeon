@@ -581,7 +581,12 @@ On the letter screen the form card lists every pair the matcher made,
 off, with the fields left for the user and the opt-ins left alone named
 below. "Fill the form" under that list is the confirm: it sends
 `fillSteps(mappings, optedOut)` built from the same `mapFields` result the
-list shows, to the same fill engine and with the same refusals as ADR 11.
+list shows, to the same fill engine and with the same refusals as ADR 11. The fill
+carries the keys of the form as the panel showed it, and the page writes
+nothing if its form's keys differ (`fillPlanned`; a dialog that opened in
+between could otherwise take values meant for another field); the panel
+reads the form again and says so. This holds on ImmoScout24 too. The
+opt-outs belong to that one set of keys and reset when it changes.
 
 Rejected: optional host permissions requested per site (a prompt per site
 and a grant that outlives the visit); a content script on `<all_urls>`

@@ -55,6 +55,10 @@ export function FormCard({ state, match, onCheck, confirm }: FormCardProps) {
       title="Form fields"
       aside={match && <MatchPill matched={match.matched} total={match.total} />}
     >
+      {/* Outside the live region, so a toggle is not announced twice. */}
+      {state.status === "form" && match && confirm && (
+        <PairList mappings={match.mappings} confirm={confirm} />
+      )}
       <div aria-live="polite">
         {state.status === "form" ? (
           match && <FormLines state={state} match={match} confirm={confirm} />
@@ -126,16 +130,14 @@ function FormLines({
     .filter((f) => skipped.includes(f.key));
 
   return (
-    <>
-      {confirm && <PairList mappings={match.mappings} confirm={confirm} />}
-      <FillLines
-        filled={report?.filled.length}
-        notFilled={notFilled}
-        unmatched={unmatched}
-        replaced={replaced}
-        leftAlone={match.leftAlone}
-      />
-    </>
+    <FillLines
+      changed={state.changed === true}
+      filled={report?.filled.length}
+      notFilled={notFilled}
+      unmatched={unmatched}
+      replaced={replaced}
+      leftAlone={match.leftAlone}
+    />
   );
 }
 
@@ -187,6 +189,8 @@ function PairList({
 }
 
 interface FillLinesProps {
+  /** The last fill found another form than the one shown. */
+  changed: boolean;
   /** How many fields the last fill wrote, if there was one. */
   filled: number | undefined;
   notFilled: FormField[];
@@ -196,6 +200,7 @@ interface FillLinesProps {
 }
 
 function FillLines({
+  changed,
   filled,
   notFilled,
   unmatched,
@@ -204,6 +209,13 @@ function FillLines({
 }: FillLinesProps) {
   return (
     <ul className={styles.lines}>
+      {changed && (
+        <li className={cx(styles.line, "type-body-sm")}>
+          <ExclamationIcon size={18} />
+          The form on the page changed, so nothing was filled. Check the fields
+          below, then fill again.
+        </li>
+      )}
       {filled !== undefined && (
         <li className={cx(styles.line, "type-body-sm")}>
           <TickIcon size={18} />

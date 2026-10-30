@@ -8,7 +8,8 @@ import { coupleWithDog } from "../../test-support/sample-profiles";
 import { generic } from "../adapters/generic/generic";
 import { immoscout24 } from "../adapters/immoscout24/immoscout24";
 import { mapFields } from "../rules/fieldMatch";
-import { fillForm, fillSteps, type FillStep } from "./fill";
+import { describeFields } from "./describe";
+import { fillForm, fillPlanned, fillSteps, type FillStep } from "./fill";
 
 describe("fillForm on a React form (the ADR 11 probe)", () => {
   const state: Record<string, string> = {};
@@ -243,6 +244,25 @@ describe.each(["contact-form.html", "contact-form-placeholders.html"])(
       )) {
         expect(box.checked).toBe(false);
       }
+    });
+
+    it("fills nothing when the form is not the one the plan was made from", () => {
+      const keys = describeFields(form).map((field) => field.key);
+      const steps = fillSteps(mappings());
+      // The page adds a field after the preview: every index key shifts.
+      form.insertAdjacentHTML("afterbegin", '<input name="neu">');
+      expect(fillPlanned(form, steps, keys)).toBe("changed");
+      expect(form.querySelector("textarea")?.value).toBe("");
+      expect(attempts).toEqual([]);
+    });
+
+    it("fills as planned while the form is unchanged", () => {
+      const keys = describeFields(form).map((field) => field.key);
+      const steps = fillSteps(mappings());
+      expect(fillPlanned(form, steps, keys)).toEqual({
+        filled: steps.map((step) => step.key),
+        skipped: [],
+      });
     });
 
     it("leaves a field the user opted out of as it was", () => {
