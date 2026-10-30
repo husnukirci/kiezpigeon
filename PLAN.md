@@ -107,7 +107,7 @@ use), and how two applicants are related (so the letter stops guessing).
       unknown sites with a confirm step before filling
 - [x] Tracker: save an application when the user confirms they sent it;
       statuses Sent, Viewing, Closed; stat tiles; filters
-- [ ] Docs: README (what it does, install unpacked, privacy section,
+- [x] Docs: README (what it does, install unpacked, privacy section,
       screenshots), `docs/decisions.md`, `CLAUDE.md`, `docs/ai-workflow.md`;
       personal data scrub; `v1.0.0` tag
 
@@ -198,6 +198,8 @@ Expected during the build:
 
 ADR 10 (move-in as a choice, schema 2) was added after Phase 4, which
 moved the two after it up by one, as PHASES.md already numbers them.
+ADR 13 (applications and the export file) was recorded in the Phase 8
+audit for shapes that had shipped without an entry.
 
 ## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 

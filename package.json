@@ -1,6 +1,6 @@
 {
   "name": "kiezpigeon",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Chrome extension for the Berlin apartment hunt: reads a listing, writes a German application letter, fills the contact form. You press Send.",
   "license": "MIT",
@@ -19,7 +19,8 @@
     "lint": "eslint . && stylelint \"**/*.css\"",
     "format": "prettier --write .",
     "prepare": "husky",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "screenshots": "npm run build && SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
