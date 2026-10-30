@@ -1,7 +1,9 @@
 // "Letter ready" (design system screen 3): the letter on paper, its checks,
 // Rewrite / Edit / Copy, the tone switch, which writes it again, and the
 // form fields card. Edits are re-checked as you type, and Fill the form
-// writes the letter as edited. The user presses Send on the page.
+// writes the letter as edited. On an unknown site the card lists every pair
+// first and Fill the form writes only those left on (ADR 12). The user
+// presses Send on the page.
 import { useState } from "react";
 import { fillSteps, type FillStep } from "../../../fill/fill";
 import { mapFields } from "../../../rules/fieldMatch";
@@ -26,6 +28,8 @@ interface LetterReadyProps {
   profile: Profile;
   listingTitle: string | undefined;
   form: ContactFormState;
+  /** An unknown site: list the pairs for the user to confirm first. */
+  confirmFirst?: boolean;
   onCheckForm: () => void;
   /** Fills the page's form; never sends it. */
   onFill: (steps: FillStep[]) => void;
@@ -41,6 +45,7 @@ export function LetterReady({
   profile,
   listingTitle,
   form,
+  confirmFirst = false,
   onCheckForm,
   onFill,
   onTone,
@@ -55,7 +60,22 @@ export function LetterReady({
     text !== undefined && form.status === "form"
       ? mapFields(form.fields, profile, text)
       : undefined;
-  const canFill = match !== undefined && match.matched > 0;
+  // Keys of the fields the user switched off; the list and the fill both
+  // read this one set and this one mapping.
+  const [optedOut, setOptedOut] = useState<ReadonlySet<string>>(new Set());
+  const steps = match ? fillSteps(match.mappings, optedOut) : [];
+  const confirm = confirmFirst
+    ? {
+        optedOut,
+        onToggle: (key: string) => {
+          setOptedOut((current) => {
+            const next = new Set(current);
+            if (!next.delete(key)) next.add(key);
+            return next;
+          });
+        },
+      }
+    : undefined;
 
   return (
     <section className={screen.screen} aria-labelledby="letter-title">
@@ -104,7 +124,12 @@ export function LetterReady({
             request={state.request}
             onRewrite={onRewrite}
           />
-          <FormCard state={form} match={match} onCheck={onCheckForm} />
+          <FormCard
+            state={form}
+            match={match}
+            onCheck={onCheckForm}
+            confirm={confirm}
+          />
         </>
       )}
 
@@ -114,10 +139,10 @@ export function LetterReady({
         </Button>
         <Button
           kind="primary"
-          disabled={!canFill}
+          disabled={steps.length === 0}
           aria-describedby="send-reminder"
           onClick={() => {
-            if (match) onFill(fillSteps(match.mappings));
+            onFill(steps);
           }}
         >
           Fill the form
