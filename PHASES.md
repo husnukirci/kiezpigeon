@@ -45,6 +45,12 @@ when ADRs 1 to 7 were accepted. Paths follow the folder map in ADR 6.
       session
 - [ ] No real personal data in the diff: fixtures scrubbed, sample profiles
       invented, no API key (grep for `@`, phone-number shapes, `sk-ant-`)
+- [ ] No personal circumstances of the author anywhere, PR description
+      and PR comments included: no real names, relationship, job
+      situation, income, or quotes from real letters and listings
+- [ ] No AI attribution: no AI co-author trailer in any commit, no tool
+      footer in the PR description; read the PR body before
+      `gh pr create` (commitlint and the Attribution workflow enforce it)
 - [ ] Never-submit grep: no `.submit(`, `requestSubmit`,
       `new SubmitEvent`, `dispatchEvent(new Event("submit"`, `.click()` on
       a button outside the panel's own UI, or synthetic `Enter` key events

@@ -35,7 +35,11 @@ Optimize for legibility over cleverness.
    to be wrong, append one line to `docs/ai-workflow.md`. Written
    incrementally, never reconstructed.
 6. **No real personal data, anywhere.** Not in code, fixtures, tests, docs,
-   screenshots, comments or commit messages. Saved listing HTML is scrubbed
+   screenshots, comments, commit messages, PR descriptions or PR comments.
+   That includes the author's own circumstances: names, relationship, job
+   situation, income, their real letters and listings. Describe real runs
+   in general terms ("a real letter named both applicants three times"),
+   never by quoting them. Saved listing HTML is scrubbed
    before it is committed: contact person names, phone numbers, email
    addresses, street addresses, listing ids and tracking tokens are replaced
    with invented values, and the fixture's header comment says so. Sample
