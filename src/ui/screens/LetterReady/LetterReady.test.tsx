@@ -65,6 +65,7 @@ const contactForm: ContactFormState = {
 function renderWith(
   state: Exclude<LetterState, { status: "idle" }>,
   form: ContactFormState = { status: "no_form" },
+  confirmFirst = false,
 ) {
   const props = {
     onTone: vi.fn(),
@@ -79,6 +80,7 @@ function renderWith(
       profile={coupleWithDog}
       listingTitle={kreuzbergListing.title}
       form={form}
+      confirmFirst={confirmFirst}
       {...props}
     />,
   );
@@ -139,6 +141,60 @@ describe("LetterReady", () => {
       { key: "name:firstName", kind: "firstName", value: "Mara" },
       { key: "name:phone", kind: "phone", value: "030 5550123" },
     ]);
+  });
+
+  it("lists no pairs to confirm on a known site", () => {
+    renderWith(ready, contactForm);
+    expect(screen.queryByRole("button", { name: /→/ })).toBeNull();
+  });
+
+  it("on an unknown site lists every pair and fills only those left on", () => {
+    const props = renderWith(ready, contactForm, true);
+    const pairs = screen.getAllByRole("button", { name: /→/ });
+    expect(pairs.map((pair) => pair.textContent)).toEqual([
+      `Nachricht → your letter (${countWords(passingLetter)} words)`,
+      "Vorname → Mara",
+      "Telefonnummer → 030 5550123",
+    ]);
+    for (const pair of pairs) {
+      expect(pair.getAttribute("aria-pressed")).toBe("true");
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: /^Vorname/ }));
+    const off = screen.getByRole("button", { name: /^Vorname/ });
+    expect(off.getAttribute("aria-pressed")).toBe("false");
+    expect(off.textContent).toBe("Vorname → MaraLeft as it is");
+    // The replaced-field line no longer names a field that stays as it is.
+    expect(screen.queryByText(/Replaces what the page already has/)).toBeNull();
+
+    expect(props.onFill).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    expect(props.onFill).toHaveBeenCalledExactlyOnceWith([
+      { key: "name:message", kind: "message", value: passingLetter },
+      { key: "name:phone", kind: "phone", value: "030 5550123" },
+    ]);
+  });
+
+  it("can not fill once every pair is switched off", () => {
+    renderWith(
+      ready,
+      {
+        status: "form",
+        fields: [field({ key: "name:vorname", label: "Vorname" })],
+      },
+      true,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Vorname/ }));
+    expect(
+      screen.getByRole("button", { name: "Fill the form" }),
+    ).toHaveProperty("disabled", true);
+  });
+
+  it("names the toolbar icon when an unknown site can no longer be read", () => {
+    renderWith(ready, { status: "unreachable" }, true);
+    expect(
+      screen.getByText(/Click the Kiezpigeon icon in the toolbar/),
+    ).toBeDefined();
   });
 
   it("reports what the last fill did", () => {

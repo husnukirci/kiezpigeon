@@ -1,6 +1,7 @@
 // The design system's filled glyphs (README "Iconography"): a tick in a teal
-// disc, an exclamation in a sun disc, a plus of two rounded bars. Always
-// decorative; the text next to them carries the meaning.
+// disc, an exclamation in a sun disc, a plus of two rounded bars, and an
+// empty ring for a choice switched off. Always decorative; the text next to
+// them carries the meaning.
 import styles from "./Icons.module.css";
 
 interface IconProps {
@@ -88,6 +89,21 @@ export function PlusIcon({ size = 16 }: IconProps) {
         height="3"
         rx="1.5"
       />
+    </svg>
+  );
+}
+
+/** The tick's disc left empty, in the current text colour. */
+export function RingIcon({ size = 14 }: IconProps) {
+  return (
+    <svg
+      className={styles.icon}
+      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      aria-hidden="true"
+    >
+      <circle className={styles.ring} cx="8" cy="8" r="7" />
     </svg>
   );
 }

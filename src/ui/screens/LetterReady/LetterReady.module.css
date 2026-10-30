@@ -101,3 +101,44 @@
   margin: 0;
   color: var(--ink-muted);
 }
+
+.pairs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One planned field as a toggle: on is the teal chip, off the plain one
+   with an empty ring and the words "Left as it is" (Chip README roles). */
+.pair {
+  --icon-gap: 10px;
+  --pair-border: 2px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--icon-gap);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-3);
+  border: var(--pair-border) solid var(--line);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--ink-muted);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.pair[aria-pressed="true"] {
+  border-color: var(--teal);
+  background: var(--teal-deep);
+  color: var(--ink);
+}
+
+.off {
+  display: block;
+  color: var(--ink-subtle);
+}
