@@ -1,6 +1,11 @@
 // The tracker: status changes, stats and filters over saved applications.
 // The current time is passed in; nothing here reads the clock.
-import type { Application, ApplicationStatus, IsoDateTime } from "./types";
+import type {
+  Application,
+  ApplicationStatus,
+  IsoDateTime,
+  Listing,
+} from "./types";
 
 export type TrackerFilter = "all" | ApplicationStatus;
 
@@ -13,6 +18,29 @@ export interface TrackerStats {
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * The record saved when the user says they sent the letter. The extension
+ * never sends, so it never decides this itself.
+ */
+export function newApplication(
+  listing: Listing,
+  letter: string,
+  { now, random }: { now: IsoDateTime; random: string },
+): Application {
+  const { url, title, district, warmmieteCents } = listing;
+  return {
+    id: `app_${random}`,
+    listingUrl: url,
+    ...(title !== undefined && { listingTitle: title }),
+    ...(district !== undefined && { district }),
+    ...(warmmieteCents !== undefined && { warmmieteCents }),
+    letter,
+    status: "sent",
+    sentAt: now,
+    statusChangedAt: now,
+  };
+}
 
 /** Any status may follow any other; the user corrects mistakes. */
 export function setStatus(

@@ -12,9 +12,10 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("App", () => {
-  it("shows the header with the wordmark and a labelled settings button", () => {
+  it("shows the header with the wordmark and labelled tracker and settings buttons", () => {
     render(<App />);
     expect(screen.getByRole("banner").textContent).toBe("Kiezpigeon");
+    expect(screen.getByRole("button", { name: "Your pigeons" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Settings" })).toBeDefined();
   });
 
@@ -46,5 +47,25 @@ describe("App", () => {
     expect(
       await screen.findByRole("heading", { name: "Ready when you are, Mara" }),
     ).toBeDefined();
+  });
+
+  it("keeps home, and a letter on it, while the tracker is open", async () => {
+    await write("profile", coupleWithDog);
+    render(<App />);
+    const home = await screen.findByRole("heading", {
+      name: "Ready when you are, Mara",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Your pigeons" }));
+    expect(
+      await screen.findByRole("heading", { name: "Your pigeons" }),
+    ).toBeDefined();
+    expect(
+      screen.queryByRole("heading", { name: "Ready when you are, Mara" }),
+    ).toBeNull();
+    expect(home.isConnected).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(
+      screen.getByRole("heading", { name: "Ready when you are, Mara" }),
+    ).toBe(home);
   });
 });

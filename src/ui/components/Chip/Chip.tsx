@@ -1,5 +1,5 @@
-// Chip (design system components/Chip/README.md). ToggleChip is an
-// aria-pressed button; DocumentChip names a document with a tick when
+// Chip (design system components/Chip/README.md). ToggleChip and FilterChip
+// are aria-pressed buttons; DocumentChip names a document with a tick when
 // ready and an exclamation when pending, read-only unless given onToggle.
 import type { ReactNode } from "react";
 import { cx } from "../../cx";
@@ -17,6 +17,20 @@ export function ToggleChip({ pressed, onToggle, children }: ToggleProps) {
     <button
       type="button"
       className={cx(styles.chip, styles.toggle, "type-label")}
+      aria-pressed={pressed}
+      onClick={onToggle}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A filter tab: one of a set, the chosen one white. */
+export function FilterChip({ pressed, onToggle, children }: ToggleProps) {
+  return (
+    <button
+      type="button"
+      className={cx(styles.chip, styles.filter, "type-label")}
       aria-pressed={pressed}
       onClick={onToggle}
     >
