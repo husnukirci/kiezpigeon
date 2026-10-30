@@ -3,6 +3,8 @@ import { browser } from "wxt/browser";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { coupleWithDog } from "../../test-support/sample-profiles";
 import {
+  addApplication,
+  changeApplication,
   clearAll,
   migrate,
   MIGRATIONS,
@@ -103,6 +105,30 @@ describe("writeAll with extra keys", () => {
     expect(await browser.storage.local.get(null)).toEqual({
       schemaVersion: SCHEMA_VERSION,
       profile: coupleWithDog,
+    });
+  });
+});
+
+describe("applications", () => {
+  it("adds applications one by one and changes one by id", async () => {
+    const second = { ...application, id: "app_test2" };
+    await addApplication(application);
+    await addApplication(second);
+    await changeApplication("app_test2", (a) => ({ ...a, status: "closed" }));
+    expect(await read("applications")).toEqual({
+      ok: true,
+      value: [application, { ...second, status: "closed" }],
+    });
+  });
+
+  it("refuses to add to a damaged list instead of overwriting it", async () => {
+    const damaged = [{ ...application, status: "ghosted" }];
+    await browser.storage.local.set({ applications: damaged });
+    await expect(addApplication(application)).rejects.toThrow(
+      "applications[0].status",
+    );
+    expect(await browser.storage.local.get("applications")).toEqual({
+      applications: damaged,
     });
   });
 });
