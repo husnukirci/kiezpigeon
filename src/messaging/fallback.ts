@@ -3,6 +3,13 @@
 // holds. No host permission is involved, so without the grant it fails.
 import { browser } from "wxt/browser";
 
+/**
+ * Set on `window` by whichever Kiezpigeon script answers a page first. A
+ * site's content script and an injected reader share the extension's
+ * isolated world, so the reader sees it and never answers beside them.
+ */
+export const PAGE_ANSWERED = "kiezpigeonAnswers";
+
 /** Where WXT writes the `fallback` unlisted script in the build. */
 export const FALLBACK_SCRIPT = "/fallback.js";
 
