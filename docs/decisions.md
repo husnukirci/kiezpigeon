@@ -365,6 +365,18 @@ confirmed the per-tab options in Chromium; the running probes are
 `src/messaging/panel.test.ts` and the own-tab test in
 `src/ui/hooks/useActiveListing.test.tsx`.
 
+**Amendment (2026-10-30): the panel reads its tab's address.** "No answer"
+hid two different problems: an ImmoScout24 page that is not an exposé, and
+an exposé opened before the extension was loaded. The panel now also calls
+`tabs.get(tabId).url` and `unreadPage` (`src/rules/unreadPage.ts`) picks the
+wording. No new permission, and the `tabs` permission stays rejected: the
+Phase 9 probe in the built extension showed the address is hidden until the
+icon click, which is what opens the panel, and stays readable until the tab
+changes origin (the content script's match grants no access to it). An
+address that cannot be read counts as another site, so the panel offers the
+fallback and its wording still mentions reloading. The running probe is the
+address test in `e2e/fallback.spec.ts`.
+
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
 **Status.** Accepted.

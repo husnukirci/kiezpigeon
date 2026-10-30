@@ -218,6 +218,54 @@ test("the reader never answers beside a site's own content script", async () => 
   await panel.close();
 });
 
+test("the panel knows a tab's address only under the icon's grant, and says why it is not read", async () => {
+  const search = "https://www.immobilienscout24.de/Suche/de/berlin";
+  await context.route(`${search}**`, (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<!doctype html><title>Invented search page</title>",
+    }),
+  );
+  const site = await context.newPage();
+  await site.goto(search);
+  await site.bringToFront();
+  const tabId = await siteTabId();
+  const panel = await context.newPage();
+  await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  const address = () =>
+    panel.evaluate(
+      async (tab) => (await chrome.tabs.get(tab ?? -1)).url,
+      tabId,
+    );
+
+  // No `tabs` permission: before the click the address is hidden.
+  expect(await address()).toBeUndefined();
+  await clickIcon(site);
+  expect(await address()).toBe(search);
+
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await expect(
+    panel.getByText(
+      "This ImmoScout24 page is not a listing. Open a listing to start.",
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Use this page" }),
+  ).toBeHidden();
+
+  // Another origin ends the grant: the address is gone, so the panel can
+  // only offer the fallback.
+  await site.goto(SITE);
+  expect(await address()).toBeUndefined();
+  await expect(
+    panel.getByRole("button", { name: "Use this page" }),
+  ).toBeVisible();
+  await site.close();
+  await panel.close();
+});
+
 const CASES: Case[] = [
   {
     path: "/wohnung/17",

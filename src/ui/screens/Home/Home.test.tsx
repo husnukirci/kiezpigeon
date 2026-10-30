@@ -90,6 +90,28 @@ describe("Home", () => {
     });
   });
 
+  it.each([
+    [
+      "https://www.immobilienscout24.de/Suche/de/berlin/wohnung-mieten",
+      "This ImmoScout24 page is not a listing. Open a listing to start.",
+    ],
+    [
+      "https://www.immobilienscout24.de/expose/100000009",
+      "Reload this tab so Kiezpigeon can read it.",
+    ],
+  ])("says why %s is not read, and offers no fallback", async (url, reason) => {
+    vi.mocked(browser.tabs.sendMessage).mockRejectedValue(
+      new Error("Receiving end does not exist."),
+    );
+    const get = vi.spyOn(browser.tabs, "get") as unknown as MockInstance<
+      () => Promise<Browser.tabs.Tab>
+    >;
+    get.mockResolvedValue({ id: 7, url } as Browser.tabs.Tab);
+    render(<Home profile={coupleWithDog} />);
+    expect(await screen.findByText(reason)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Use this page" })).toBeNull();
+  });
+
   it("starts over on an unknown site when its tab loads another page", async () => {
     window.history.replaceState(null, "", "?tabId=7");
     // No content script answers: the tab is not a listing Kiezpigeon knows.
