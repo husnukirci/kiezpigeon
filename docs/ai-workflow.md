@@ -138,6 +138,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P7 | Item 3 (export, import, delete all) was already built in Phase 2, but every screen test used an empty application list, so it would have passed with applications dropped. | The three Settings tests now carry an application each.
 - P7 | Two test helpers (unit and e2e) found a stat tile by its label and also matched the Sent pill. | Both look for the stat-sized number above the label.
 - P7 | I built the tracker screen (item 2) before "Did you send it?" (item 1), so the saved record had somewhere to show; the phase asks for the list in order. | Noted here and in the PR; no other effect.
+- P7 | Branch review (a fresh reviewer agent, read-only, without a shell) found three real gaps: my URL check tested only the prefix, so an imported `http://[bad` passed and its row would throw while rendering and blank the panel; the previous fill's report stays on screen while a new fill runs, so a second fill that wrote nothing could save a letter that never reached the form; adding and changing applications read then wrote with nothing in between, so two quick changes lost one and a double "Yes" could save twice. | All fixed, each with a test seen failing first: the validator parses the address, a fill click remembers the report it saw, and changes to the list run one at a time with one application per listing. Also took its copy note: the first tip names the "Did you send it?" card.
 
 ## Per-phase narrative
 
