@@ -4,19 +4,6 @@
   gap: var(--space-4);
 }
 
-/* Two fields side by side; they stack below the 320px panel's room. */
-.pair {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--space-3);
-}
-
-.narrowWide {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: var(--space-3);
-}
-
 .failure {
   /* Card preview: 10px between icon and text. */
   --icon-gap: 10px;
