@@ -101,10 +101,16 @@ export function fillForm(
   return report;
 }
 
-/** The steps for every mapping that has a value; the rest stay untouched. */
-export function fillSteps(mappings: readonly FieldMapping[]): FillStep[] {
+/**
+ * The steps for every mapping that has a value, except the fields the user
+ * opted out of by key; the rest stay untouched.
+ */
+export function fillSteps(
+  mappings: readonly FieldMapping[],
+  optedOut: ReadonlySet<string> = new Set(),
+): FillStep[] {
   return mappings.flatMap((m) =>
-    m.value === undefined
+    m.value === undefined || optedOut.has(m.field.key)
       ? []
       : [{ key: m.field.key, kind: m.kind, value: m.value }],
   );
