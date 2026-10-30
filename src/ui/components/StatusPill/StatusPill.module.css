@@ -10,9 +10,22 @@
   font-weight: 700;
 }
 
-.matched {
+.matched,
+.viewing {
   background: var(--teal);
   color: var(--on-teal);
+  white-space: nowrap;
+}
+
+.sent {
+  background: var(--violet);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.closed {
+  background: var(--night-500);
+  color: var(--ink-muted);
   white-space: nowrap;
 }
 
