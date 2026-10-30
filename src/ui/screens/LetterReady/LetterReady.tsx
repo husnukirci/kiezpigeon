@@ -3,12 +3,17 @@
 // form fields card. Edits are re-checked as you type, and Fill the form
 // writes the letter as edited. On an unknown site the card lists every pair
 // first and Fill the form writes only those left on (ADR 12). The user
-// presses Send on the page.
+// presses Send on the page, then tells the panel so it can be tracked.
 import { useState } from "react";
 import { fillSteps, type FillStep } from "../../../fill/fill";
 import { mapFields } from "../../../rules/fieldMatch";
 import { countWords, validateLetter } from "../../../rules/letterValidate";
-import type { LetterRequest, Profile, Tone } from "../../../rules/types";
+import type {
+  Application,
+  LetterRequest,
+  Profile,
+  Tone,
+} from "../../../rules/types";
 import { describeProblem, type LetterDraft } from "../../../rules/writeLetter";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
@@ -22,6 +27,7 @@ import { TONES } from "../profileForm/ProfileSections";
 import screen from "../Screen.module.css";
 import { FormCard } from "./FormCard";
 import styles from "./LetterReady.module.css";
+import { SentCard } from "./SentCard";
 
 interface LetterReadyProps {
   state: Exclude<LetterState, { status: "idle" }>;
@@ -38,6 +44,12 @@ interface LetterReadyProps {
   /** Writes the letter again in the same tone. */
   onRewrite: () => void;
   onBack: () => void;
+  /** The tracker's record for this listing, once the user saved one. */
+  saved?: Application | undefined;
+  /** Why saving it failed, if it did. */
+  saveFailed?: string | undefined;
+  /** "Yes, I sent it", with the letter as it went into the form. */
+  onSent: (letter: string) => void;
 }
 
 export function LetterReady({
@@ -51,6 +63,9 @@ export function LetterReady({
   onTone,
   onRewrite,
   onBack,
+  saved,
+  saveFailed,
+  onSent,
 }: LetterReadyProps) {
   // Edits belong to one draft; a new draft starts clean.
   const [edit, setEdit] = useState<{ of: LetterDraft; text: string }>();
@@ -72,6 +87,14 @@ export function LetterReady({
   }>();
   const optedOut = choice?.of === formId ? choice.optedOut : new Set<string>();
   const steps = match ? fillSteps(match.mappings, optedOut) : [];
+  // The letter of the last click on Fill the form, and whether that fill
+  // wrote anything. Once it has, the question stays: checking the form
+  // again drops the report, not the fact that the form was filled.
+  const [lastFill, setLastFill] = useState<{ text: string; wrote: boolean }>();
+  const wrote = form.status === "form" && (form.report?.filled.length ?? 0) > 0;
+  if (lastFill && !lastFill.wrote && wrote) {
+    setLastFill({ ...lastFill, wrote: true });
+  }
   const confirm = confirmFirst
     ? {
         optedOut,
@@ -136,6 +159,15 @@ export function LetterReady({
             onCheck={onCheckForm}
             confirm={confirm}
           />
+          {(saved || lastFill?.wrote) && (
+            <SentCard
+              saved={saved}
+              failed={saveFailed}
+              onSent={() => {
+                if (lastFill) onSent(lastFill.text);
+              }}
+            />
+          )}
         </>
       )}
 
@@ -148,6 +180,7 @@ export function LetterReady({
           disabled={steps.length === 0}
           aria-describedby="send-reminder"
           onClick={() => {
+            if (text !== undefined) setLastFill({ text, wrote: false });
             onFill(steps, formKeys);
           }}
         >

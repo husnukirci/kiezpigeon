@@ -13,7 +13,7 @@ import {
 } from "../../../../test-support/sample-profiles";
 import { createLetterRequest } from "../../../rules/letterPrompt";
 import { countWords } from "../../../rules/letterValidate";
-import type { FormField } from "../../../rules/types";
+import type { Application, FormField } from "../../../rules/types";
 import type { ContactFormState } from "../../hooks/useContactForm";
 import type { LetterState } from "../../hooks/useLetter";
 import { LetterReady } from "./LetterReady";
@@ -68,6 +68,7 @@ function renderWith(
   state: Exclude<LetterState, { status: "idle" }>,
   form: ContactFormState = { status: "no_form" },
   confirmFirst = false,
+  saved?: Application,
 ) {
   const props = {
     onTone: vi.fn(),
@@ -75,19 +76,32 @@ function renderWith(
     onBack: vi.fn(),
     onCheckForm: vi.fn(),
     onFill: vi.fn(),
+    onSent: vi.fn(),
   };
-  render(
+  const ui = (form: ContactFormState, saved?: Application) => (
     <LetterReady
       state={state}
       profile={coupleWithDog}
       listingTitle={kreuzbergListing.title}
       form={form}
       confirmFirst={confirmFirst}
+      saved={saved}
       {...props}
-    />,
+    />
   );
-  return props;
+  const { rerender } = render(ui(form, saved));
+  return {
+    ...props,
+    rerender: (form: ContactFormState, saved?: Application) => {
+      rerender(ui(form, saved));
+    },
+  };
 }
+
+const filledReport = {
+  filled: ["name:message", "name:firstName"],
+  skipped: [],
+};
 
 describe("LetterReady", () => {
   it("shows the letter on paper with its checks and actions", () => {
@@ -218,6 +232,7 @@ describe("LetterReady", () => {
         onTone={vi.fn()}
         onRewrite={vi.fn()}
         onBack={vi.fn()}
+        onSent={vi.fn()}
       />
     );
     const { rerender } = render(view(contactForm));
@@ -258,6 +273,58 @@ describe("LetterReady", () => {
       screen.getByText("Filled 2 fields. Check them on the page."),
     ).toBeDefined();
     expect(screen.getByText("Could not fill: Telefonnummer.")).toBeDefined();
+  });
+
+  it("asks whether you sent it only after a fill, and saves the letter as filled", () => {
+    const props = renderWith(ready, contactForm);
+    expect(screen.queryByText("Did you send it?")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit your letter"), {
+      target: { value: "Sehr geehrte Frau Weber, kurz." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, report: filledReport });
+    // Edits after the fill are not what the landlord got.
+    fireEvent.change(screen.getByLabelText("Edit your letter"), {
+      target: { value: "Changed after the fill." },
+    });
+    // Checking the form again drops the report; the question stays.
+    props.rerender(contactForm);
+    expect(screen.getByText("Did you send it?")).toBeDefined();
+    expect(props.onSent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Yes, I sent it" }));
+    expect(props.onSent).toHaveBeenCalledExactlyOnceWith(
+      "Sehr geehrte Frau Weber, kurz.",
+    );
+  });
+
+  it("does not ask when the fill wrote nothing", () => {
+    const props = renderWith(ready, contactForm);
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, changed: true });
+    expect(screen.queryByText("Did you send it?")).toBeNull();
+  });
+
+  it("shows the listing is already in your pigeons instead of asking again", () => {
+    const saved: Application = {
+      id: "app_k3x9",
+      listingUrl: kreuzbergListing.url,
+      letter: passingLetter,
+      status: "viewing",
+      sentAt: "2027-02-01T09:30:00.000Z",
+      statusChangedAt: "2027-02-03T09:30:00.000Z",
+    };
+    const props = renderWith(ready, contactForm, false, saved);
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, report: filledReport }, saved);
+    expect(screen.getByText(/In your pigeons, marked Viewing/)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Yes, I sent it" })).toBeNull();
+    // Still exactly one teal button on the screen.
+    expect(
+      screen
+        .getAllByRole("button")
+        .filter((b) => b.className.includes("primary")),
+    ).toHaveLength(1);
   });
 
   it("copies exactly the letter and leaves it unchanged", async () => {
