@@ -17,6 +17,7 @@ import { SelectField, TextField } from "../../components/TextField/TextField";
 import { cx } from "../../cx";
 import { panelTab } from "../../hooks/useActiveListing";
 import { ListingFlow } from "../Home/ListingFlow";
+import layout from "../profileForm/ProfileSections.module.css";
 import screen from "../Screen.module.css";
 import styles from "./UnknownSite.module.css";
 
@@ -202,7 +203,7 @@ function FactsScreen({
             set({ title });
           }}
         />
-        <div className={styles.pair}>
+        <div className={layout.pair}>
           <TextField
             label="Kaltmiete in €"
             inputMode="decimal"
@@ -222,7 +223,7 @@ function FactsScreen({
             }}
           />
         </div>
-        <div className={styles.narrowWide}>
+        <div className={layout.narrowWide}>
           <SelectField
             label="Salutation"
             value={facts.salutation}
