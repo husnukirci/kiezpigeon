@@ -41,30 +41,33 @@ const field = (partial: Partial<FormField> & { key: string }): FormField => ({
 });
 
 /** A small contact form as the content script would describe it. */
+const contactFields: FormField[] = [
+  field({ key: "name:message", type: "textarea", label: "Nachricht" }),
+  field({
+    key: "name:salutation",
+    type: "select",
+    label: "Anrede *",
+    options: [{ value: "MALE", label: "Herr" }],
+  }),
+  field({ key: "name:firstName", label: "Vorname *", value: "Jonas" }),
+  field({ key: "name:phone", label: "Telefonnummer", value: "" }),
+  field({
+    key: "name:followAnAgent",
+    type: "checkbox",
+    label: "Anbieter:in folgen",
+    checked: true,
+  }),
+];
 const contactForm: ContactFormState = {
   status: "form",
-  fields: [
-    field({ key: "name:message", type: "textarea", label: "Nachricht" }),
-    field({
-      key: "name:salutation",
-      type: "select",
-      label: "Anrede *",
-      options: [{ value: "MALE", label: "Herr" }],
-    }),
-    field({ key: "name:firstName", label: "Vorname *", value: "Jonas" }),
-    field({ key: "name:phone", label: "Telefonnummer", value: "" }),
-    field({
-      key: "name:followAnAgent",
-      type: "checkbox",
-      label: "Anbieter:in folgen",
-      checked: true,
-    }),
-  ],
+  fields: contactFields,
 };
+const formKeys = contactFields.map((f) => f.key);
 
 function renderWith(
   state: Exclude<LetterState, { status: "idle" }>,
   form: ContactFormState = { status: "no_form" },
+  confirmFirst = false,
 ) {
   const props = {
     onTone: vi.fn(),
@@ -79,6 +82,7 @@ function renderWith(
       profile={coupleWithDog}
       listingTitle={kreuzbergListing.title}
       form={form}
+      confirmFirst={confirmFirst}
       {...props}
     />,
   );
@@ -130,15 +134,116 @@ describe("LetterReady", () => {
       target: { value: "Sehr geehrte Frau Weber, kurz." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
-    expect(props.onFill).toHaveBeenCalledExactlyOnceWith([
-      {
-        key: "name:message",
-        kind: "message",
-        value: "Sehr geehrte Frau Weber, kurz.",
-      },
-      { key: "name:firstName", kind: "firstName", value: "Mara" },
-      { key: "name:phone", kind: "phone", value: "030 5550123" },
+    expect(props.onFill).toHaveBeenCalledExactlyOnceWith(
+      [
+        {
+          key: "name:message",
+          kind: "message",
+          value: "Sehr geehrte Frau Weber, kurz.",
+        },
+        { key: "name:firstName", kind: "firstName", value: "Mara" },
+        { key: "name:phone", kind: "phone", value: "030 5550123" },
+      ],
+      formKeys,
+    );
+  });
+
+  it("lists no pairs to confirm on a known site", () => {
+    renderWith(ready, contactForm);
+    expect(screen.queryByRole("button", { name: /→/ })).toBeNull();
+  });
+
+  it("on an unknown site lists every pair and fills only those left on", () => {
+    const props = renderWith(ready, contactForm, true);
+    const pairs = screen.getAllByRole("button", { name: /→/ });
+    expect(pairs.map((pair) => pair.textContent)).toEqual([
+      `Nachricht → your letter (${countWords(passingLetter)} words)`,
+      "Vorname → Mara",
+      "Telefonnummer → 030 5550123",
     ]);
+    for (const pair of pairs) {
+      expect(pair.getAttribute("aria-pressed")).toBe("true");
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: /^Vorname/ }));
+    const off = screen.getByRole("button", { name: /^Vorname/ });
+    expect(off.getAttribute("aria-pressed")).toBe("false");
+    expect(off.textContent).toBe("Vorname → MaraLeft as it is");
+    // The replaced-field line no longer names a field that stays as it is.
+    expect(screen.queryByText(/Replaces what the page already has/)).toBeNull();
+
+    expect(props.onFill).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    expect(props.onFill).toHaveBeenCalledExactlyOnceWith(
+      [
+        { key: "name:message", kind: "message", value: passingLetter },
+        { key: "name:phone", kind: "phone", value: "030 5550123" },
+      ],
+      formKeys,
+    );
+  });
+
+  it("can not fill once every pair is switched off", () => {
+    renderWith(
+      ready,
+      {
+        status: "form",
+        fields: [field({ key: "name:vorname", label: "Vorname" })],
+      },
+      true,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Vorname/ }));
+    expect(
+      screen.getByRole("button", { name: "Fill the form" }),
+    ).toHaveProperty("disabled", true);
+  });
+
+  it("names the toolbar icon when an unknown site can no longer be read", () => {
+    renderWith(ready, { status: "unreachable" }, true);
+    expect(
+      screen.getByText(/Click the Kiezpigeon icon in the toolbar/),
+    ).toBeDefined();
+  });
+
+  it("forgets what you switched off when the page's form changes", () => {
+    const view = (form: ContactFormState) => (
+      <LetterReady
+        state={ready}
+        profile={coupleWithDog}
+        listingTitle={undefined}
+        form={form}
+        confirmFirst
+        onCheckForm={vi.fn()}
+        onFill={vi.fn()}
+        onTone={vi.fn()}
+        onRewrite={vi.fn()}
+        onBack={vi.fn()}
+      />
+    );
+    const { rerender } = render(view(contactForm));
+    const vorname = () => screen.getByRole("button", { name: /^Vorname/ });
+    fireEvent.click(vorname());
+    expect(vorname().getAttribute("aria-pressed")).toBe("false");
+
+    // Read again with the same fields: the choice stays.
+    rerender(view({ ...contactForm }));
+    expect(vorname().getAttribute("aria-pressed")).toBe("false");
+
+    // The page gained a field: keys may now name other fields, so all on.
+    rerender(
+      view({
+        status: "form",
+        fields: [...contactFields, field({ key: "index:9", label: "Beruf" })],
+      }),
+    );
+    expect(vorname().getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("says nothing was filled when the form changed since it was shown", () => {
+    renderWith(ready, { ...contactForm, changed: true }, true);
+    expect(
+      screen.getByText(/The form on the page changed, so nothing was filled/),
+    ).toBeDefined();
   });
 
   it("reports what the last fill did", () => {

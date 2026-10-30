@@ -5,9 +5,11 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadFixture } from "../../test-support/fixtures";
 import { coupleWithDog } from "../../test-support/sample-profiles";
+import { generic } from "../adapters/generic/generic";
 import { immoscout24 } from "../adapters/immoscout24/immoscout24";
 import { mapFields } from "../rules/fieldMatch";
-import { fillForm, fillSteps, type FillStep } from "./fill";
+import { describeFields } from "./describe";
+import { fillForm, fillPlanned, fillSteps, type FillStep } from "./fill";
 
 describe("fillForm on a React form (the ADR 11 probe)", () => {
   const state: Record<string, string> = {};
@@ -74,6 +76,29 @@ describe("fillForm on a React form (the ADR 11 probe)", () => {
   });
 });
 
+/** Records every way a form can be sent, so a test sees any attempt. */
+function recordSendAttempts(page: Document, form: HTMLFormElement): string[] {
+  const attempts: string[] = [];
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    attempts.push("submit event");
+  });
+  page.addEventListener("click", () => attempts.push("click"), true);
+  form.addEventListener("reset", () => attempts.push("reset"));
+  for (const type of ["keydown", "keyup", "keypress", "focusin"]) {
+    page.addEventListener(type, () => attempts.push(type), true);
+  }
+  vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(() => {
+    attempts.push("form.submit()");
+  });
+  vi.spyOn(HTMLFormElement.prototype, "requestSubmit").mockImplementation(
+    () => {
+      attempts.push("form.requestSubmit()");
+    },
+  );
+  return attempts;
+}
+
 describe("fillForm on the ImmoScout24 contact form", () => {
   let page: Document;
   let form: HTMLFormElement;
@@ -84,25 +109,7 @@ describe("fillForm on the ImmoScout24 contact form", () => {
     const found = immoscout24.contactForm(page);
     if (!found) throw new Error("fixture has no contact form");
     form = found;
-    // Records every way a form can be sent, so the test sees any attempt.
-    attempts = [];
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      attempts.push("submit event");
-    });
-    page.addEventListener("click", () => attempts.push("click"), true);
-    form.addEventListener("reset", () => attempts.push("reset"));
-    for (const type of ["keydown", "keyup", "keypress", "focusin"]) {
-      page.addEventListener(type, () => attempts.push(type), true);
-    }
-    vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(() => {
-      attempts.push("form.submit()");
-    });
-    vi.spyOn(HTMLFormElement.prototype, "requestSubmit").mockImplementation(
-      () => {
-        attempts.push("form.requestSubmit()");
-      },
-    );
+    attempts = recordSendAttempts(page, form);
   });
 
   afterEach(() => {
@@ -202,3 +209,73 @@ describe("fillForm on the ImmoScout24 contact form", () => {
     expect(attempts).toEqual([]);
   });
 });
+
+describe.each(["contact-form.html", "contact-form-placeholders.html"])(
+  "fillForm on the generic fixture %s (ADR 12)",
+  (fixture) => {
+    let page: Document;
+    let form: HTMLFormElement;
+    let attempts: string[];
+
+    beforeEach(() => {
+      page = loadFixture("generic", fixture);
+      const found = generic.contactForm(page);
+      if (!found) throw new Error("fixture has no contact form");
+      form = found;
+      attempts = recordSendAttempts(page, form);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const mappings = () =>
+      mapFields(generic.readContactForm(page), coupleWithDog, "Hallo").mappings;
+
+    it("fills every matched field and leaves the form unsubmitted", () => {
+      const steps = fillSteps(mappings());
+      const report = fillForm(form, steps);
+      expect(report.filled).toEqual(steps.map((step) => step.key));
+      expect(report.skipped).toEqual([]);
+      expect(attempts).toEqual([]);
+      expect(form.querySelector("textarea")?.value).toBe("Hallo");
+      for (const box of form.querySelectorAll<HTMLInputElement>(
+        "[name=datenschutz], [name=agb]",
+      )) {
+        expect(box.checked).toBe(false);
+      }
+    });
+
+    it("fills nothing when the form is not the one the plan was made from", () => {
+      const keys = describeFields(form).map((field) => field.key);
+      const steps = fillSteps(mappings());
+      // The page adds a field after the preview: every index key shifts.
+      form.insertAdjacentHTML("afterbegin", '<input name="neu">');
+      expect(fillPlanned(form, steps, keys)).toBe("changed");
+      expect(form.querySelector("textarea")?.value).toBe("");
+      expect(attempts).toEqual([]);
+    });
+
+    it("fills as planned while the form is unchanged", () => {
+      const keys = describeFields(form).map((field) => field.key);
+      const steps = fillSteps(mappings());
+      expect(fillPlanned(form, steps, keys)).toEqual({
+        filled: steps.map((step) => step.key),
+        skipped: [],
+      });
+    });
+
+    it("leaves a field the user opted out of as it was", () => {
+      const all = mappings();
+      const optedOut = all.find((m) => m.kind === "email")?.field.key;
+      expect(optedOut).toBeDefined();
+      const steps = fillSteps(all, new Set([optedOut ?? ""]));
+      fillForm(form, steps);
+      expect(steps.map((step) => step.key)).not.toContain(optedOut);
+      expect(form.querySelector<HTMLInputElement>("[type=email]")?.value).toBe(
+        "",
+      );
+      expect(form.querySelector("textarea")?.value).toBe("Hallo");
+    });
+  },
+);

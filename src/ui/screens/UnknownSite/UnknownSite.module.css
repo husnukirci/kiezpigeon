@@ -1,0 +1,20 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.failure {
+  /* Card preview: 10px between icon and text. */
+  --icon-gap: 10px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--icon-gap);
+  margin: 0;
+  color: var(--ink);
+}
+
+.bottom {
+  align-items: center;
+}
