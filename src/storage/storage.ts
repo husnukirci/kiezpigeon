@@ -149,6 +149,37 @@ export async function writeAll(values: Partial<StoredData>): Promise<void> {
   await browser.storage.local.set(clean);
 }
 
+/** The stored applications, or a throw naming why they cannot be read. */
+async function readApplications(): Promise<Application[]> {
+  const stored = await read("applications");
+  if (!stored.ok) {
+    throw new Error(
+      `Stored applications are damaged: ${stored.problems.join("; ")}`,
+    );
+  }
+  return stored.value ?? [];
+}
+
+/** Adds one application to the list, e.g. after "Yes, I sent it". */
+export async function addApplication(application: Application): Promise<void> {
+  await write("applications", [...(await readApplications()), application]);
+}
+
+/** Replaces the application with `id` by `change(it)`; others stay as they are. */
+export async function changeApplication(
+  id: string,
+  change: (application: Application) => Application,
+): Promise<void> {
+  const applications = await readApplications();
+  if (!applications.some((a) => a.id === id)) {
+    throw new Error(`No stored application ${id}`);
+  }
+  await write(
+    "applications",
+    applications.map((a) => (a.id === id ? change(a) : a)),
+  );
+}
+
 /** Removes one key, e.g. when the user disconnects Claude. */
 export async function remove(key: StoredKey): Promise<void> {
   await ready();
