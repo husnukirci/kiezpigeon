@@ -1,6 +1,7 @@
 import { defineContentScript } from "wxt/utils/define-content-script";
 import { immoscout24 } from "../adapters/immoscout24/immoscout24";
 import { fillForm } from "../fill/fill";
+import { PAGE_ANSWERED } from "../messaging/fallback";
 import { handle } from "../messaging/messaging";
 
 // Answers the side panel on ImmoScout24 exposé pages (ADR 8). It reads the
@@ -9,6 +10,8 @@ import { handle } from "../messaging/messaging";
 export default defineContentScript({
   matches: ["https://www.immobilienscout24.de/expose/*"],
   main() {
+    // So an injected fallback reader never answers beside this script.
+    Object.assign(window, { [PAGE_ANSWERED]: true });
     handle({
       ping: () => ({ type: "pong" }),
       getListing: () => {

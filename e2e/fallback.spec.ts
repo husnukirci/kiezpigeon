@@ -23,6 +23,7 @@ const ROOT = join(import.meta.dirname, "..");
 const EXTENSION = join(ROOT, ".output", "chrome-mv3");
 const ORIGIN = "https://flats.example";
 const SITE = `${ORIGIN}/wohnung/17`;
+const EXPOSE = "https://www.immobilienscout24.de/expose/100000009";
 const PAGES: Record<string, string> = {
   "/wohnung/17": "contact-form.html",
   "/wohnung/18": "contact-form-placeholders.html",
@@ -69,6 +70,17 @@ test.beforeAll(async () => {
       body: readFileSync(join(ROOT, "fixtures", "generic", file), "utf8"),
     });
   });
+  // An exposé address whose content script finds no listing, so the panel
+  // would offer "Use this page" there too.
+  await context.route(`${EXPOSE}**`, (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: readFileSync(
+        join(ROOT, "fixtures", "generic", "contact-form.html"),
+        "utf8",
+      ),
+    }),
+  );
   await context.route("https://api.anthropic.com/**", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -178,6 +190,33 @@ interface Case {
   untouched: string[];
   consent: string;
 }
+
+test("the reader never answers beside a site's own content script", async () => {
+  const site = await context.newPage();
+  await site.goto(EXPOSE);
+  await clickIcon(site);
+  const tabId = await siteTabId();
+  const panel = await context.newPage();
+  await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  const answer: unknown = await panel.evaluate(async (tab) => {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab ?? -1 },
+      files: ["/fallback.js"],
+    });
+    const reply: unknown = await chrome.tabs.sendMessage(tab ?? -1, {
+      type: "fillForm",
+      steps: [{ key: "name:vorname", kind: "firstName", value: "Mara" }],
+    });
+    return reply;
+  }, tabId);
+  // The ImmoScout24 script answers (its dialog is not open), and the
+  // injected reader, which would have filled the enquiry form, never ran:
+  // the first answer wins, but every listener still acts.
+  expect(answer).toEqual({ ok: true, value: { kind: "no_form" } });
+  await expect(site.locator("[name=vorname]")).toHaveValue("");
+  await site.close();
+  await panel.close();
+});
 
 const CASES: Case[] = [
   {
