@@ -1,0 +1,40 @@
+<!-- scrubbed: names, phones, emails, addresses, ids replaced -->
+<!-- invented page: a housing company's listing whose contact form names its fields only by placeholder or aria-label, asks for street and number in one field, carries a CSS-hidden spam trap, and sits next to a login form -->
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>Wohnung 3.12 | Beispiel Wohnen eG</title>
+    <style>
+      .trap { position: absolute; display: none; }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <form action="/login" method="post">
+        <input name="user" type="email" placeholder="E-Mail" />
+        <input name="pass" type="password" placeholder="Passwort" />
+        <button type="submit">Anmelden</button>
+      </form>
+    </aside>
+    <main>
+      <h1>Wohnung 3.12</h1>
+      <form class="kontakt" action="/kontakt" method="post">
+        <input name="fname" type="text" placeholder="Vorname" />
+        <input name="lname" type="text" placeholder="Nachname" />
+        <input name="strasse" type="text" placeholder="Straße und Hausnummer" />
+        <input name="plzort" type="text" placeholder="PLZ / Ort" />
+        <input name="mail" type="email" placeholder="E-Mail-Adresse" />
+        <div class="trap">
+          <input name="email_repeat" type="email" aria-label="E-Mail wiederholen" />
+        </div>
+        <input name="personen" type="number" aria-label="Anzahl Erwachsene" />
+        <input name="einzug" type="date" aria-label="Gewünschter Einzug" />
+        <label><input name="haustiere" type="checkbox" /> Ich habe Haustiere</label>
+        <textarea name="text" aria-label="Nachricht an uns"></textarea>
+        <label><input name="agb" type="checkbox" /> Ich akzeptiere die AGB.</label>
+        <button type="submit">Absenden</button>
+      </form>
+    </main>
+  </body>
+</html>
