@@ -1,6 +1,6 @@
 # Kiezpigeon: phase specs
 
-Nine phases for Tier 1 (`v1.0.0`). **One phase = one Claude Code session =
+Nine phases for Tier 1 (`v1.0.0`), then follow-up phases (Phase 9 on). **One phase = one Claude Code session =
 one PR.** Each spec is self-contained: a fresh session reading only
 `CLAUDE.md`, `PLAN.md`, and its own phase section has everything it needs.
 No phase depends on chat history.
@@ -562,3 +562,81 @@ minutes.
 **Acceptance:** PLAN.md section 9 holds, checked item by item in the PR.
 
 **PR:** `docs: readme, adr audit, ai workflow, v1.0.0`
+
+---
+
+## Phase 9: ImmoScout24 in English, and saying why a page is not read
+
+**Context for a fresh session:** v1.0.0 is released (Phases 0 to 8). Two
+live checks in Phase 5 found the panel silent on an ImmoScout24 exposé,
+because the tab was the site's English address (`/en/expose/<id>`), which
+the content script does not match. Since Phase 6 such a page falls through
+to the unknown-site fallback, which asks the user to type facts the page
+already shows.
+
+**Objective:** an English ImmoScout24 exposé works exactly like a German
+one (listing detected, fit check, German letter, "X of Y matched", fill
+without submit), and a page Kiezpigeon cannot read says why.
+
+**In scope**
+
+1. Probe first. The automated browser is blocked by ImmoScout24 (Phase 3),
+   so the author saves one English exposé with the contact dialog open,
+   and the German version of the same listing, from their own Chrome.
+   Record in `docs/ai-workflow.md`: whether the `is24qa-*` classes and
+   `data-qa` attributes are the same on `/en/`; how the English page
+   writes prices, sizes, floor, dates, "immediately" and "by
+   arrangement", pets and the feature tags; and whether the contact
+   form's field names and select option codes match the German form.
+   Probe whether the `activeTab` grant from the icon click lets the panel
+   read its tab's URL (`tabs.get(tabId).url`) without the `tabs`
+   permission; item 4 depends on it.
+2. Fixtures (fixture-driven tier). With `scripts/reduce-fixture.ts`:
+   `fixtures/immoscout24/en-listing-complete.html` and
+   `en-contact-form.html`, scrubbed as every fixture (header comment, no
+   real names, phones, emails, addresses, ids or tracking tokens; read the
+   reduced page text, not only the pattern check). The German fixtures
+   stay as they are.
+3. Adapter and matcher. `matches(url)` and the content script's match
+   cover `/en/expose/*` (ADR 8 amendment: a new content script match on
+   the same host, no new permission). English values parse to the same
+   `Listing` as the German page: a test reads both fixtures of the same
+   listing and asserts equal `Listing`s apart from `url`. Features map to
+   the existing German feature names, so letters stay German. Any English
+   label the field matcher must classify (`First name`, `Move-in date`,
+   `Pets`, ...) is added test-first (strict tier; `src/rules/` stays
+   pure). Option codes are matched as codes, not labels, where the probe
+   shows they are shared.
+4. Not-read reasons (smoke test plus manual QA). The not-a-listing screen
+   tells three cases apart and words each plainly: an ImmoScout24 page
+   that is not an exposé ("This ImmoScout24 page is not a listing. Open a
+   listing to start."), a known listing tab opened before the extension
+   was loaded ("Reload this tab so Kiezpigeon can read it."), and any
+   other site (the existing "Use this page" fallback). The rule that picks
+   the case from a URL and the content script's answer is pure and
+   test-first. If the item 1 probe shows the URL is not readable without
+   a new permission, the screen keeps today's wording and the gap is
+   proposed, not built (a permission needs an ADR and the author's yes).
+5. Never-submit on English: `e2e/never-submit.spec.ts` gains a run with
+   the English contact form fixture served at an `/en/expose/` address.
+
+**Out of scope:** English letters (Tier 2: German stays the default and
+the only validated language); other ImmoScout24 locales than `/en/`;
+Anrede (needs a profile field and an ADR); a second listing site.
+
+**Acceptance:** on the English fixtures, the e2e runs and the unit tests
+are green; on one live English exposé in the author's Chrome (not sent),
+the listing card shows the same Kaltmiete, Warmmiete, size, rooms and fit
+lines as the German page of the same listing, the letter is German, the
+match count equals the German page's, the form stays unsent, and the
+consoles show no errors; on a live ImmoScout24 search page, the panel
+shows the "not a listing" wording from item 4.
+
+**Phase review checklist:** the German fixtures' tests unchanged and
+green; no new permission without an ADR; the English and German
+`Listing` of the same exposé are equal in a test; never-submit grep
+clean; fixtures scrubbed and read; no personal circumstances of the
+author in fixtures, logs or the PR; `package.json` version `1.1.0`, tag
+`v1.1.0` pushed by the author after merging.
+
+**PR:** `feat(adapters): immoscout24 in english, clear reasons on unread pages`
