@@ -220,6 +220,7 @@ describe("parseApplication", () => {
       "data:text/html,hi",
       "www.immobilienscout24.de/expose/1",
       "https://",
+      "http://[bad",
     ]) {
       expect(parseApplication({ ...application, listingUrl })).toEqual({
         ok: false,
