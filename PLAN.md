@@ -105,7 +105,7 @@ use), and how two applicants are related (so the letter stops guessing).
 - [x] Form filling: ImmoScout24 contact form mapping, "X of Y matched",
       fill on click, never submit, send reminder; generic fallback for
       unknown sites with a confirm step before filling
-- [ ] Tracker: save an application when the user confirms they sent it;
+- [x] Tracker: save an application when the user confirms they sent it;
       statuses Sent, Viewing, Closed; stat tiles; filters
 - [ ] Docs: README (what it does, install unpacked, privacy section,
       screenshots), `docs/decisions.md`, `CLAUDE.md`, `docs/ai-workflow.md`;

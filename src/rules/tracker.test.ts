@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { filterApplications, setStatus, trackerStats } from "./tracker";
+import {
+  kreuzbergListing,
+  sparseListing,
+} from "../../test-support/sample-profiles";
+import {
+  filterApplications,
+  newApplication,
+  setStatus,
+  trackerStats,
+} from "./tracker";
 import type { Application, ApplicationStatus } from "./types";
 
 function app(
@@ -26,6 +35,39 @@ const apps = [
   app("app_d", "sent", "2027-02-03T12:00:00.000Z"),
   app("app_e", "sent", "2027-02-10T11:59:59.000Z"),
 ];
+
+describe("newApplication", () => {
+  it("saves the listing summary and the letter as sent, now", () => {
+    expect(
+      newApplication(kreuzbergListing, "Sehr geehrte Frau Weber, ...", {
+        now,
+        random: "k3x9",
+      }),
+    ).toEqual({
+      id: "app_k3x9",
+      listingUrl: "https://www.immobilienscout24.de/expose/100000001",
+      listingTitle: "Helle 2-Zimmer-Altbauwohnung mit Balkon",
+      district: "Kreuzberg",
+      warmmieteCents: 140000,
+      letter: "Sehr geehrte Frau Weber, ...",
+      status: "sent",
+      sentAt: now,
+      statusChangedAt: now,
+    });
+  });
+
+  it("leaves out what the listing did not show", () => {
+    const saved = newApplication(sparseListing, "Hallo", { now, random: "a" });
+    expect(Object.keys(saved).sort()).toEqual([
+      "id",
+      "letter",
+      "listingUrl",
+      "sentAt",
+      "status",
+      "statusChangedAt",
+    ]);
+  });
+});
 
 describe("setStatus", () => {
   it("records when the status changed", () => {

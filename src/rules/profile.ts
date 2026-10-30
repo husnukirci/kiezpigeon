@@ -129,6 +129,16 @@ function isIsoDateTime(value: unknown): value is string {
  * Each reader returns a placeholder on failure; the caller only uses the
  * built value when there were no problems.
  */
+/** Parses as a URL (the tracker reads its host) and is http or https. */
+function isWebUrl(value: string): boolean {
+  if (!/^https?:\/\/[^/?#\s]+/i.test(value)) return false;
+  try {
+    return new URL(value).hostname !== "";
+  } catch {
+    return false;
+  }
+}
+
 class Reader {
   constructor(
     private readonly problems: string[],
@@ -165,6 +175,14 @@ class Reader {
     const value = this.source[key];
     if (typeof value === "string") return value;
     this.fail(key, "must be text");
+    return "";
+  }
+
+  /** An http(s) address with a host: the tracker opens it as a link. */
+  webUrl(key: string): string {
+    const value = this.source[key];
+    if (typeof value === "string" && isWebUrl(value)) return value;
+    this.fail(key, "must be a web address (http or https)");
     return "";
   }
 
@@ -360,7 +378,7 @@ function readMoveIn(r: Reader): MoveIn {
 function readApplication(r: Reader): Application {
   return withoutUndefined({
     id: r.text("id"),
-    listingUrl: r.text("listingUrl"),
+    listingUrl: r.webUrl("listingUrl"),
     listingTitle: r.optionalText("listingTitle"),
     district: r.optionalText("district"),
     warmmieteCents: r.optionalCents("warmmieteCents"),

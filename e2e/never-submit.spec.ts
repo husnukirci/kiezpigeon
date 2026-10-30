@@ -158,4 +158,24 @@ test("Fill the form fills the contact form and never sends it", async () => {
   await expect(
     form.locator("#is24-checkbox-isRelocationOfferChecked-input"),
   ).not.toBeChecked();
+
+  // Only the user says it was sent; then it is tracked, and still nothing
+  // reached the page.
+  await panel.getByRole("button", { name: "Yes, I sent it" }).click();
+  await expect(panel.getByText(/In your pigeons, marked Sent/)).toBeVisible();
+  await panel.getByRole("button", { name: "Your pigeons" }).click();
+  const rows = panel
+    .getByRole("list", { name: "Applications" })
+    .getByRole("listitem");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.getByText("Sent", { exact: true })).toBeVisible();
+  await expect(
+    rows.getByRole("link", { name: "Open listing" }),
+  ).toHaveAttribute("href", EXPOSE);
+  expect(pageLoads).toEqual([`GET ${EXPOSE}`]);
+  expect(
+    await listing.evaluate(
+      () => (window as unknown as { sendAttempts: string[] }).sendAttempts,
+    ),
+  ).toEqual([]);
 });

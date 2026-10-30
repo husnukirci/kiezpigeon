@@ -213,6 +213,25 @@ describe("parseApplication", () => {
       ],
     });
   });
+
+  it("accepts only a web address as the listing, since the tracker links it", () => {
+    for (const listingUrl of [
+      "javascript:alert(1)",
+      "data:text/html,hi",
+      "www.immobilienscout24.de/expose/1",
+      "https://",
+      "http://[bad",
+    ]) {
+      expect(parseApplication({ ...application, listingUrl })).toEqual({
+        ok: false,
+        problems: ["listingUrl: must be a web address (http or https)"],
+      });
+    }
+    expect(
+      parseApplication({ ...application, listingUrl: "http://example.org/1" })
+        .ok,
+    ).toBe(true);
+  });
 });
 
 /** A profile as schema 1 stored it: a bare `moveInDate`. */
