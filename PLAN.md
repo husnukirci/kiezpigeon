@@ -113,6 +113,9 @@ use), and how two applicants are related (so the letter stops guessing).
 
 ### Tier 2: follow-ups
 
+- [ ] ImmoScout24's English pages read like the German ones, and the
+      panel says why a page is not read (Phase 9; found in Phase 5's live
+      checks)
 - [ ] A second listing adapter (candidates: Immowelt, Kleinanzeigen,
       WG-Gesucht, deutsche-wohnen.com), proving the adapter interface with
       a second real site
@@ -150,6 +153,7 @@ merges, then starts the next phase in a fresh session.
 | P6    | Generic form fallback for unknown sites with confirm-before-fill                                                     | feat(fallback)  |
 | P7    | Tracker: save on "I sent it", statuses, stats, filters, pigeon tip                                                   | feat(tracker)   |
 | P8    | Docs, ADR audit, ai-workflow finalize, README + screenshots, data scrub, v1 tag                                      | docs            |
+| P9    | ImmoScout24 in English (`/en/expose/`), clear reasons when a page is not read; v1.1.0                                | feat(adapters)  |
 
 Each phase lands green (tests, typecheck, lint, build, manual check in
 Chrome where the phase is user-visible) before the next starts.
