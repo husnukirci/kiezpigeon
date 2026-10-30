@@ -12,9 +12,10 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("App", () => {
-  it("shows the header with the wordmark and a labelled settings button", () => {
+  it("shows the header with the wordmark and labelled tracker and settings buttons", () => {
     render(<App />);
     expect(screen.getByRole("banner").textContent).toBe("Kiezpigeon");
+    expect(screen.getByRole("button", { name: "Your pigeons" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Settings" })).toBeDefined();
   });
 
