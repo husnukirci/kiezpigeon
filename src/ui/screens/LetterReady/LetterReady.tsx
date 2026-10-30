@@ -5,7 +5,7 @@
 // first and Fill the form writes only those left on (ADR 12). The user
 // presses Send on the page, then tells the panel so it can be tracked.
 import { useState } from "react";
-import { fillSteps, type FillStep } from "../../../fill/fill";
+import { fillSteps, type FillReport, type FillStep } from "../../../fill/fill";
 import { mapFields } from "../../../rules/fieldMatch";
 import { countWords, validateLetter } from "../../../rules/letterValidate";
 import type {
@@ -87,13 +87,17 @@ export function LetterReady({
   }>();
   const optedOut = choice?.of === formId ? choice.optedOut : new Set<string>();
   const steps = match ? fillSteps(match.mappings, optedOut) : [];
-  // The letter of the last click on Fill the form, and whether that fill
-  // wrote anything. Once it has, the question stays: checking the form
-  // again drops the report, not the fact that the form was filled.
-  const [lastFill, setLastFill] = useState<{ text: string; wrote: boolean }>();
-  const wrote = form.status === "form" && (form.report?.filled.length ?? 0) > 0;
-  if (lastFill && !lastFill.wrote && wrote) {
-    setLastFill({ ...lastFill, wrote: true });
+  // The letter now in the page's form: the text of the last click on Fill
+  // the form whose own report says it wrote. The previous report stays on
+  // screen while a fill runs, so a click remembers the report it saw and
+  // only a new one counts. Checking the form again drops the report, not
+  // the letter in the form, so the question stays.
+  const report = form.status === "form" ? form.report : undefined;
+  const [pending, setPending] = useState<{ text: string; seen?: FillReport }>();
+  const [written, setWritten] = useState<string>();
+  if (pending && report && report !== pending.seen) {
+    setPending(undefined);
+    if (report.filled.length > 0) setWritten(pending.text);
   }
   const confirm = confirmFirst
     ? {
@@ -159,12 +163,12 @@ export function LetterReady({
             onCheck={onCheckForm}
             confirm={confirm}
           />
-          {(saved || lastFill?.wrote) && (
+          {(saved || written !== undefined) && (
             <SentCard
               saved={saved}
               failed={saveFailed}
               onSent={() => {
-                if (lastFill) onSent(lastFill.text);
+                if (written !== undefined) onSent(written);
               }}
             />
           )}
@@ -180,7 +184,7 @@ export function LetterReady({
           disabled={steps.length === 0}
           aria-describedby="send-reminder"
           onClick={() => {
-            if (text !== undefined) setLastFill({ text, wrote: false });
+            if (text !== undefined) setPending({ text, seen: report });
             onFill(steps, formKeys);
           }}
         >
