@@ -207,7 +207,7 @@ function meta({ district, warmmieteCents, sentAt }: Application): string {
 /** The pigeon speaks in first person (design system "Voice"). */
 function tip(stats: TrackerStats): string {
   if (stats.total === 0) {
-    return "Nothing here yet. After you send a letter I filled in, tell me on the letter screen and I'll keep it here.";
+    return 'Nothing here yet. After you send a letter I filled in, answer "Did you send it?" on the letter screen and I\'ll keep it here.';
   }
   if (stats.viewing > 0) {
     return "You have a Besichtigung. Take your documents along, so you can hand them over on the day.";
