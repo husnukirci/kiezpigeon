@@ -1,0 +1,63 @@
+<!-- scrubbed: names, phones, emails, addresses, ids replaced -->
+<!-- invented page: a small property manager's listing with a plain HTML contact form, a search box in the header and a newsletter form in the footer -->
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>2-Zimmer-Wohnung am Kiefernpark | Hausverwaltung Beispiel</title>
+  </head>
+  <body>
+    <header>
+      <form action="/suche" method="get" role="search">
+        <label for="q">Suche</label>
+        <input id="q" name="q" type="search" />
+        <button type="submit">Suchen</button>
+      </form>
+    </header>
+    <main>
+      <h1>2-Zimmer-Wohnung am Kiefernpark</h1>
+      <p>Kaltmiete 980 €, Warmmiete 1.190 €, 58 m², Balkon, Einbauküche.</p>
+      <p>Ihre Ansprechpartnerin: Frau Beispielfrau</p>
+      <section>
+        <h2>Anfrage zu dieser Wohnung</h2>
+        <form id="anfrage" action="/anfrage" method="post">
+          <label for="anrede">Anrede</label>
+          <select id="anrede" name="anrede">
+            <option value="">Bitte wählen</option>
+            <option value="frau">Frau</option>
+            <option value="herr">Herr</option>
+          </select>
+          <label for="vorname">Vorname *</label>
+          <input id="vorname" name="vorname" type="text" required />
+          <label for="nachname">Nachname *</label>
+          <input id="nachname" name="nachname" type="text" required />
+          <label for="email">E-Mail *</label>
+          <input id="email" name="email" type="email" required />
+          <label for="telefon">Telefon</label>
+          <input id="telefon" name="telefon" type="tel" />
+          <label for="nachricht">Ihre Nachricht *</label>
+          <textarea id="nachricht" name="nachricht" rows="8" required></textarea>
+          <label for="anhang">Unterlagen anhängen</label>
+          <input id="anhang" name="anhang" type="file" />
+          <input type="hidden" name="objekt" value="invented-0001" />
+          <label>
+            <input name="datenschutz" type="checkbox" required />
+            Ich habe die Datenschutzerklärung gelesen.
+          </label>
+          <button type="submit">Anfrage senden</button>
+        </form>
+      </section>
+    </main>
+    <footer>
+      <form action="/newsletter" method="post">
+        <label for="nl-email">Newsletter: Ihre E-Mail</label>
+        <input id="nl-email" name="nl-email" type="email" />
+        <label>
+          <input name="nl-ok" type="checkbox" />
+          Ja, ich möchte den Newsletter erhalten.
+        </label>
+        <button type="submit">Anmelden</button>
+      </form>
+    </footer>
+  </body>
+</html>

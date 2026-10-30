@@ -1,6 +1,6 @@
 // Reads a form's fields into the rules core's plain `FormField`s and finds
-// them again by key. Shared by site adapters and, in Phase 6, the fallback
-// for unknown sites. Reads only; never changes the page.
+// them again by key. Shared by site adapters and the fallback for unknown
+// sites (ADR 12). Reads only; never changes the page.
 import type { FormField } from "../rules/types";
 
 type FieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
@@ -65,10 +65,15 @@ function labelOf(element: FieldElement): string | undefined {
   return undefined;
 }
 
-function isVisible(element: FieldElement): boolean {
+/**
+ * Hidden by type, attribute or style. A field a stylesheet hides is often
+ * a spam trap that a person never fills, so Kiezpigeon must not either.
+ */
+export function isVisible(element: Element): boolean {
   return (
     !(element instanceof HTMLInputElement && element.type === "hidden") &&
-    element.closest("[hidden], [aria-hidden='true']") === null
+    element.closest("[hidden], [aria-hidden='true']") === null &&
+    element.checkVisibility()
   );
 }
 

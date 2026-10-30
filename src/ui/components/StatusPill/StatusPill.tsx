@@ -4,11 +4,18 @@
 import { cx } from "../../cx";
 import styles from "./StatusPill.module.css";
 
-export function DetectedBadge({ siteName }: { siteName: string }) {
+/** "Listing detected · ImmoScout24", or another label for typed facts. */
+export function DetectedBadge({
+  siteName,
+  label = "Listing detected",
+}: {
+  siteName: string;
+  label?: string;
+}) {
   return (
     <p className={cx(styles.pill, styles.detected, "type-caption")}>
       <span className={styles.dot} aria-hidden="true" />
-      Listing detected · {siteName}
+      {label} · {siteName}
     </p>
   );
 }

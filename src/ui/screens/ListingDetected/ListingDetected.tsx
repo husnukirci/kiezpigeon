@@ -43,6 +43,8 @@ interface ListingDetectedProps {
   listing: Listing;
   /** The choice from the last letter for this listing, if any. */
   initialChoice?: LetterChoice | undefined;
+  /** Set when the user typed the facts (ADR 12): a Back to change them. */
+  onEditFacts?: (() => void) | undefined;
   onWrite: (choice: LetterChoice) => void;
 }
 
@@ -51,6 +53,7 @@ export function ListingDetected({
   siteName,
   listing,
   initialChoice,
+  onEditFacts,
   onWrite,
 }: ListingDetectedProps) {
   const [tone, setTone] = useState<Tone>(
@@ -65,7 +68,10 @@ export function ListingDetected({
   return (
     <section className={screen.screen} aria-labelledby="listing-title">
       <div className={screen.heading}>
-        <DetectedBadge siteName={siteName} />
+        <DetectedBadge
+          siteName={siteName}
+          label={onEditFacts ? "Your listing facts" : undefined}
+        />
         <h1 id="listing-title" className={cx(screen.title, "type-title-lg")}>
           {listing.title ?? "Untitled listing"}
         </h1>
@@ -100,7 +106,14 @@ export function ListingDetected({
         onChange={setChosen}
       />
 
-      <div className={cx(screen.actions, styles.write)}>
+      <div
+        className={cx(screen.actions, onEditFacts ? styles.back : styles.write)}
+      >
+        {onEditFacts && (
+          <Button className={screen.back} onClick={onEditFacts}>
+            Back
+          </Button>
+        )}
         <Button
           kind="primary"
           disabled={needsHighlight}

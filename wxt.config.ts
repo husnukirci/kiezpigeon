@@ -9,7 +9,9 @@ export default defineConfig({
     name: "Kiezpigeon",
     description:
       "Writes your Berlin flat application and fills the contact form. You review and press Send yourself.",
-    permissions: ["sidePanel", "storage"],
+    // activeTab + scripting: the fallback reads and fills an unknown site's
+    // form on the user's click only, with no host permission (ADR 12).
+    permissions: ["sidePanel", "storage", "activeTab", "scripting"],
     // The letter call from the service worker (ADR 4); nothing else.
     host_permissions: ["https://api.anthropic.com/*"],
     action: {

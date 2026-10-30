@@ -18,6 +18,15 @@
   fill: currentcolor;
 }
 
+.ring {
+  /* Drawn as the tick disc's outline, so the shape tells on from off. */
+  --ring-width: 2px;
+
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: var(--ring-width);
+}
+
 /* Icons keep their size when the text beside them wraps. */
 .icon {
   flex-shrink: 0;

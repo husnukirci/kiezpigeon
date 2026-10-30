@@ -4,7 +4,7 @@
 // a consent box and never touches a file input (CLAUDE.md "Never submit").
 import { classifyField } from "../rules/fieldMatch";
 import type { FieldKind, FieldMapping, FieldValue } from "../rules/types";
-import { describeField, findField } from "./describe";
+import { describeField, describeFields, findField } from "./describe";
 
 export interface FillStep {
   key: string;
@@ -101,10 +101,32 @@ export function fillForm(
   return report;
 }
 
-/** The steps for every mapping that has a value; the rest stay untouched. */
-export function fillSteps(mappings: readonly FieldMapping[]): FillStep[] {
+/**
+ * `fillForm`, but only into the form the plan was made from: if the form's
+ * field keys differ from the ones the user saw (a field added, removed or
+ * moved), nothing is written, because a key could now name another field.
+ */
+export function fillPlanned(
+  root: ParentNode,
+  steps: readonly FillStep[],
+  formKeys: readonly string[],
+): FillReport | "changed" {
+  const now = describeFields(root).map((field) => field.key);
+  const same =
+    now.length === formKeys.length && now.every((k, i) => k === formKeys[i]);
+  return same ? fillForm(root, steps) : "changed";
+}
+
+/**
+ * The steps for every mapping that has a value, except the fields the user
+ * opted out of by key; the rest stay untouched.
+ */
+export function fillSteps(
+  mappings: readonly FieldMapping[],
+  optedOut: ReadonlySet<string> = new Set(),
+): FillStep[] {
   return mappings.flatMap((m) =>
-    m.value === undefined
+    m.value === undefined || optedOut.has(m.field.key)
       ? []
       : [{ key: m.field.key, kind: m.kind, value: m.value }],
   );
