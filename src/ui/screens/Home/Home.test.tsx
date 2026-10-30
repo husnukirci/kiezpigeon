@@ -89,4 +89,44 @@ describe("Home", () => {
       request: { tone: "formal" },
     });
   });
+
+  it("starts over on an unknown site when its tab loads another page", async () => {
+    window.history.replaceState(null, "", "?tabId=7");
+    // No content script answers: the tab is not a listing Kiezpigeon knows.
+    vi.mocked(browser.tabs.sendMessage).mockRejectedValue(
+      new Error("Receiving end does not exist."),
+    );
+    Object.defineProperty(browser, "scripting", {
+      value: {
+        executeScript: () =>
+          Promise.resolve([{ frameId: 0, result: "https://flats.example/1" }]),
+      },
+      configurable: true,
+    });
+    try {
+      render(<Home profile={coupleWithDog} />);
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Use this page" }),
+      );
+      fireEvent.change(await screen.findByLabelText("Kaltmiete in €"), {
+        target: { value: "980" },
+      });
+
+      await fakeBrowser.tabs.onUpdated.trigger(7, { status: "complete" }, {
+        id: 7,
+      } as Browser.tabs.Tab);
+      // The facts belonged to the page that was there before.
+      expect(
+        await screen.findByRole("button", { name: "Use this page" }),
+      ).toBeDefined();
+      fireEvent.click(screen.getByRole("button", { name: "Use this page" }));
+      expect(await screen.findByLabelText("Kaltmiete in €")).toHaveProperty(
+        "value",
+        "",
+      );
+    } finally {
+      Reflect.deleteProperty(browser, "scripting");
+      window.history.replaceState(null, "", "/");
+    }
+  });
 });

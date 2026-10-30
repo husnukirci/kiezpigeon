@@ -559,9 +559,14 @@ without its query string and from then on answers `getContactForm` and
 `src/adapters/generic/` picks: of the visible forms that ask for no
 password, one with a visible message box, else the one with the most typed
 fields if it has at least three, the first in the page on a tie. It
-installs its listener once per page; the panel injects again before every
-read and fill, which costs nothing and finds a page reloaded on the same
-site. `describeFields` now also treats a field a stylesheet hides as
+installs its listener once per page, and not at all where a site's own
+content script already answers (both run in the extension's isolated
+world and share a marker on `window`): the first answer wins, but every
+listener acts, so two would both fill. The panel injects again before
+every read and fill, which costs nothing and finds a page reloaded on the
+same site. Typed facts, opt-outs and the letter belong to one page: when
+the tab finishes loading another, the panel starts over at "Use this
+page" (`usePageLoads`). `describeFields` now also treats a field a stylesheet hides as
 invisible (`checkVisibility()`), so a spam trap is neither counted nor
 filled, on any site.
 
