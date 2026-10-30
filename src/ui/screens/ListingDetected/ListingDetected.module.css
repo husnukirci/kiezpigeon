@@ -37,6 +37,11 @@
   flex-direction: column;
 }
 
+/* Back beside the teal button, as on the letter screen. */
+.back {
+  align-items: center;
+}
+
 .next {
   margin: 0;
   color: var(--ink-subtle);
