@@ -298,6 +298,22 @@ describe("LetterReady", () => {
     );
   });
 
+  it("keeps the letter of the last fill that wrote, not of a later one that did not", () => {
+    const props = renderWith(ready, contactForm);
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, report: filledReport });
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit your letter"), {
+      target: { value: "Sehr geehrte Frau Weber, kurz." },
+    });
+    // The second fill starts while the first fill's report is still shown,
+    // then finds the form changed and writes nothing.
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, changed: true });
+    fireEvent.click(screen.getByRole("button", { name: "Yes, I sent it" }));
+    expect(props.onSent).toHaveBeenCalledExactlyOnceWith(passingLetter);
+  });
+
   it("does not ask when the fill wrote nothing", () => {
     const props = renderWith(ready, contactForm);
     fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
