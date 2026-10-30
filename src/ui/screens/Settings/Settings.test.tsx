@@ -9,8 +9,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { coupleWithDog } from "../../../../test-support/sample-profiles";
 import { exportData } from "../../../rules/profile";
+import type { Application } from "../../../rules/types";
 import { read, resetForTests, write } from "../../../storage/storage";
 import { Settings } from "./Settings";
+
+const application: Application = {
+  id: "app_k3x9",
+  listingUrl: "https://www.immobilienscout24.de/expose/100000001",
+  listingTitle: "Helle 2-Zimmer-Altbauwohnung mit Balkon",
+  letter: "Sehr geehrte Frau Weber, ...",
+  status: "viewing",
+  sentAt: "2027-02-01T09:30:00.000Z",
+  statusChangedAt: "2027-02-03T09:30:00.000Z",
+};
 
 beforeEach(async () => {
   fakeBrowser.reset();
@@ -75,7 +86,8 @@ describe("Settings", () => {
     });
   });
 
-  it("deletes everything after a confirm", async () => {
+  it("deletes everything, applications too, after a confirm", async () => {
+    await write("applications", [application]);
     const onClose = vi.fn();
     render(<Settings profile={coupleWithDog} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "Delete all data" }));
@@ -100,13 +112,18 @@ describe("Settings", () => {
     expect(await read("profile")).toEqual({ ok: true, value: coupleWithDog });
   });
 
-  it("replaces the data with an import after a confirm", async () => {
+  it("replaces the data, applications too, with an import after a confirm", async () => {
     const onClose = vi.fn();
     render(<Settings profile={undefined} onClose={onClose} />);
     const changed = { ...coupleWithDog, hasWbs: true };
     chooseFile(
-      JSON.stringify(exportData(changed, [], "2027-01-01T00:00:00.000Z")),
+      JSON.stringify(
+        exportData(changed, [application], "2027-01-01T00:00:00.000Z"),
+      ),
     );
+    expect(
+      await screen.findByText(/a profile and 1 application\./),
+    ).toBeDefined();
     fireEvent.click(
       await screen.findByRole("button", { name: "Replace my data" }),
     );
@@ -114,10 +131,15 @@ describe("Settings", () => {
       expect(onClose).toHaveBeenCalled();
     });
     expect(await read("profile")).toEqual({ ok: true, value: changed });
+    expect(await read("applications")).toEqual({
+      ok: true,
+      value: [application],
+    });
   });
 
-  it("exports a JSON file with the profile and no API key", async () => {
+  it("exports a JSON file with the profile, the applications and no API key", async () => {
     await fakeBrowser.storage.local.set({ apiKey: "FAKE-KEY" });
+    await write("applications", [application]);
     const blobs: Blob[] = [];
     vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
       blobs.push(blob as Blob);
@@ -139,6 +161,7 @@ describe("Settings", () => {
     expect(JSON.parse(text)).toMatchObject({
       kiezpigeon: 2,
       profile: coupleWithDog,
+      applications: [application],
     });
     expect(text).not.toContain("FAKE-KEY");
   });
