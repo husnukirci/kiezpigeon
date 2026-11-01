@@ -56,6 +56,7 @@ describe("send and handle", () => {
     });
     expect(await send({ type: "getListing" })).toEqual({
       kind: "not_listing",
+      siteName: "ImmoScout24",
     });
   });
 
