@@ -640,3 +640,120 @@ author in fixtures, logs or the PR; `package.json` version `1.1.0`, tag
 `v1.1.0` pushed by the author after merging.
 
 **PR:** `feat(adapters): immoscout24 in english, clear reasons on unread pages`
+
+## Phase 10: Vonovia, the second listing adapter
+
+**Context for a fresh session:** v1.1.0 is released (Phases 0 to 9).
+ImmoScout24 is the only known site; every other site goes through the
+fallback, where the user types facts the page already shows. Vonovia lets
+its listings be read and its form be opened by an automated browser, and
+this is the first site to test the adapter interface from ADR 8. A
+read-only probe while writing this spec found (re-check in item 1):
+
+- Listing pages are `https://www.vonovia.de/zuhause-finden/immobilien/`
+  plus a slug ending in an object id. Links from the site's emails carry
+  tracking parameters, which are never stored.
+- The facts are server-rendered as visible label and value rows (`Kaltmiete`,
+  `Nebenkosten`, `Warmmiete`, `Größe`, `Zimmer`, `Geschoss`, `Verfügbar ab`,
+  `Baujahr`), with an `Ausstattung` list, a location link and a contact card
+  of the form `Frau Lastname`. There are no test attributes, so the adapter
+  reads rows by their label. The same data sits in a JSON attribute, which
+  the adapter does not read (ADR 8) and fixtures must not keep.
+- The contact form (`form[name="real-estate-contact-form"]`) is in the page
+  before its overlay opens, so being in the DOM does not mean it is open. It
+  has no `action`. Its submit button is named `submit`, which shadows
+  `form.submit`. It has no consent checkbox.
+- It asks for `firstname`, `surename`, `telephone`, `email`, `einkommensart`,
+  `monatliches_nettoeinkommen` and `message`, all required except `message`,
+  plus a hidden `wrkID` that holds the listing's id.
+- Both selects are hidden (`display: none`, `aria-hidden`) behind Slim Select
+  widgets, paired by `data-id` on the select and its `.ss-main`. Today they
+  count as spam traps and are dropped without a word. Setting the select's
+  value and firing `input` and `change` updated the widget and made the
+  select valid, with no request sent.
+
+**Objective:** a Vonovia listing works like an ImmoScout24 one: listing
+detected, fit check, German letter, "X of Y matched", and a fill that
+includes both required dropdowns and never sends.
+
+**In scope**
+
+1. Probe first. Save one listing with the overlay open from the author's
+   Chrome, and confirm the findings above on it. Also check whether the
+   `/zuhause-finden/immobilien/` address serves anything that is not a
+   listing, and how a for-sale object differs. Log the result in
+   `docs/ai-workflow.md`.
+2. Fixtures (fixture-driven tier). With `scripts/reduce-fixture.ts`:
+   `fixtures/vonovia/listing-complete.html`, `listing-missing-fields.html`
+   and `contact-form.html`. The reducer gains what the pairing needs
+   (`data-id`, `aria-hidden`) and still drops the JSON attribute that holds
+   the street, contact and object id. Scrub `wrkID`, the object id in the
+   address and page text, the location link and the contact card. Read the
+   reduced page text, not only the pattern check.
+3. Adapter (`src/adapters/vonovia/`, tests after, against the fixtures).
+   `matches(url)` takes listing addresses only. `readListing` reads rows by
+   label through the existing German parsers, adding what the probe shows is
+   missing (`2. Obergeschoß` as floor 2, the `OT` district in the location).
+   Features come from `Ausstattung` under the German names the letter already
+   uses. A field the page does not state, such as pets or WBS, goes in
+   `missing`. A page with no `Kaltmiete` row, such as a for-sale object,
+   returns `undefined`. `contactForm` and `readContactForm` return nothing
+   until the overlay is open.
+4. Hidden selects (`src/fill/describe.ts`, test first). A hidden `<select>`
+   counts as visible only when a visible `.ss-main` with the same `data-id`
+   stands in for it. Every other hidden field stays a trap, with a test for
+   each case: no widget, a hidden widget, and a widget with another
+   `data-id`. This also reaches the fallback, which closes the gap logged in
+   Phase 6 for any site using the same widget.
+5. Field matching (strict tier, `src/rules/`). A new field kind for
+   `Einkommensart` is matched ahead of `income`. It picks the option for own
+   income (`eigenes Einkommen`) only when every applicant is `permanent`,
+   `fixed_term`, `civil_servant`, `self_employed` or `trainee`. For any other
+   employment it fills nothing and the field shows under "Fill these
+   yourself", because the profile cannot tell Bürgergeld from
+   Arbeitslosengeld, or a student's own income from support. Income bands
+   compare whole euros with an inclusive lower bound, so `2.001 - 3.000 EUR`
+   takes 2.001 € and `bis 2.000 EUR` takes 2.000,50 €; the existing band tests
+   stay green. `keine Angabe` is never chosen.
+6. Content script (`src/entrypoints/vonovia.content.ts`, unit test after).
+   Matches listing addresses only (ADR 8 amendment, and PLAN.md section 7 in
+   the same commit). The handlers ImmoScout24's script holds move into one
+   shared helper that takes an adapter, so the two scripts differ only by
+   adapter and match, and the ImmoScout24 tests stay unchanged.
+7. Not-read reasons and copy (strict tier for `unreadPage`, smoke test plus
+   manual QA for the screens). `unreadPage` stops assuming ImmoScout24 and
+   returns the site's name, so a Vonovia page that is not a listing, and a
+   listing opened before the extension was loaded, read as they do on
+   ImmoScout24. An unknown-site or not-read screen that names ImmoScout24 as
+   the place to start names both sites.
+8. Never-submit: `e2e/never-submit.spec.ts` gains a run with the Vonovia
+   form fixture, served at a Vonovia-shaped address, asserting no `submit`
+   event, no request and no navigation, with both selects holding the
+   profile's values and their widgets showing them.
+
+**Out of scope:** Deutsche Wohnen (the next adapter; its site looks like the
+same platform, so note in the PR what it could reuse, but do not build for
+it); Vonovia's other languages; for-sale objects; pets, WBS or a new profile
+field for income type; reading the page's JSON; a third-party select library
+in the extension.
+
+**Acceptance:** the unit tests and e2e runs are green on the fixtures. On one
+live Vonovia listing in the author's Chrome (not sent), the listing card
+shows the page's Kaltmiete, Warmmiete, size, rooms, floor, availability and
+address; the contact person is greeted by name in a German letter; with an
+employed profile the panel reports 7 of 7 matched; both dropdowns visibly
+show the filled choice; the form stays unsent and the consoles show no
+errors. On Vonovia's search results, the panel shows the "not a listing"
+wording.
+
+**Phase review checklist:** the ImmoScout24 fixtures' tests unchanged and
+green; ADR 8 amended and PLAN.md section 7 updated with the new match; a test
+proves a hidden field without a stand-in widget is still not filled; the
+hidden `wrkID` is never filled; no raw query string reaches a stored
+`Listing`; never-submit grep clean; fixtures scrubbed and read, with no real
+street, contact name, object id or tracking token left, and the JSON attribute
+gone; no personal circumstances of the author in fixtures, logs or the PR;
+`package.json` version `1.2.0`, tag `v1.2.0` pushed by the author after
+merging.
+
+**PR:** `feat(adapters): vonovia, the second listing site`

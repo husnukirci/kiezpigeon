@@ -116,9 +116,9 @@ use), and how two applicants are related (so the letter stops guessing).
 - [ ] ImmoScout24's English pages read like the German ones, and the
       panel says why a page is not read (Phase 9; found in Phase 5's live
       checks)
-- [ ] A second listing adapter (candidates: Immowelt, Kleinanzeigen,
-      WG-Gesucht, deutsche-wohnen.com), proving the adapter interface with
-      a second real site
+- [ ] A second listing adapter, Vonovia (Phase 10), proving the adapter
+      interface with a second real site (next candidates: deutsche-wohnen.com,
+      Immowelt, Kleinanzeigen, WG-Gesucht)
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"
