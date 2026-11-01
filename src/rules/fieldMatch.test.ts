@@ -288,6 +288,16 @@ describe("mapFields on select fields", () => {
     expect(valueOf(coupleWithDog, smoker)).toBe("n");
   });
 
+  it("says the documents are available in English", () => {
+    const documents = select(
+      "Application documents",
+      ["TRUE", "Available"],
+      ["FALSE", "Not available"],
+    );
+    expect(valueOf(coupleWithDog, documents)).toBe("TRUE");
+    expect(valueOf(soloStudent, documents)).toBeUndefined();
+  });
+
   it("picks the move-in option by the kind of move-in", () => {
     const moveIn = select(
       "Einzugstermin",
