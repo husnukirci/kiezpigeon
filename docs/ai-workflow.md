@@ -148,6 +148,12 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P9 | Probe: I told the author ImmoScout24 tabs would show their URL through a host permission. The manifest has none for that site, only a content script match, and in the built extension `tabs.get(id).url` was empty on an exposé until the icon click. After the click it read on all pages of the origin, and a cross-origin navigation hid it again. | Corrected before building on it. The panel only opens from the icon, so item 4 needs no new permission (ADR 8 amendment, running probe in `e2e/fallback.spec.ts`). The manual check asked of the author was dropped.
 - P9 | The spec's probe needs an English exposé saved from the author's own Chrome. The first attempt failed because the sandbox could not read `~/Downloads`; the pages there were only Phase 3's German ones. | Item 4 was built first, out of the spec's order, since it needs no saved page. Items 1 to 3 and 5 wait for the English page; no English markup was guessed.
 
+- P9 | The English page's numbers would have passed through the German parsers silently: `€1,105` read as 1 euro and `60.13 m²` as 60. Found by comparing the two languages of one listing before writing code. | English parsers that take the whole number or refuse it, test-first, with a test that a German-written rent on the English page goes to `missing`.
+
+- P9 | Spec wrong: it asked for equal `Listing`s apart from `url`, but the site machine-translates the landlord's title. | The test compares everything but `url` and `title`, and ADR 8 says why.
+
+- P9 | Probe: two pages saved with Cmd+S and the contact dialog open held no form at all, though the same dialog copied from DevTools did. My first guess was that the dialog had not been opened. The author pasted the dialog's markup for both languages instead. | The dialog fixture is written from that markup with invented values. The pasted dialogs came from another listing than the saved pages, which does not matter for field names and codes, so the English form fixture is the listing page plus this dialog.
+
 ## Per-phase narrative
 
 Written at the end, from the log above and the PR descriptions.
