@@ -2,16 +2,31 @@
 // exact Listing the adapter returns for it.
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
-import { coupleWithDog } from "../../../test-support/sample-profiles";
+import {
+  coupleWithDog,
+  soloStudent,
+} from "../../../test-support/sample-profiles";
 import { mapFields } from "../../rules/fieldMatch";
 import { immoscout24 } from "./immoscout24";
 
 const URL = "https://www.immobilienscout24.de/expose/100000003";
+const PAIR_ID = "100000020";
+const GERMAN_URL = `https://www.immobilienscout24.de/expose/${PAIR_ID}`;
+const ENGLISH_URL = `https://www.immobilienscout24.de/en/expose/${PAIR_ID}`;
+
+const englishPage = () =>
+  loadFixture("immoscout24", "en-listing-complete.html");
 
 describe("immoscout24.matches", () => {
   it("matches exposé pages only", () => {
     expect(immoscout24.matches(URL)).toBe(true);
     expect(immoscout24.matches(`${URL}?referrer=RESULT_LIST`)).toBe(true);
+    expect(immoscout24.matches(ENGLISH_URL)).toBe(true);
+    expect(
+      immoscout24.matches(
+        "https://www.immobilienscout24.de/fr/expose/100000003",
+      ),
+    ).toBe(false);
     expect(
       immoscout24.matches(
         "https://www.immobilienscout24.de/Suche/de/berlin/berlin/wohnung-mieten",
@@ -232,5 +247,133 @@ describe("immoscout24.readContactForm", () => {
       const last = fields.filter((f) => f.name === name).at(-1);
       expect(last?.value).toBeUndefined();
     }
+  });
+});
+
+describe("immoscout24.readListing on the English page", () => {
+  it("reads the same flat as the German page of the same listing", () => {
+    const german = immoscout24.readListing(
+      loadFixture("immoscout24", "de-listing-pair.html"),
+      GERMAN_URL,
+    );
+    const english = immoscout24.readListing(englishPage(), ENGLISH_URL);
+    // The site translates the landlord's title by machine, so the title
+    // and the address of the page are what legitimately differ.
+    expect({ ...english, url: "", title: "" }).toEqual({
+      ...german,
+      url: "",
+      title: "",
+    });
+    expect(english?.url).toBe(ENGLISH_URL);
+    expect(english?.title).toBeTruthy();
+  });
+
+  it("reads each figure from its English text", () => {
+    expect(immoscout24.readListing(englishPage(), ENGLISH_URL)).toMatchObject({
+      kaltmieteCents: 86500,
+      nebenkostenCents: 24000,
+      warmmieteCents: 110500,
+      areaM2: 60.13,
+      rooms: 2,
+      floor: 5,
+      availability: { kind: "date", date: "2025-11-01" },
+      petPolicy: "not_allowed",
+    });
+  });
+
+  it("names features in German, so a letter stays German", () => {
+    expect(
+      immoscout24.readListing(englishPage(), ENGLISH_URL)?.features,
+    ).toEqual(["Balkon", "Keller", "WG-geeignet"]);
+  });
+
+  it("leaves out a feature it has no German name for", () => {
+    const page = englishPage();
+    const tag = page.querySelector('[data-qa="is24qa-cellar-label"]');
+    tag?.setAttribute("data-qa", "is24qa-sauna-label");
+    expect(immoscout24.readListing(page, ENGLISH_URL)?.features).toEqual([
+      "Balkon",
+      "WG-geeignet",
+    ]);
+  });
+
+  it.each([
+    ["Yes", "allowed"],
+    ["No", "not_allowed"],
+    ["By arrangement", "by_arrangement"],
+  ])("reads pets %s", (text, policy) => {
+    const page = englishPage();
+    const pets = page.querySelector(".is24qa-pets");
+    if (pets) pets.textContent = text;
+    expect(immoscout24.readListing(page, ENGLISH_URL)?.petPolicy).toBe(policy);
+  });
+
+  it.each([
+    ["Ground floor", 0],
+    ["Basement", -1],
+    ["3 of 5", 3],
+  ])("reads floor %s", (text, floor) => {
+    const page = englishPage();
+    const row = page.querySelector(".is24qa-floor");
+    if (row) row.textContent = text;
+    expect(immoscout24.readListing(page, ENGLISH_URL)?.floor).toBe(floor);
+  });
+
+  it("does not misread a German-written rent on the English page", () => {
+    const page = englishPage();
+    const rent = page.querySelector(".is24qa-total-rent");
+    const main = page.querySelector(
+      ".is24qa-maincriteria-rentincludingutilities-label-main",
+    );
+    if (rent) rent.textContent = "1.105 €";
+    if (main) main.textContent = "1.105 €";
+    const listing = immoscout24.readListing(page, ENGLISH_URL);
+    expect(listing?.warmmieteCents).toBeUndefined();
+    expect(listing?.missing).toContain("warmmieteCents");
+  });
+});
+
+describe("immoscout24 contact form on the English page", () => {
+  const LETTER = "Sehr geehrte Damen und Herren";
+  const german = () =>
+    immoscout24.readContactForm(
+      loadFixture("immoscout24", "contact-form.html"),
+    );
+  const english = () =>
+    immoscout24.readContactForm(
+      loadFixture("immoscout24", "en-contact-form.html"),
+    );
+
+  it("finds the open dialog's form", () => {
+    expect(english().map((f) => f.key)).toContain("name:firstName");
+  });
+
+  it.each([
+    ["a couple with a dog", coupleWithDog],
+    ["a solo student", soloStudent],
+  ])("plans the same fill as the German form for %s", (_name, profile) => {
+    const pairs = (fields: ReturnType<typeof german>) =>
+      mapFields(fields, profile, LETTER).mappings.map((m) => [
+        m.field.key,
+        m.kind,
+        m.value,
+      ]);
+    expect(pairs(english())).toEqual(pairs(german()));
+  });
+
+  it("matches as many fields as the German form", () => {
+    const score = (fields: ReturnType<typeof german>) => {
+      const { matched, total } = mapFields(fields, coupleWithDog, LETTER);
+      return { matched, total };
+    };
+    expect(score(english())).toEqual(score(german()));
+  });
+
+  it("leaves both opt-ins alone", () => {
+    const { leftAlone } = mapFields(english(), coupleWithDog, LETTER);
+    expect(leftAlone.map((f) => f.key)).toEqual([
+      "name:sendUserProfile",
+      "id:is24-checkbox-isRelocationOfferChecked-input",
+    ]);
   });
 });

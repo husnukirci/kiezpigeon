@@ -377,6 +377,20 @@ address that cannot be read counts as another site, so the panel offers the
 fallback and its wording still mentions reloading. The running probe is the
 address test in `e2e/fallback.spec.ts`.
 
+**Amendment (2026-11-01): the English address.** The content script also
+matches `/en/expose/*` on the same host, and the adapter reads it. This is a
+new match, not a new permission. The English page has its own `is24qa-*`
+classes for the rows and writes numbers the English way (`€1,105`,
+`60.13 m²`), so the adapter picks its parsers from the address. Those parsers
+take a number as one whole token and refuse a German-written sum on the
+English page: a field named in `missing` is better than a rent read as `1`.
+Feature tags go by their site code, shared by both languages, through a table
+of German names; a code outside the table is left out, so no English word
+reaches a German letter. Form field names and option codes are the same in
+both languages, as the probe showed. The two languages' `Listing`s are equal
+apart from `url` and `title`, because the site machine-translates the title.
+The running probe is the English run in `e2e/never-submit.spec.ts`.
+
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
 **Status.** Accepted.

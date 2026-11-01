@@ -1,6 +1,7 @@
-// Parsers for the German text listing pages show: money, numbers, dates
-// and contact names. Each returns undefined for text it cannot read, so an
-// adapter can name the field in `missing` instead of guessing.
+// Parsers for the text listing pages show: money, numbers, dates and contact
+// names, in German, and in English where ImmoScout24 translates its page.
+// Each returns undefined for text it cannot read, so an adapter can name the
+// field in `missing` instead of guessing.
 import type {
   Availability,
   Cents,
@@ -26,6 +27,44 @@ export function parseNumberText(text: string): number | undefined {
   return Number(
     `${whole.replaceAll(".", "")}${fraction ? `.${fraction}` : ""}`,
   );
+}
+
+/**
+ * The number in the English page's text as one token, whole or not at all,
+ * so `1.105` (a sum written the German way) is refused rather than read as
+ * 1.105.
+ */
+function englishNumber(text: string): number | undefined {
+  const token = /\d[\d.,]*\d|\d/.exec(text)?.[0];
+  if (token === undefined) return undefined;
+  const match = /^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/.exec(token);
+  if (!match) return undefined;
+  const [, whole = "", fraction] = match;
+  return Number(
+    `${whole.replaceAll(",", "")}${fraction ? `.${fraction}` : ""}`,
+  );
+}
+
+/** `€865`, `+ €240`, `€1,180.50` → cents. */
+export function parseEnglishEuro(text: string): Cents | undefined {
+  const euros = englishNumber(text);
+  return euros === undefined ? undefined : Math.round(euros * 100);
+}
+
+/** `60.13 m²`, `2.5` → a number. */
+export function parseEnglishNumber(text: string): number | undefined {
+  return englishNumber(text);
+}
+
+/** `01.11.2025`, `immediately`, `by arrangement` → when the flat is free. */
+export function parseEnglishAvailability(
+  text: string,
+): Availability | undefined {
+  const date = parseGermanDate(text);
+  if (date) return { kind: "date", date };
+  if (/immediately/i.test(text)) return { kind: "immediately" };
+  if (/arrangement/i.test(text)) return { kind: "by_arrangement" };
+  return undefined;
 }
 
 /** `01.03.2027` or `1.3.2027` anywhere in the text → `2027-03-01`. */

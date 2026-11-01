@@ -8,7 +8,10 @@ import { handle } from "../messaging/messaging";
 // page only when asked, calls nothing but its adapter and the fill layer,
 // and fills only inside the open contact form, never sending it (ADR 11).
 export default defineContentScript({
-  matches: ["https://www.immobilienscout24.de/expose/*"],
+  matches: [
+    "https://www.immobilienscout24.de/expose/*",
+    "https://www.immobilienscout24.de/en/expose/*",
+  ],
   main() {
     // So an injected fallback reader never answers beside this script.
     Object.assign(window, { [PAGE_ANSWERED]: true });
