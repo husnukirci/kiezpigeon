@@ -26,6 +26,12 @@ const ENGLISH_FIXTURE = readFileSync(
   join(ROOT, "fixtures", "immoscout24", "en-contact-form.html"),
   "utf8",
 );
+const VONOVIA_LISTING =
+  "https://www.vonovia.de/zuhause-finden/immobilien/helle-3-zimmer-wohnung-82-1000000001";
+const VONOVIA_FIXTURE = readFileSync(
+  join(ROOT, "fixtures", "vonovia", "contact-form.html"),
+  "utf8",
+);
 
 /** Runs in the page before its own markup: records any attempt to send. */
 function recordSendAttempts(): void {
@@ -67,6 +73,10 @@ test.beforeAll(async () => {
   await context.route(`${ENGLISH_EXPOSE}**`, (route) => {
     pageLoads.push(`${route.request().method()} ${route.request().url()}`);
     return route.fulfill({ contentType: "text/html", body: ENGLISH_FIXTURE });
+  });
+  await context.route(`${VONOVIA_LISTING}**`, (route) => {
+    pageLoads.push(`${route.request().method()} ${route.request().url()}`);
+    return route.fulfill({ contentType: "text/html", body: VONOVIA_FIXTURE });
   });
   await context.route("https://api.anthropic.com/**", (route) => {
     claudeCalls += 1;
@@ -246,4 +256,55 @@ test("the English contact form is filled the same way and never sent", async () 
   await expect(
     form.locator("#is24-checkbox-isRelocationOfferChecked-input"),
   ).not.toBeChecked();
+});
+
+test("the Vonovia form is filled, its hidden selects too, and never sent", async () => {
+  pageLoads.length = 0;
+  const listing = await context.newPage();
+  await listing.addInitScript(recordSendAttempts);
+  await listing.goto(VONOVIA_LISTING);
+
+  await listing.bringToFront();
+  const worker = context.serviceWorkers()[0];
+  const tabId = await worker?.evaluate(
+    async () => (await chrome.tabs.query({ active: true }))[0]?.id,
+  );
+  expect(tabId).toBeDefined();
+
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await expect(panel.getByText(/Listing detected · Vonovia/)).toBeVisible();
+  await panel
+    .getByRole("group", { name: "Highlights to mention" })
+    .getByRole("button")
+    .first()
+    .click();
+  await panel.getByRole("button", { name: "Write my letter" }).click();
+  await expect(panel.getByText("7 of 7 matched")).toBeVisible();
+
+  await panel.getByRole("button", { name: "Fill the form" }).click();
+  await expect(
+    panel.getByText("Filled 7 fields.", { exact: false }),
+  ).toBeVisible();
+
+  await listing.waitForLoadState("networkidle");
+  expect(pageLoads).toEqual([`GET ${VONOVIA_LISTING}`]);
+  expect(
+    await listing.evaluate(
+      () => (window as unknown as { sendAttempts: string[] }).sendAttempts,
+    ),
+  ).toEqual([]);
+
+  const form = listing.locator("form[name=real-estate-contact-form]");
+  await expect(form.locator("[name=firstname]")).toHaveValue("Mara");
+  await expect(form.locator("[name=telephone]")).toHaveValue("030 5550123");
+  await expect(form.locator("[name=einkommensart]")).toHaveValue("1");
+  await expect(form.locator("[name=monatliches_nettoeinkommen]")).toHaveValue(
+    "M_3",
+  );
+  await expect(form.locator("[name=message]")).not.toHaveValue("");
+  // The listing's own id, the hidden field a person never touches.
+  await expect(form.locator("[name=wrkID]")).toHaveValue("1000000001");
 });
