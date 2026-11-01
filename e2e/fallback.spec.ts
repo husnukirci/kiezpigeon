@@ -218,6 +218,35 @@ test("the reader never answers beside a site's own content script", async () => 
   await panel.close();
 });
 
+test("a Vonovia page that is not a listing says so, with no fallback", async () => {
+  const search = "https://www.vonovia.de/zuhause-finden";
+  await context.route(`${search}**`, (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: readFileSync(
+        join(ROOT, "fixtures", "vonovia", "search-results.html"),
+        "utf8",
+      ),
+    }),
+  );
+  const site = await context.newPage();
+  await site.goto(search);
+  await clickIcon(site);
+  const tabId = await siteTabId();
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await expect(
+    panel.getByText(
+      "This Vonovia page is not a listing. Open a listing to start.",
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Use this page" }),
+  ).toBeHidden();
+});
+
 test("the panel knows a tab's address only under the icon's grant, and says why it is not read", async () => {
   const search = "https://www.immobilienscout24.de/Suche/de/berlin";
   await context.route(`${search}**`, (route) =>
