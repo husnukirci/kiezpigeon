@@ -70,11 +70,29 @@ function labelOf(element: FieldElement): string | undefined {
  * a spam trap that a person never fills, so Kiezpigeon must not either.
  */
 export function isVisible(element: Element): boolean {
+  const widget = styledStandIn(element);
+  if (widget) return isVisible(widget);
   return (
     !(element instanceof HTMLInputElement && element.type === "hidden") &&
     element.closest("[hidden], [aria-hidden='true']") === null &&
     element.checkVisibility()
   );
+}
+
+/**
+ * Slim Select hides a real `<select>` and draws its own right after it, with
+ * the same `data-id`. The person fills the select through that widget, so
+ * only a select paired this way is exempt from the trap rule.
+ */
+function styledStandIn(element: Element): Element | undefined {
+  const id = element.getAttribute("data-id");
+  const next = element.nextElementSibling;
+  return element instanceof HTMLSelectElement &&
+    id &&
+    next?.matches(".ss-main") &&
+    next.getAttribute("data-id") === id
+    ? next
+    : undefined;
 }
 
 /** One element as plain data; `key` is the handle `findField` takes. */
