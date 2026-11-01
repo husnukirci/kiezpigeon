@@ -408,6 +408,14 @@ every applicant's job means that; anything else is left to the user, because
 the profile holds no income type. The running probes are the Vonovia run in
 `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
 
+The site draws a listing's title and address just after the load event, and
+the panel asks at that event. So `SiteAdapter` gains an optional
+`isReady(document)`, and the content script holds its answer until that is
+true, for at most two seconds, and then answers with what it has. It watches
+the page only while a request is waiting. It does not read the page's JSON to
+get ahead of the drawing, and does not poll. The running probe is the late
+title run in `e2e/never-submit.spec.ts`.
+
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
 **Status.** Accepted.

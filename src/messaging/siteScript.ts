@@ -6,12 +6,38 @@ import { fillPlanned } from "../fill/fill";
 import { PAGE_ANSWERED } from "./fallback";
 import { handle } from "./messaging";
 
+/** How long a slow page may keep the panel waiting for its answer. */
+export const READY_TIMEOUT_MS = 2000;
+
+/** Waits for the adapter's page to be drawn, or for the time to run out. */
+function untilReady(adapter: SiteAdapter): Promise<void> {
+  const ready = (): boolean => adapter.isReady?.(document) ?? true;
+  if (ready()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const finish = (): void => {
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve();
+    };
+    const observer = new MutationObserver(() => {
+      if (ready()) finish();
+    });
+    const timer = setTimeout(finish, READY_TIMEOUT_MS);
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  });
+}
+
 export function answerAs(adapter: SiteAdapter): void {
   // So an injected fallback reader never answers beside this script.
   Object.assign(window, { [PAGE_ANSWERED]: true });
   handle({
     ping: () => ({ type: "pong" }),
-    getListing: () => {
+    getListing: async () => {
+      await untilReady(adapter);
       // Without the query string: it carries the site's tracking.
       const url = location.origin + location.pathname;
       const listing = adapter.readListing(document, url);

@@ -72,17 +72,31 @@ function featuresOf(document: Document): Feature[] {
   return features;
 }
 
+function kaltText(document: Document): string | undefined {
+  return row(document, "Kaltmiete") ?? figure(document, "Kaltmiete");
+}
+
+/**
+ * The rows and key figures are in the page as it arrives. The site's script
+ * draws the title and the address together, just after the load event.
+ */
+function isReady(document: Document): boolean {
+  return (
+    kaltText(document) === undefined || textOf(document, "h1") !== undefined
+  );
+}
+
 function readListing(document: Document, url: string): Listing | undefined {
-  const kaltText = row(document, "Kaltmiete") ?? figure(document, "Kaltmiete");
+  const kalt = kaltText(document);
   // A for-sale object has a price instead, and a search page has neither.
-  if (kaltText === undefined) return undefined;
+  if (kalt === undefined) return undefined;
 
   const address = addressOf(document);
   return assembleListing(url, featuresOf(document), {
     title: textOf(document, "h1"),
     address,
     district: map(address, districtOf),
-    kaltmieteCents: parseEuroText(kaltText),
+    kaltmieteCents: parseEuroText(kalt),
     nebenkostenCents: map(row(document, "Nebenkosten"), parseEuroText),
     warmmieteCents: map(
       row(document, "Warmmiete") ?? figure(document, "Warmmiete"),
@@ -120,6 +134,7 @@ export const vonovia: SiteAdapter = {
   id: "vonovia",
   siteName: "Vonovia",
   matches: (url) => LISTING_URL.test(url),
+  isReady,
   readListing,
   contactForm,
   readContactForm: (document) => {

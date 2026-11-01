@@ -32,6 +32,24 @@ const VONOVIA_FIXTURE = readFileSync(
   join(ROOT, "fixtures", "vonovia", "contact-form.html"),
   "utf8",
 );
+const VONOVIA_LATE_LISTING =
+  "https://www.vonovia.de/zuhause-finden/immobilien/spaete-wohnung-82-1000000002";
+// The site draws its title just after the load event (the Phase 10 live check).
+const VONOVIA_LATE_FIXTURE = readFileSync(
+  join(ROOT, "fixtures", "vonovia", "listing-complete.html"),
+  "utf8",
+)
+  .replace(/<h1[\s\S]*?<\/h1>/, "")
+  .replace(
+    "</body>",
+    `<script>
+      addEventListener("load", () => setTimeout(() => {
+        const title = document.createElement("h1");
+        title.textContent = "Helle 3-Zimmer-Wohnung mit Balkon";
+        document.querySelector("main").prepend(title);
+      }, 300));
+    </script></body>`,
+  );
 
 /** Runs in the page before its own markup: records any attempt to send. */
 function recordSendAttempts(): void {
@@ -78,6 +96,9 @@ test.beforeAll(async () => {
     pageLoads.push(`${route.request().method()} ${route.request().url()}`);
     return route.fulfill({ contentType: "text/html", body: VONOVIA_FIXTURE });
   });
+  await context.route(`${VONOVIA_LATE_LISTING}**`, (route) =>
+    route.fulfill({ contentType: "text/html", body: VONOVIA_LATE_FIXTURE }),
+  );
   await context.route("https://api.anthropic.com/**", (route) => {
     claudeCalls += 1;
     return route.fulfill({
@@ -307,4 +328,29 @@ test("the Vonovia form is filled, its hidden selects too, and never sent", async
   await expect(form.locator("[name=message]")).not.toHaveValue("");
   // The listing's own id, the hidden field a person never touches.
   await expect(form.locator("[name=wrkID]")).toHaveValue("1000000001");
+});
+
+test("a reload with the panel open waits for a title the site draws late", async () => {
+  const listing = await context.newPage();
+  await listing.goto(VONOVIA_LATE_LISTING);
+  await listing.bringToFront();
+  const worker = context.serviceWorkers()[0];
+  const tabId = await worker?.evaluate(
+    async () => (await chrome.tabs.query({ active: true }))[0]?.id,
+  );
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  const title = panel.getByRole("heading", {
+    name: "Helle 3-Zimmer-Wohnung mit Balkon",
+  });
+  await expect(title).toBeVisible();
+
+  await listing.reload();
+  await listing.locator("h1").waitFor();
+  // Long enough for the panel to have asked again and drawn its answer.
+  await panel.waitForTimeout(500);
+  await expect(panel.getByText("Untitled listing")).toBeHidden();
+  await expect(title).toBeVisible();
 });

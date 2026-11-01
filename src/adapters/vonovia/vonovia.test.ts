@@ -97,6 +97,21 @@ describe("vonovia.readListing", () => {
   });
 });
 
+describe("vonovia.isReady", () => {
+  it("waits for the title on a listing the site is still drawing", () => {
+    const page = loadFixture("vonovia", "listing-complete.html");
+    expect(vonovia.isReady?.(page)).toBe(true);
+    page.querySelector("h1")?.remove();
+    expect(vonovia.isReady?.(page)).toBe(false);
+  });
+
+  it("does not wait on a page that is no listing", () => {
+    expect(
+      vonovia.isReady?.(loadFixture("vonovia", "search-results.html")),
+    ).toBe(true);
+  });
+});
+
 describe("vonovia.readContactForm", () => {
   it("is empty until the overlay is open", () => {
     const closed = loadFixture("vonovia", "listing-complete.html");

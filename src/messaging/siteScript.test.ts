@@ -3,7 +3,7 @@ import { fakeBrowser } from "wxt/testing/fake-browser";
 import type { SiteAdapter } from "../adapters/types";
 import { PAGE_ANSWERED } from "./fallback";
 import { send } from "./messaging";
-import { answerAs } from "./siteScript";
+import { answerAs, READY_TIMEOUT_MS } from "./siteScript";
 
 const adapter = (overrides: Partial<SiteAdapter>): SiteAdapter => ({
   id: "site",
@@ -44,6 +44,39 @@ describe("answerAs", () => {
       "https://flats.example/listing/1",
     );
     expect(window).toHaveProperty(PAGE_ANSWERED, true);
+  });
+
+  it("waits for a page the site is still drawing", async () => {
+    const readListing = vi.fn(() => ({
+      url: "ignored",
+      features: [],
+      missing: [],
+    }));
+    answerAs(
+      adapter({
+        readListing,
+        isReady: (page) => page.querySelector("h1") !== null,
+      }),
+    );
+    const answer = send({ type: "getListing" });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(readListing).not.toHaveBeenCalled();
+    document.body.append(document.createElement("h1"));
+    expect(await answer).toMatchObject({ kind: "listing" });
+    expect(readListing).toHaveBeenCalledTimes(1);
+    document.querySelector("h1")?.remove();
+  });
+
+  it("answers with what it has when the page never finishes", async () => {
+    vi.useFakeTimers();
+    try {
+      answerAs(adapter({ isReady: () => false }));
+      const answer = send({ type: "getListing" });
+      await vi.advanceTimersByTimeAsync(READY_TIMEOUT_MS);
+      expect(await answer).toEqual({ kind: "not_listing", siteName: "Site" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("names its site when the page is not a listing", async () => {

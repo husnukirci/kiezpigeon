@@ -9,6 +9,12 @@ export interface SiteAdapter {
   /** Shown in the detected badge, e.g. `ImmoScout24`. */
   siteName: string;
   matches(url: string): boolean;
+  /**
+   * False while the site is still drawing what `readListing` needs, for a
+   * site that draws part of a listing after the load event. Omitted when the
+   * page is complete by then.
+   */
+  isReady?(document: Document): boolean;
   /** `undefined` when the page is not a listing. */
   readListing(document: Document, url: string): Listing | undefined;
   /** The open contact form, the root that filling works inside. */
