@@ -300,8 +300,8 @@ function optionWhere(
   )?.value;
 }
 
-const NO = new RegExp(word("nein|no|false|nicht|keine?|n|0"), "u");
-const YES = new RegExp(word("ja|yes|true|vorhanden|j|y|1"), "u");
+const NO = new RegExp(word("nein|no|not|false|nicht|keine?|n|0"), "u");
+const YES = new RegExp(word("ja|yes|true|vorhanden|available|j|y|1"), "u");
 
 function yesNoOption(field: FormField, answer: boolean): string | undefined {
   return optionWhere(field, (text) =>

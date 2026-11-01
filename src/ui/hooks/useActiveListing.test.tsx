@@ -14,6 +14,7 @@ import { kreuzbergListing } from "../../../test-support/sample-profiles";
 import { useActiveListing } from "./useActiveListing";
 
 let toTab: MockInstance<(tabId: number, message: unknown) => Promise<unknown>>;
+let tabGet: MockInstance<() => Promise<Browser.tabs.Tab>>;
 let activeTabId = 7;
 
 beforeEach(() => {
@@ -24,6 +25,8 @@ beforeEach(() => {
     () => Promise<Browser.tabs.Tab[]>
   >;
   query.mockImplementation(() => Promise.resolve([tab(activeTabId)]));
+  tabGet = vi.spyOn(browser.tabs, "get");
+  tabGet.mockResolvedValue(tab(activeTabId));
 });
 afterEach(cleanup);
 
@@ -31,6 +34,8 @@ afterEach(cleanup);
 function tab(id: number): Browser.tabs.Tab {
   return { id } as Browser.tabs.Tab;
 }
+
+const OTHER_SITE = { kind: "not_read", page: "other_site" };
 
 const detected = {
   kind: "listing",
@@ -55,7 +60,7 @@ describe("useActiveListing", () => {
     toTab.mockRejectedValue(new Error("Receiving end does not exist."));
     const { result } = renderHook(() => useActiveListing());
     await waitFor(() => {
-      expect(result.current).toEqual({ kind: "not_listing" });
+      expect(result.current).toEqual(OTHER_SITE);
     });
 
     toTab.mockResolvedValue({ ok: true, value: detected });
@@ -71,7 +76,39 @@ describe("useActiveListing", () => {
     vi.mocked(browser.tabs.query).mockRejectedValue(new Error("No window"));
     const { result } = renderHook(() => useActiveListing());
     await waitFor(() => {
-      expect(result.current).toEqual({ kind: "not_listing" });
+      expect(result.current).toEqual(OTHER_SITE);
+    });
+  });
+
+  it("says to reload an exposé whose content script does not answer", async () => {
+    toTab.mockRejectedValue(new Error("Receiving end does not exist."));
+    tabGet.mockResolvedValue({
+      ...tab(7),
+      url: "https://www.immobilienscout24.de/expose/100000009",
+    });
+    const { result } = renderHook(() => useActiveListing(7));
+    await waitFor(() => {
+      expect(result.current).toEqual({ kind: "not_read", page: "reload_tab" });
+    });
+  });
+
+  it("names an exposé page whose content script finds no listing", async () => {
+    toTab.mockResolvedValue({ ok: true, value: { kind: "not_listing" } });
+    const { result } = renderHook(() => useActiveListing(7));
+    await waitFor(() => {
+      expect(result.current).toEqual({
+        kind: "not_read",
+        page: "immoscout24_not_listing",
+      });
+    });
+  });
+
+  it("offers the fallback when the tab's address cannot be read", async () => {
+    toTab.mockRejectedValue(new Error("Receiving end does not exist."));
+    tabGet.mockRejectedValue(new Error("No tab with id: 7"));
+    const { result } = renderHook(() => useActiveListing(7));
+    await waitFor(() => {
+      expect(result.current).toEqual(OTHER_SITE);
     });
   });
 

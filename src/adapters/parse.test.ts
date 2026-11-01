@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   parseAvailability,
   parseContactName,
+  parseEnglishAvailability,
+  parseEnglishEuro,
+  parseEnglishNumber,
   parseEuroText,
   parseGermanDate,
   parseNumberText,
@@ -74,5 +77,42 @@ describe("parseAvailability", () => {
     ["bald", undefined],
   ])("reads %j", (text, expected) => {
     expect(parseAvailability(text)).toEqual(expected);
+  });
+});
+
+describe("the English page's text", () => {
+  it("reads euros with a comma for thousands and a point for cents", () => {
+    expect(parseEnglishEuro("€865")).toBe(86500);
+    expect(parseEnglishEuro("+ €240")).toBe(24000);
+    expect(parseEnglishEuro("€1,105")).toBe(110500);
+    expect(parseEnglishEuro("€1,180.50")).toBe(118050);
+  });
+
+  it("refuses a sum written the German way rather than misread it", () => {
+    expect(parseEnglishEuro("1.105 €")).toBeUndefined();
+    expect(parseEnglishEuro("2.595,00 €")).toBeUndefined();
+    expect(parseEnglishEuro("no price")).toBeUndefined();
+  });
+
+  it("reads sizes and rooms with a decimal point", () => {
+    expect(parseEnglishNumber("60.13 m²")).toBe(60.13);
+    expect(parseEnglishNumber("2")).toBe(2);
+    expect(parseEnglishNumber("2.5")).toBe(2.5);
+    expect(parseEnglishNumber("1,204 m²")).toBe(1204);
+    expect(parseEnglishNumber("60,13 m²")).toBeUndefined();
+  });
+
+  it("reads when the flat is free", () => {
+    expect(parseEnglishAvailability("01.11.2025")).toEqual({
+      kind: "date",
+      date: "2025-11-01",
+    });
+    expect(parseEnglishAvailability("immediately")).toEqual({
+      kind: "immediately",
+    });
+    expect(parseEnglishAvailability("by arrangement")).toEqual({
+      kind: "by_arrangement",
+    });
+    expect(parseEnglishAvailability("soon")).toBeUndefined();
   });
 });

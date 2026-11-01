@@ -21,6 +21,11 @@ const FIXTURE = readFileSync(
   join(ROOT, "fixtures", "immoscout24", "contact-form.html"),
   "utf8",
 );
+const ENGLISH_EXPOSE = "https://www.immobilienscout24.de/en/expose/100000020";
+const ENGLISH_FIXTURE = readFileSync(
+  join(ROOT, "fixtures", "immoscout24", "en-contact-form.html"),
+  "utf8",
+);
 
 /** Runs in the page before its own markup: records any attempt to send. */
 function recordSendAttempts(): void {
@@ -58,6 +63,10 @@ test.beforeAll(async () => {
   await context.route(`${EXPOSE}**`, (route) => {
     pageLoads.push(`${route.request().method()} ${route.request().url()}`);
     return route.fulfill({ contentType: "text/html", body: FIXTURE });
+  });
+  await context.route(`${ENGLISH_EXPOSE}**`, (route) => {
+    pageLoads.push(`${route.request().method()} ${route.request().url()}`);
+    return route.fulfill({ contentType: "text/html", body: ENGLISH_FIXTURE });
   });
   await context.route("https://api.anthropic.com/**", (route) => {
     claudeCalls += 1;
@@ -178,4 +187,63 @@ test("Fill the form fills the contact form and never sends it", async () => {
       () => (window as unknown as { sendAttempts: string[] }).sendAttempts,
     ),
   ).toEqual([]);
+});
+
+test("the English contact form is filled the same way and never sent", async () => {
+  pageLoads.length = 0;
+  const listing = await context.newPage();
+  await listing.addInitScript(recordSendAttempts);
+  await listing.goto(ENGLISH_EXPOSE);
+  await expect(
+    listing.getByRole("dialog", { name: "Contact request" }),
+  ).toBeVisible();
+
+  await listing.bringToFront();
+  const worker = context.serviceWorkers()[0];
+  const tabId = await worker?.evaluate(
+    async () => (await chrome.tabs.query({ active: true }))[0]?.id,
+  );
+  expect(tabId).toBeDefined();
+
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await expect(panel.getByText(/Listing detected/)).toBeVisible();
+  const highlights = panel.getByRole("group", {
+    name: "Highlights to mention",
+  });
+  // Features stay German on the English page, so the letter does too.
+  await expect(
+    highlights.getByRole("button", { name: /Balkon/ }),
+  ).toBeVisible();
+  await highlights.getByRole("button").first().click();
+  await panel.getByRole("button", { name: "Write my letter" }).click();
+  await expect(panel.getByText("14 of 15 matched")).toBeVisible();
+
+  await panel.getByRole("button", { name: "Fill the form" }).click();
+  await expect(
+    panel.getByText("Filled 14 fields.", { exact: false }),
+  ).toBeVisible();
+
+  await listing.waitForLoadState("networkidle");
+  expect(pageLoads).toEqual([`GET ${ENGLISH_EXPOSE}`]);
+  expect(
+    await listing.evaluate(
+      () => (window as unknown as { sendAttempts: string[] }).sendAttempts,
+    ),
+  ).toEqual([]);
+
+  const form = listing.getByTestId("contact-form");
+  await expect(form.locator("[name=firstName]")).toHaveValue("Mara");
+  await expect(form.locator("[name=hasPets]")).toHaveValue("TRUE");
+  await expect(form.locator("[name=income]")).toHaveValue(
+    "OVER_4000_UPTO_5000",
+  );
+  await expect(form.locator("[name=message]")).not.toHaveValue("");
+  await expect(form.locator("[name=salutation]")).toHaveValue("");
+  await expect(form.locator("[name=sendUserProfile]")).toBeChecked();
+  await expect(
+    form.locator("#is24-checkbox-isRelocationOfferChecked-input"),
+  ).not.toBeChecked();
 });

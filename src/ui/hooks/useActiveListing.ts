@@ -1,15 +1,17 @@
 // The listing in the panel's tab (ADR 8). A panel opened from the icon
 // belongs to one tab and asks only that tab: when it opens and whenever that
 // tab finishes loading a page. Without a tab of its own (an older panel) it
-// falls back to the active tab and follows tab switches. No answer means the
-// page is not a listing.
+// falls back to the active tab and follows tab switches. A tab that is not a
+// listing also says why, from its address and the script's answer.
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import { send, type ListingResult } from "../../messaging/messaging";
+import { unreadPage, type UnreadPage } from "../../rules/unreadPage";
 
-export type ActiveListing = { kind: "loading" } | ListingResult;
-
-const NOT_LISTING: ListingResult = { kind: "not_listing" };
+export type ActiveListing =
+  | { kind: "loading" }
+  | Extract<ListingResult, { kind: "listing" }>
+  | { kind: "not_read"; page: UnreadPage };
 
 /** The panel's own tab, or the active one for a panel without a tab. */
 export async function panelTab(
@@ -21,14 +23,29 @@ export async function panelTab(
   );
 }
 
-async function askTab(ownTab: number | undefined): Promise<ListingResult> {
+/** Set only under the icon click's `activeTab` grant (ADR 8). */
+async function tabUrl(tabId: number): Promise<string | undefined> {
   try {
-    const tabId = await panelTab(ownTab);
-    if (tabId === undefined) return NOT_LISTING;
-    return await send({ type: "getListing" }, tabId);
+    return (await browser.tabs.get(tabId)).url;
+  } catch {
+    return undefined;
+  }
+}
+
+async function askTab(
+  ownTab: number | undefined,
+): Promise<Exclude<ActiveListing, { kind: "loading" }>> {
+  let tabId: number | undefined;
+  try {
+    tabId = await panelTab(ownTab);
+    if (tabId === undefined) throw new Error("No tab");
+    const answer = await send({ type: "getListing" }, tabId);
+    if (answer.kind === "listing") return answer;
+    return { kind: "not_read", page: unreadPage(await tabUrl(tabId), true) };
   } catch {
     // No content script on this page, or one from before an update.
-    return NOT_LISTING;
+    const url = tabId === undefined ? undefined : await tabUrl(tabId);
+    return { kind: "not_read", page: unreadPage(url, false) };
   }
 }
 
