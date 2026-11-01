@@ -192,6 +192,7 @@ export type FieldKind =
   | "pets"
   | "smoker"
   | "income"
+  | "incomeType"
   | "employment"
   | "moveInDate"
   | "wbs"
