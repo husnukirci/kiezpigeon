@@ -35,7 +35,7 @@ function tab(id: number): Browser.tabs.Tab {
   return { id } as Browser.tabs.Tab;
 }
 
-const OTHER_SITE = { kind: "not_read", page: "other_site" };
+const OTHER_SITE = { kind: "not_read", page: { reason: "other_site" } };
 
 const detected = {
   kind: "listing",
@@ -88,17 +88,23 @@ describe("useActiveListing", () => {
     });
     const { result } = renderHook(() => useActiveListing(7));
     await waitFor(() => {
-      expect(result.current).toEqual({ kind: "not_read", page: "reload_tab" });
+      expect(result.current).toEqual({
+        kind: "not_read",
+        page: { reason: "reload_tab" },
+      });
     });
   });
 
   it("names an exposé page whose content script finds no listing", async () => {
-    toTab.mockResolvedValue({ ok: true, value: { kind: "not_listing" } });
+    toTab.mockResolvedValue({
+      ok: true,
+      value: { kind: "not_listing", siteName: "ImmoScout24" },
+    });
     const { result } = renderHook(() => useActiveListing(7));
     await waitFor(() => {
       expect(result.current).toEqual({
         kind: "not_read",
-        page: "immoscout24_not_listing",
+        page: { reason: "not_listing", siteName: "ImmoScout24" },
       });
     });
   });
@@ -113,7 +119,10 @@ describe("useActiveListing", () => {
   });
 
   it("asks again when a tab finishes loading, not while it loads", async () => {
-    toTab.mockResolvedValue({ ok: true, value: { kind: "not_listing" } });
+    toTab.mockResolvedValue({
+      ok: true,
+      value: { kind: "not_listing", siteName: "ImmoScout24" },
+    });
     renderHook(() => useActiveListing());
     await waitFor(() => {
       expect(toTab).toHaveBeenCalledTimes(1);

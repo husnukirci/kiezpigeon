@@ -3,6 +3,7 @@ import { coupleWithDog, soloStudent } from "../../test-support/sample-profiles";
 import { classifyField, mapFields } from "./fieldMatch";
 import { defaultProfile } from "./profile";
 import type {
+  Applicant,
   EmploymentType,
   FieldKind,
   FormField,
@@ -60,6 +61,9 @@ describe("classifyField", () => {
     [{ label: "Haustiere", type: "checkbox" }, "pets"],
     [{ label: "Nichtraucher", type: "checkbox" }, "smoker"],
     [{ label: "Haushaltsnettoeinkommen" }, "income"],
+    [{ label: "Einkommensart", type: "select" }, "incomeType"],
+    [{ name: "einkommensart", id: "input-dropdown-income-type" }, "incomeType"],
+    [{ name: "incomeType" }, "incomeType"],
     [{ name: "income" }, "income"],
     [{ label: "Beruf" }, "employment"],
     [{ label: "Beschäftigungsverhältnis", type: "select" }, "employment"],
@@ -359,6 +363,75 @@ describe("mapFields on select fields", () => {
       ["TRUE", "Vorhanden"],
     );
     expect(valueOf(coupleWithDog, documents)).toBe("TRUE");
+  });
+
+  it("takes the band above a gap at its lower bound", () => {
+    const income = select(
+      "Monatliches Nettoeinkommen",
+      ["M_1", "bis 2.000 EUR"],
+      ["M_2", "2.001 - 3.000 EUR"],
+      ["M_3", "über 3.000 EUR"],
+      ["M_A", "keine Angabe"],
+    );
+    const atEdge = (cents: number): Profile => ({
+      ...soloStudent,
+      applicants: soloStudent.applicants.map((a) => ({
+        ...a,
+        netIncomeCents: cents,
+      })),
+    });
+    expect(valueOf(atEdge(200000), income)).toBe("M_1");
+    // Between the two bands, as a sum with cents can be.
+    expect(valueOf(atEdge(200050), income)).toBe("M_1");
+    expect(valueOf(atEdge(200100), income)).toBe("M_2");
+    expect(valueOf(atEdge(300000), income)).toBe("M_2");
+    expect(valueOf(atEdge(300050), income)).toBe("M_3");
+  });
+
+  it("names own income only when every applicant's job means own income", () => {
+    const incomeType = select(
+      "Einkommensart",
+      ["1", "eigenes Einkommen (Gehalt, Lohn, Unterhalt)"],
+      ["2", "Arbeitslosengeld, Sozialhilfe"],
+      ["3", "Rente, Pension"],
+      ["4", "Bürgergeld"],
+    );
+    const as = (...jobs: EmploymentType[]): Profile => ({
+      ...coupleWithDog,
+      applicants: jobs.map((employment, index) => ({
+        ...(coupleWithDog.applicants[0] as Applicant),
+        id: `a${String(index + 1)}`,
+        employment,
+      })),
+    });
+    for (const job of [
+      "permanent",
+      "fixed_term",
+      "civil_servant",
+      "self_employed",
+      "trainee",
+    ] satisfies EmploymentType[]) {
+      expect(valueOf(as(job), incomeType)).toBe("1");
+    }
+    expect(valueOf(as("permanent", "fixed_term"), incomeType)).toBe("1");
+    for (const job of [
+      "student",
+      "job_seeking",
+      "other",
+    ] satisfies EmploymentType[]) {
+      expect(valueOf(as(job), incomeType)).toBeUndefined();
+    }
+    expect(valueOf(as("permanent", "student"), incomeType)).toBeUndefined();
+    // A list with no such option gets no guess.
+    expect(
+      valueOf(as("permanent"), select("Einkommensart", ["4", "Bürgergeld"])),
+    ).toBeUndefined();
+  });
+
+  it("leaves a typed income type alone", () => {
+    expect(
+      valueOf(coupleWithDog, field({ label: "Einkommensart" })),
+    ).toBeUndefined();
   });
 
   it("leaves an income select alone when no range holds the income", () => {

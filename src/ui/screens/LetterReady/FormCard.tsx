@@ -78,7 +78,7 @@ export function FormCard({ state, match, onCheck, confirm }: FormCardProps) {
 const MESSAGES: Record<Exclude<ContactFormState["status"], "form">, string> = {
   checking: "Looking for the contact form.",
   no_form:
-    "Open the contact form on the listing first: press Nachricht on the page. Then check the form here.",
+    "Open the contact form on the listing first: use the contact button on the page. Then check the form here.",
   unreachable:
     "Kiezpigeon cannot reach this page. Reload it, then check the form.",
 };

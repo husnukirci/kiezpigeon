@@ -96,6 +96,8 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
   ["children", pattern({ within: "kinder|children", whole: "kind|kids?" })],
   ["pets", pattern({ within: "haustier|tierhaltung", whole: "pets?|tiere" })],
   ["smoker", pattern({ within: "raucher|smok" })],
+  // Before `income`, whose words it holds.
+  ["incomeType", pattern({ within: "einkommensart|income ?type" })],
   [
     "income",
     pattern({ within: "einkommen|income|gehalt|salary", whole: "netto" }),
@@ -251,9 +253,10 @@ function valueFor(
       if (field.type === "date") return undefined;
       return moveIn && MOVE_IN_TEXT[moveIn.kind];
     // No profile field holds a salutation; consent is never filled; the
-    // documents question is only asked as a choice.
+    // documents and income type questions are only asked as a choice.
     case "salutation":
     case "documents":
+    case "incomeType":
     case "consent":
     case "unknown":
       return undefined;
@@ -372,10 +375,46 @@ function incomeRange(
 
 function incomeOption(field: FormField, profile: Profile): string | undefined {
   const euros = householdIncomeCents(profile) / 100;
-  return field.options?.find((option) => {
-    const range = incomeRange(option.label);
-    return range !== undefined && euros > range.above && euros <= range.upTo;
-  })?.value;
+  const optionWhereRange = (
+    holds: (range: { above: number; upTo: number }) => boolean,
+  ) =>
+    field.options?.find((option) => {
+      const range = incomeRange(option.label);
+      return range !== undefined && holds(range);
+    })?.value;
+  // `bis 2.000` then `2.001 - 3.000` leave a gap that `2.000,50` falls in, and
+  // `2.001` itself starts a band, so a miss tries whole euros with the lower
+  // bound included.
+  const whole = Math.floor(euros);
+  return (
+    optionWhereRange(({ above, upTo }) => euros > above && euros <= upTo) ??
+    optionWhereRange(({ above, upTo }) => whole >= above && whole <= upTo)
+  );
+}
+
+/** Jobs that mean an income of one's own, whichever way it is earned. */
+const OWN_INCOME_JOBS: ReadonlySet<EmploymentType> = new Set([
+  "permanent",
+  "fixed_term",
+  "civil_servant",
+  "self_employed",
+  "trainee",
+]);
+
+/**
+ * The profile cannot tell Bürgergeld from Arbeitslosengeld, or a student's
+ * own income from support, so anything else is left to the user.
+ */
+function incomeTypeOption(
+  field: FormField,
+  profile: Profile,
+): string | undefined {
+  const allOwn = profile.applicants.every((a) =>
+    OWN_INCOME_JOBS.has(a.employment),
+  );
+  return allOwn
+    ? optionWhere(field, (t) => t.includes("eigenes einkommen"))
+    : undefined;
 }
 
 const DOCUMENTS: DocumentType[] = [
@@ -413,6 +452,8 @@ function optionFor(
     }
     case "income":
       return incomeOption(field, profile);
+    case "incomeType":
+      return incomeTypeOption(field, profile);
     case "employment":
       return (
         applicant &&

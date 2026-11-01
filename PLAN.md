@@ -214,6 +214,8 @@ audit for shapes that had shipped without an entry.
   user action, including unknown sites for the fallback.
 - Host permission for `https://www.immobilienscout24.de/*`: the known
   adapter's content script.
+- A content script match on `https://www.vonovia.de/zuhause-finden/immobilien/*`:
+  the second adapter (ADR 8 amendment, Phase 10).
 - Host permission for `https://api.anthropic.com/*` (ADR 4, Phase 4).
 
 No `tabs`, `history`, `webRequest`, `cookies` or `<all_urls>`.

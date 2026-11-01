@@ -4,6 +4,7 @@
 // page's tracking data and inline scripts are never read.
 import { describeFields } from "../../fill/describe";
 import type { Feature, Listing, PetPolicy } from "../../rules/types";
+import { assembleListing, type ListingFields } from "../listing";
 import {
   parseContactName,
   parseEnglishAvailability,
@@ -27,24 +28,6 @@ const GERMAN_FEATURES: Readonly<Record<string, Feature>> = {
   handicappedAccessible: "Stufenloser Zugang",
   lift: "Personenaufzug",
 };
-
-/** The fields readListing tries to fill, in the order it reports them. */
-const FIELDS = [
-  "title",
-  "address",
-  "district",
-  "kaltmieteCents",
-  "nebenkostenCents",
-  "warmmieteCents",
-  "areaM2",
-  "rooms",
-  "floor",
-  "availability",
-  "yearBuilt",
-  "petPolicy",
-  "wbsRequired",
-  "contactPerson",
-] as const satisfies readonly (keyof Listing)[];
 
 function textOf(document: Document, selector: string): string | undefined {
   const text = document
@@ -158,7 +141,7 @@ function readListing(document: Document, url: string): Listing | undefined {
   if (title === undefined && kaltText === undefined) return undefined;
 
   const address = textOf(document, '[data-qa="is24-expose-address"]');
-  const found: Pick<Listing, (typeof FIELDS)[number]> = {
+  const found: ListingFields = {
     title,
     address,
     district: map(address, districtOf),
@@ -217,17 +200,7 @@ function readListing(document: Document, url: string): Listing | undefined {
     ),
   };
 
-  const listing: Listing = {
-    url,
-    features: featuresOf(document, english),
-    missing: [],
-  };
-  for (const field of FIELDS) {
-    const value = found[field];
-    if (value === undefined) listing.missing.push(field);
-    else Object.assign(listing, { [field]: value });
-  }
-  return listing;
+  return assembleListing(url, featuresOf(document, english), found);
 }
 
 /**

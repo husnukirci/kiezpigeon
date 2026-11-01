@@ -391,6 +391,31 @@ both languages, as the probe showed. The two languages' `Listing`s are equal
 apart from `url` and `title`, because the site machine-translates the title.
 The running probe is the English run in `e2e/never-submit.spec.ts`.
 
+**Amendment (2026-11-01): Vonovia, the second site.** A new content script
+matches `https://www.vonovia.de/zuhause-finden/immobilien/*`. This is a new
+match on a new host and adds no entry to `permissions` or `host_permissions`.
+The interface held: the adapter is one folder, and the two scripts share
+`answerAs(adapter)`. The rules changed in three places. A `not_listing` answer
+names its site, because an answer alone no longer does, and `unreadPage` keeps
+a table of known sites. Vonovia has no test attributes, so its adapter reads
+visible rows by their German label, which breaks if the site renames a label;
+the page's JSON stays unread, as above. Its required income dropdowns are
+hidden selects behind a Slim Select widget, so a select counts as visible when
+the next element is a visible `.ss-main` with the same `data-id`. Any other
+hidden field stays a possible spam trap. This reaches the fallback too.
+`Einkommensart` is its own field kind and only ever names own income, when
+every applicant's job means that; anything else is left to the user, because
+the profile holds no income type. The running probes are the Vonovia run in
+`e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
+
+The site draws a listing's title and address just after the load event, and
+the panel asks at that event. So `SiteAdapter` gains an optional
+`isReady(document)`, and the content script holds its answer until that is
+true, for at most two seconds, and then answers with what it has. It watches
+the page only while a request is waiting. It does not read the page's JSON to
+get ahead of the drawing, and does not poll. The running probe is the late
+title run in `e2e/never-submit.spec.ts`.
+
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
 **Status.** Accepted.

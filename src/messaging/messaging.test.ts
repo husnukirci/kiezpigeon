@@ -48,9 +48,15 @@ describe("send and handle", () => {
 
   it("stays silent on a type it has no handler for", async () => {
     handle({ ping: () => ({ type: "pong" }) });
-    handle({ getListing: () => ({ kind: "not_listing" as const }) });
+    handle({
+      getListing: () => ({
+        kind: "not_listing" as const,
+        siteName: "ImmoScout24",
+      }),
+    });
     expect(await send({ type: "getListing" })).toEqual({
       kind: "not_listing",
+      siteName: "ImmoScout24",
     });
   });
 

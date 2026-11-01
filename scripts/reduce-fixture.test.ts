@@ -22,6 +22,16 @@ describe("reduce", () => {
     ).toBe('<div data-qa="contactName"><a href="#">x</a></div>');
   });
 
+  it("keeps what pairs a hidden select with its styled widget", () => {
+    expect(
+      reduce(
+        '<select aria-hidden="true" data-id="ss-1" style="display: none;"></select><div data-id="ss-1" data-selected-value="" class="ss-main"></div>',
+      ),
+    ).toBe(
+      '<select aria-hidden="true" data-id="ss-1"></select><div data-id="ss-1" class="ss-main"></div>',
+    );
+  });
+
   it("keeps the charset meta and drops the others", () => {
     expect(
       reduce(
