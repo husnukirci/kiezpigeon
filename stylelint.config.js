@@ -18,7 +18,12 @@ const TOKEN_ONLY_PROPERTIES = [
 
 export default {
   extends: ["stylelint-config-standard", "stylelint-config-css-modules"],
-  ignoreFiles: ["src/styles/tokens.css", ".output/**", ".wxt/**"],
+  ignoreFiles: [
+    "src/styles/tokens.css",
+    ".output/**",
+    ".wxt/**",
+    "kp-fixtures/**",
+  ],
   plugins: ["stylelint-declaration-strict-value"],
   rules: {
     "color-no-hex": true,

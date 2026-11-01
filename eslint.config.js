@@ -30,7 +30,7 @@ const ANTHROPIC_HOST = [
 ];
 
 export default tseslint.config(
-  { ignores: [".output/", ".wxt/", "node_modules/"] },
+  { ignores: [".output/", ".wxt/", "node_modules/", "kp-fixtures/"] },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {
