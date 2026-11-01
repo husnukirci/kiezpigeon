@@ -87,6 +87,16 @@ describe("vonovia.readListing", () => {
     expect(listing?.kaltmieteCents).toBe(98765);
   });
 
+  it("does not take a parking space for a flat", () => {
+    const page = loadFixture("vonovia", "listing-complete.html");
+    const type = Array.from(page.querySelectorAll("li > .name")).find(
+      (name) => name.textContent.trim() === "Typ",
+    )?.nextElementSibling;
+    if (!type) throw new Error("no Typ row in the fixture");
+    type.textContent = "Parken";
+    expect(vonovia.readListing(page, URL)).toBeUndefined();
+  });
+
   it("does not take a search page for a listing", () => {
     expect(
       vonovia.readListing(

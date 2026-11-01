@@ -16,6 +16,9 @@ import type { SiteAdapter } from "../types";
 const LISTING_URL =
   /^https:\/\/www\.vonovia\.de\/zuhause-finden\/immobilien\/[^/?#]*\d+-\d+\/?(?:[?#]|$)/;
 
+/** The `Typ` rows a person can apply to live in. */
+const HOME_TYPES = new Set(["Wohnung", "Haus"]);
+
 function clean(text: string | null | undefined): string | undefined {
   return text?.replace(/\s+/g, " ").trim() || undefined;
 }
@@ -90,6 +93,9 @@ function readListing(document: Document, url: string): Listing | undefined {
   const kalt = kaltText(document);
   // A for-sale object has a price instead, and a search page has neither.
   if (kalt === undefined) return undefined;
+  // The site lists parking spaces and shops the same way, with a Kaltmiete.
+  const type = row(document, "Typ");
+  if (type !== undefined && !HOME_TYPES.has(type)) return undefined;
 
   const address = addressOf(document);
   return assembleListing(url, featuresOf(document), {
