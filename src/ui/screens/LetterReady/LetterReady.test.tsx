@@ -123,7 +123,9 @@ describe("LetterReady", () => {
 
   it("asks you to open the contact form, and checks again on a click", () => {
     const props = renderWith(ready);
-    expect(screen.getByText(/press Nachricht on the page/)).toBeDefined();
+    expect(
+      screen.getByText(/use the contact button on the page/),
+    ).toBeDefined();
     fireEvent.click(screen.getByRole("button", { name: "Check the form" }));
     expect(props.onCheckForm).toHaveBeenCalledOnce();
   });
