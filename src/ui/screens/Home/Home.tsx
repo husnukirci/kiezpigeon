@@ -1,5 +1,5 @@
 // What a user with a profile sees: the listing in the active tab and, after
-// "Write my letter", its letter; on ImmoScout24, why a page is not read; on
+// "Write my letter", its letter; on a known site, why a page is not read; on
 // any other site, the offer to use the page anyway (ADR 12).
 import { panelTabId } from "../../../messaging/panel";
 import type { Profile } from "../../../rules/types";
@@ -24,7 +24,7 @@ export function Home({ profile }: { profile: Profile }) {
       />
     );
   }
-  if (active.page !== "other_site") {
+  if (active.page.reason !== "other_site") {
     return <PageNotRead page={active.page} profile={profile} />;
   }
   // Typed facts, opt-outs and the letter belong to one page: another page

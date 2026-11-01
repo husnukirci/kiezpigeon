@@ -9,7 +9,7 @@ import type { LetterDraft } from "../rules/writeLetter";
 
 export type ListingResult =
   | { kind: "listing"; siteName: string; listing: Listing }
-  | { kind: "not_listing" };
+  | { kind: "not_listing"; siteName: string };
 
 /** `no_form` until the user opens the site's contact form. */
 export type ContactFormResult =

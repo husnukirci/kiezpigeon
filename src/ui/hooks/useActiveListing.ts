@@ -41,11 +41,14 @@ async function askTab(
     if (tabId === undefined) throw new Error("No tab");
     const answer = await send({ type: "getListing" }, tabId);
     if (answer.kind === "listing") return answer;
-    return { kind: "not_read", page: unreadPage(await tabUrl(tabId), true) };
+    return {
+      kind: "not_read",
+      page: unreadPage(await tabUrl(tabId), answer.siteName),
+    };
   } catch {
     // No content script on this page, or one from before an update.
     const url = tabId === undefined ? undefined : await tabUrl(tabId);
-    return { kind: "not_read", page: unreadPage(url, false) };
+    return { kind: "not_read", page: unreadPage(url, undefined) };
   }
 }
 
