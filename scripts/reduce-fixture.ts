@@ -18,6 +18,9 @@ const KEEP_ATTRIBUTES = new Set([
   "class",
   "data-qa",
   "data-testid",
+  // A styled dropdown and the hidden select it stands in for (ADR 8).
+  "data-id",
+  "aria-hidden",
   "name",
   "type",
   "for",
