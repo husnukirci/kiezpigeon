@@ -113,7 +113,7 @@ use), and how two applicants are related (so the letter stops guessing).
 
 ### Tier 2: follow-ups
 
-- [ ] ImmoScout24's English pages read like the German ones, and the
+- [x] ImmoScout24's English pages read like the German ones, and the
       panel says why a page is not read (Phase 9; found in Phase 5's live
       checks)
 - [ ] A second listing adapter (candidates: Immowelt, Kleinanzeigen,
