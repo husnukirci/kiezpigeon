@@ -247,6 +247,35 @@ test("a Vonovia page that is not a listing says so, with no fallback", async () 
   ).toBeHidden();
 });
 
+test("a Deutsche Wohnen page that is not a listing says so, with no fallback", async () => {
+  const search = "https://www.deutsche-wohnen.com/mieten/zuhause-mieten";
+  await context.route(`${search}**`, (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: readFileSync(
+        join(ROOT, "fixtures", "deutsche-wohnen", "search-results.html"),
+        "utf8",
+      ),
+    }),
+  );
+  const site = await context.newPage();
+  await site.goto(search);
+  await clickIcon(site);
+  const tabId = await siteTabId();
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await expect(
+    panel.getByText(
+      "This Deutsche Wohnen page is not a listing. Open a listing to start.",
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Use this page" }),
+  ).toBeHidden();
+});
+
 test("the panel knows a tab's address only under the icon's grant, and says why it is not read", async () => {
   const search = "https://www.immobilienscout24.de/Suche/de/berlin";
   await context.route(`${search}**`, (route) =>
