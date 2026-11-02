@@ -19,6 +19,12 @@ const KNOWN_SITES = [
     listing:
       /^https:\/\/www\.vonovia\.de\/zuhause-finden\/immobilien\/[^/?#]*\d+-\d+\/?(?:[?#]|$)/,
   },
+  {
+    name: "Deutsche Wohnen",
+    site: /^https:\/\/www\.deutsche-wohnen\.com\//,
+    listing:
+      /^https:\/\/www\.deutsche-wohnen\.com\/mieten\/mietangebote\/[^/?#]*\d+-\d+\/?(?:[?#]|$)/,
+  },
 ];
 
 export function unreadPage(
