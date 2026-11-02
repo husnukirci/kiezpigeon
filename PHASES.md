@@ -757,3 +757,102 @@ gone; no personal circumstances of the author in fixtures, logs or the PR;
 merging.
 
 **PR:** `feat(adapters): vonovia, the second listing site`
+
+## Phase 11: Deutsche Wohnen, on Vonovia's platform
+
+**Context for a fresh session:** v1.2.0 is released (Phases 0 to 10).
+Vonovia has an adapter. Deutsche Wohnen runs the same platform, and today it
+goes through the fallback, where the user types facts the page already shows.
+A read-only probe of five live listings while writing this spec found
+(re-check in item 1):
+
+- The same as Vonovia: the label and value rows, the key figures, the
+  `Ausstattung` badges, the contact card, the address link with `OT` for the
+  district, and a contact form with the same field names, option codes, hidden
+  `wrkID` and Slim Select pairs. Its overlay opens the same way, from a button
+  labelled `Anfrage senden`.
+- Listing pages are `https://www.deutsche-wohnen.com/mieten/mietangebote/`
+  plus a slug ending in an object id. The search page is
+  `/mieten/zuhause-mieten`.
+- Different from Vonovia, and each breaks today's code if copied as it is:
+  the page has **no `<h1>`**, because its title is an `h2.h2.headline`, and
+  Vonovia's `isReady` waits for an `h1`, so every read would run into the
+  two-second limit and lose the title. The availability figure is labelled
+  `Verfügbarkeit` rather than `Bezugsfrei ab`, though the `Verfügbar ab` row is
+  there.
+- The address, and so presumably the title, is drawn about 150 ms after the
+  load event, as on Vonovia. The rows came slightly after the load event on
+  some pages, so `isReady` must also hold when the rows are not there yet.
+- The double rendering logged in Phase 6 did not show on this probe, with
+  cookies declined or accepted: one `main`, one contact form. Item 1 checks it
+  again, because that run saw it.
+
+**Objective:** a Deutsche Wohnen listing works like a Vonovia one, with no
+second copy of what the two sites share.
+
+**In scope**
+
+1. Probe first, with the automated browser, since the site allows it and no
+   page from the author's Chrome is needed. Save one flat with the overlay
+   open. Across at least five live listings, record when the title, address and
+   rows appear; every `Typ` seen, and any non-flat in the results; and what
+   `Verfügbarkeit` and `Verfügbar ab` hold besides a date. Answer the cookie
+   banner both ways and look for the double rendering. Log the result in
+   `docs/ai-workflow.md`, in general terms.
+2. Fixtures (fixture-driven tier), scrubbed as every fixture:
+   `fixtures/deutsche-wohnen/listing-complete.html`,
+   `listing-missing-fields.html`, `contact-form.html` and
+   `search-results.html`. The address appears in more than one place (the link
+   text, its `title` attribute, a map id in its `href`) and the postcode can
+   stand on a line of its own. Read the reduced text, not only the pattern
+   check.
+3. Shared reader (tests after; the Vonovia tests stay unchanged and green).
+   Move what the sites share out of `src/adapters/vonovia/` into one builder
+   that takes the site's id, name and listing address and returns a
+   `SiteAdapter`. Vonovia and Deutsche Wohnen each become a thin call to it.
+   The title comes from a selector that holds on both sites' fixtures, and
+   `isReady` waits for that title, or for the rows if they are later. The
+   figure fallback for availability reads both labels. Nothing in the builder
+   tests a site by name.
+4. Adapter tests (`src/adapters/deutsche-wohnen/`, fixture-driven): the exact
+   `Listing` for the complete fixture, what the sparse one lacks, the search
+   page as `undefined`, a parking space as `undefined` under the existing `Typ`
+   rule, the form empty until the overlay is open, and `matches` refusing
+   look-alike hosts and the search page.
+5. Content script (`src/entrypoints/deutsche-wohnen.content.ts`). It matches
+   `https://www.deutsche-wohnen.com/mieten/mietangebote/*` only (ADR 8
+   amendment, and PLAN.md section 7 in the same commit) and calls `answerAs`.
+6. Not-read reasons and copy. `unreadPage`'s table gains the site, test first
+   (strict tier). The unknown-site screen and the README name all three sites.
+7. End to end: `e2e/never-submit.spec.ts` gains a Deutsche Wohnen run on its
+   form fixture, and a reload with the panel open on a page that draws its
+   title late, without an `h1`. `e2e/fallback.spec.ts` gains its not-a-listing
+   page.
+
+**Out of scope:** filtering the long `Ausstattung` list into fewer highlights
+(Tier 2 if it gets in the way); other languages; for-sale objects; any change
+to letters, the profile or the fit check; any other site.
+
+**Acceptance:** unit and e2e runs are green on the fixtures. In the built
+extension on at least three live listings, scripted with an invented profile, a
+stubbed letter and non-GET requests to the site blocked: with the panel opened
+straight after load **and** after a reload with it open, the listing card shows
+the title, Kaltmiete, Warmmiete, size, rooms and district; on one of them the
+overlay opened by hand reports 7 of 7 matched with an employed profile, both
+dropdowns visibly show the filled choice, and no request is made. Then the
+author's own Chrome (not sent), with a real letter: the contact person is
+greeted by name, the form stays unsent and the service worker, panel and page
+consoles show no errors. On the site's search page after an icon click, the
+panel shows the "not a listing" wording. The PLAN.md box is ticked only after
+the author's check.
+
+**Phase review checklist:** Vonovia's and ImmoScout24's tests unchanged and
+green, and Vonovia checked again on one live listing after the move; ADR 8
+amended and PLAN.md section 7 updated; no new entry in `permissions` or
+`host_permissions`; never-submit grep clean; the hidden `wrkID` never filled;
+no raw query string in a stored `Listing`; fixtures scrubbed and read, with no
+real street, contact name, object id or tracking token, the `title` attribute
+and map id included; no personal circumstances of the author in fixtures, logs
+or the PR; `package.json` version `1.3.0`, tag `v1.3.0` pushed after merging.
+
+**PR:** `feat(adapters): deutsche wohnen, sharing vonovia's platform reader`
