@@ -117,8 +117,9 @@ use), and how two applicants are related (so the letter stops guessing).
       panel says why a page is not read (Phase 9; found in Phase 5's live
       checks)
 - [x] A second listing adapter, Vonovia (Phase 10), proving the adapter
-      interface with a second real site (next candidates: deutsche-wohnen.com,
-      Immowelt, Kleinanzeigen, WG-Gesucht)
+      interface with a second real site (next candidates: Immowelt,
+      Kleinanzeigen, WG-Gesucht)
+- [ ] Deutsche Wohnen (Phase 11), sharing Vonovia's platform reader
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"
