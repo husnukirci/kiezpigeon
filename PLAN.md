@@ -119,7 +119,7 @@ use), and how two applicants are related (so the letter stops guessing).
 - [x] A second listing adapter, Vonovia (Phase 10), proving the adapter
       interface with a second real site (next candidates: Immowelt,
       Kleinanzeigen, WG-Gesucht)
-- [ ] Deutsche Wohnen (Phase 11), sharing Vonovia's platform reader
+- [x] Deutsche Wohnen (Phase 11), sharing Vonovia's platform reader
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"
