@@ -197,6 +197,24 @@ describe("deutscheWohnen.readContactForm", () => {
     ]);
   });
 
+  it("reads the dropdowns when the site set their widgets up twice", () => {
+    const page = loadFixture("deutsche-wohnen", "contact-form.html");
+    for (const own of page.querySelectorAll(
+      ".overlay-contact-form.active select + .ss-main",
+    )) {
+      const second = own.cloneNode(true) as Element;
+      second.setAttribute("data-id", `${own.getAttribute("data-id") ?? ""}-2`);
+      own.after(second);
+      own.setAttribute("style", "display: none;");
+    }
+    const visible = deutscheWohnen
+      .readContactForm(page)
+      .filter((field) => field.visible)
+      .map((field) => field.name);
+    expect(visible).toContain("einkommensart");
+    expect(visible).toContain("monatliches_nettoeinkommen");
+  });
+
   it("takes the open overlay when the site drew two", () => {
     const page = loadFixture("deutsche-wohnen", "contact-form.html");
     const open = page.querySelector(".overlay-contact-form.active");

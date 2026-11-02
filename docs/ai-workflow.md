@@ -169,6 +169,8 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P11 | Spec gap: a saved "open" page held no overlay at all, because my save ran before the site's script drew it, and a second run had it. The page is not "in the DOM from the start" as Vonovia's comment says. | Saved again with explicit waits; the comment now says the form may also not be there yet.
 - P11 | Spec gap: one live listing has the literal title `Kein Titel`, which would have reached the panel as the flat's name. | The reader treats it as no title, so it is named in `missing`.
 - P11 | Probe: every flat had a plain date in `Verfügbarkeit` and `Verfügbar ab`. Floors include `Erd-/Obergeschoß`, left as an unknown floor rather than guessed. Parking pages have type `Parken` and no Kaltmiete; commercial ones have their own types with one. Filtering by those types reaches them, and the flat results never showed one.
+- P11 | My first live run passed on four listings and reported 7 of 7, but none happened to be doubled. Forcing a cold visit that doubled gave 5 of 5 with both required dropdowns left empty, and the panel still read as a clean score. The site sets up the widgets twice, the select's own widget is hidden, and the visibility rule looked only at the next element, so the select counted as a spam trap. | Filling the select was first shown to update the visible widget and make it valid; then the rule was changed, test first, to accept a widget directly behind the select's own.
+- P11 | My tests: three of the first tests for that rule asserted an array where the helper returns a boolean, so they failed for the wrong reason. Found because only one should have been red. | Corrected before writing the fix.
 
 ## Per-phase narrative
 

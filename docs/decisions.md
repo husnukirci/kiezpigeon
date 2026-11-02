@@ -717,5 +717,9 @@ is what tells it from a search page. `isReady` holds until the title and the
 rows are both there on a page with that frame, because the frame and rows
 arrive in the first HTML and the title follows it. The site sometimes draws the
 hero and the contact overlay twice on a first visit; only the overlay the user
-opened is active, and filling stays inside it. The running probes are the
-Deutsche Wohnen and late title runs in `e2e/never-submit.spec.ts`.
+opened is active, and filling stays inside it. That first visit also sets up
+the dropdown widgets twice: the select's own widget is hidden and a second, with
+another `data-id`, is drawn right after it. So a select also counts as visible
+when a widget directly behind its own is visible. A select with no widget of its
+own stays a possible spam trap. The running probes are the Deutsche Wohnen and
+late title runs in `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.

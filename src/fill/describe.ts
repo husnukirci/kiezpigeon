@@ -82,17 +82,29 @@ export function isVisible(element: Element): boolean {
 /**
  * Slim Select hides a real `<select>` and draws its own right after it, with
  * the same `data-id`. The person fills the select through that widget, so
- * only a select paired this way is exempt from the trap rule.
+ * only a select paired this way is exempt from the trap rule. A page that sets
+ * the widget up twice hides the first and draws another right behind it, under
+ * a new `data-id`; both follow the select, so either can stand in.
  */
 function styledStandIn(element: Element): Element | undefined {
   const id = element.getAttribute("data-id");
-  const next = element.nextElementSibling;
-  return element instanceof HTMLSelectElement &&
-    id &&
-    next?.matches(".ss-main") &&
-    next.getAttribute("data-id") === id
-    ? next
-    : undefined;
+  const own = element.nextElementSibling;
+  if (
+    !(element instanceof HTMLSelectElement) ||
+    !id ||
+    !own?.matches(".ss-main") ||
+    own.getAttribute("data-id") !== id
+  ) {
+    return undefined;
+  }
+  for (
+    let widget: Element | null = own;
+    widget?.matches(".ss-main");
+    widget = widget.nextElementSibling
+  ) {
+    if (isVisible(widget)) return widget;
+  }
+  return own;
 }
 
 /** One element as plain data; `key` is the handle `findField` takes. */
