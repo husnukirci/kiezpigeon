@@ -122,7 +122,8 @@ function Start({ name, reading, failed, onUsePage }: StartProps) {
           {name ? `Ready when you are, ${name}` : "Ready when you are"}
         </h1>
         <p className={cx(screen.lead, "type-body")}>
-          Open a flat listing on ImmoScout24 or Vonovia to get started.
+          Open a flat listing on ImmoScout24, Vonovia or Deutsche Wohnen to get
+          started.
         </p>
         <p className={cx(screen.lead, "type-body-sm")}>
           Kiezpigeon reads the listing page itself, the one with the rent, the
