@@ -19,7 +19,7 @@ call to Claude, made with your own API key when you ask for a letter.
    job, net income), the household (who moves in, pets, smoker, move-in,
    budget, contact details), a documents checklist, the letter's default
    tone, and your Claude key. You tell it once.
-2. **Listing detected.** On an ImmoScout24 or Vonovia listing the panel shows the
+2. **Listing detected.** On an ImmoScout24, Vonovia or Deutsche Wohnen listing the panel shows the
    rent, size and rooms, and a fit check with reasons: budget, income
    against three times the Kaltmiete, pets, WBS and the move-in date. It
    informs; it never blocks. You pick a tone and one or two highlights.
@@ -50,7 +50,7 @@ the [Claude Console](https://platform.claude.com/settings/keys).
 2. `npm run build`
 3. Open `chrome://extensions`, switch on Developer mode, click "Load
    unpacked" and choose `.output/chrome-mv3/`.
-4. Open an ImmoScout24 or Vonovia listing and click the Kiezpigeon icon in the
+4. Open an ImmoScout24, Vonovia or Deutsche Wohnen listing and click the Kiezpigeon icon in the
    toolbar. The panel opens for that tab. Fill in your profile and paste
    your key in the last step (or later in Settings).
 
@@ -123,7 +123,7 @@ request. Read in this order:
 
 ## Not affiliated
 
-Kiezpigeon is not affiliated with ImmoScout24, Vonovia or any listing site. It reads
+Kiezpigeon is not affiliated with ImmoScout24, Vonovia, Deutsche Wohnen or any listing site. It reads
 the one page you have open and fills fields you would otherwise type; you
 are responsible for using it within each site's terms.
 

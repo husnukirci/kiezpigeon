@@ -3,6 +3,7 @@ import { unreadPage } from "./unreadPage";
 
 const SITE = "https://www.immobilienscout24.de";
 const VONOVIA = "https://www.vonovia.de/zuhause-finden";
+const DEUTSCHE_WOHNEN = "https://www.deutsche-wohnen.com/mieten";
 const notListing = (siteName: string) => ({
   reason: "not_listing",
   siteName,
@@ -34,6 +35,18 @@ describe("unreadPage", () => {
     }
   });
 
+  it("calls a Deutsche Wohnen page that is not a listing not a listing", () => {
+    for (const url of [
+      "https://www.deutsche-wohnen.com/",
+      `${DEUTSCHE_WOHNEN}/zuhause-mieten`,
+      `${DEUTSCHE_WOHNEN}/mietangebote`,
+      `${DEUTSCHE_WOHNEN}/mietangebote/`,
+      `${DEUTSCHE_WOHNEN}/mietangebote?city=Berlin`,
+    ]) {
+      expect(unreadPage(url, undefined)).toEqual(notListing("Deutsche Wohnen"));
+    }
+  });
+
   it("asks for a reload on an exposé whose content script does not answer", () => {
     for (const url of [
       `${SITE}/expose/100000009`,
@@ -41,6 +54,8 @@ describe("unreadPage", () => {
       `${SITE}/en/expose/100000009`,
       `${VONOVIA}/immobilien/helle-wohnung-82-1000000001`,
       `${VONOVIA}/immobilien/helle-wohnung-82-1000000001?em_src=x`,
+      `${DEUTSCHE_WOHNEN}/mietangebote/ruhige-wohnung-89-2000000001`,
+      `${DEUTSCHE_WOHNEN}/mietangebote/ruhige-wohnung-89-2000000001?em_src=x`,
     ]) {
       expect(unreadPage(url, undefined)).toEqual(RELOAD);
     }
@@ -78,6 +93,8 @@ describe("unreadPage", () => {
       "http://www.immobilienscout24.de/expose/100000009",
       "https://www.vonovia.de.flats.example/zuhause-finden/immobilien/x-82-1",
       "http://www.vonovia.de/zuhause-finden/immobilien/x-82-1",
+      "https://www.deutsche-wohnen.com.flats.example/mieten/mietangebote/x-89-1",
+      "http://www.deutsche-wohnen.com/mieten/mietangebote/x-89-1",
     ]) {
       expect(unreadPage(url, undefined)).toEqual(OTHER);
     }

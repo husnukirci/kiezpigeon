@@ -50,6 +50,31 @@ const VONOVIA_LATE_FIXTURE = readFileSync(
       }, 300));
     </script></body>`,
   );
+const DW_LISTING =
+  "https://www.deutsche-wohnen.com/mieten/mietangebote/ruhige-3-zimmer-wohnung-89-2000000001";
+const DW_FIXTURE = readFileSync(
+  join(ROOT, "fixtures", "deutsche-wohnen", "contact-form.html"),
+  "utf8",
+);
+const DW_LATE_LISTING =
+  "https://www.deutsche-wohnen.com/mieten/mietangebote/spaete-wohnung-89-2000000002";
+// This site's title is an `h2` in the hero, drawn just after the load event.
+const DW_LATE_FIXTURE = readFileSync(
+  join(ROOT, "fixtures", "deutsche-wohnen", "listing-complete.html"),
+  "utf8",
+)
+  .replace(/<h2 class="h2 headline">[\s\S]*?<\/h2>/, "")
+  .replace(
+    "</body>",
+    `<script>
+      addEventListener("load", () => setTimeout(() => {
+        const title = document.createElement("h2");
+        title.className = "h2 headline";
+        title.textContent = "Ruhige 3-Zimmer-Wohnung mit Aufzug";
+        document.querySelector(".real-estate-hero .headlines").append(title);
+      }, 300));
+    </script></body>`,
+  );
 
 /** Runs in the page before its own markup: records any attempt to send. */
 function recordSendAttempts(): void {
@@ -98,6 +123,13 @@ test.beforeAll(async () => {
   });
   await context.route(`${VONOVIA_LATE_LISTING}**`, (route) =>
     route.fulfill({ contentType: "text/html", body: VONOVIA_LATE_FIXTURE }),
+  );
+  await context.route(`${DW_LISTING}**`, (route) => {
+    pageLoads.push(`${route.request().method()} ${route.request().url()}`);
+    return route.fulfill({ contentType: "text/html", body: DW_FIXTURE });
+  });
+  await context.route(`${DW_LATE_LISTING}**`, (route) =>
+    route.fulfill({ contentType: "text/html", body: DW_LATE_FIXTURE }),
   );
   await context.route("https://api.anthropic.com/**", (route) => {
     claudeCalls += 1;
@@ -349,6 +381,84 @@ test("a reload with the panel open waits for a title the site draws late", async
 
   await listing.reload();
   await listing.locator("h1").waitFor();
+  // Long enough for the panel to have asked again and drawn its answer.
+  await panel.waitForTimeout(500);
+  await expect(panel.getByText("Untitled listing")).toBeHidden();
+  await expect(title).toBeVisible();
+});
+
+test("the Deutsche Wohnen form is filled, its hidden selects too, and never sent", async () => {
+  pageLoads.length = 0;
+  const listing = await context.newPage();
+  await listing.addInitScript(recordSendAttempts);
+  await listing.goto(DW_LISTING);
+
+  await listing.bringToFront();
+  const worker = context.serviceWorkers()[0];
+  const tabId = await worker?.evaluate(
+    async () => (await chrome.tabs.query({ active: true }))[0]?.id,
+  );
+  expect(tabId).toBeDefined();
+
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await expect(
+    panel.getByText(/Listing detected · Deutsche Wohnen/),
+  ).toBeVisible();
+  await panel
+    .getByRole("group", { name: "Highlights to mention" })
+    .getByRole("button")
+    .first()
+    .click();
+  await panel.getByRole("button", { name: "Write my letter" }).click();
+  await expect(panel.getByText("7 of 7 matched")).toBeVisible();
+
+  await panel.getByRole("button", { name: "Fill the form" }).click();
+  await expect(
+    panel.getByText("Filled 7 fields.", { exact: false }),
+  ).toBeVisible();
+
+  await listing.waitForLoadState("networkidle");
+  expect(pageLoads).toEqual([`GET ${DW_LISTING}`]);
+  expect(
+    await listing.evaluate(
+      () => (window as unknown as { sendAttempts: string[] }).sendAttempts,
+    ),
+  ).toEqual([]);
+
+  const form = listing.locator("form[name=real-estate-contact-form]");
+  await expect(form.locator("[name=firstname]")).toHaveValue("Mara");
+  await expect(form.locator("[name=telephone]")).toHaveValue("030 5550123");
+  await expect(form.locator("[name=einkommensart]")).toHaveValue("1");
+  await expect(form.locator("[name=monatliches_nettoeinkommen]")).toHaveValue(
+    "M_3",
+  );
+  await expect(form.locator("[name=message]")).not.toHaveValue("");
+  // The listing's own id, the hidden field a person never touches.
+  await expect(form.locator("[name=wrkID]")).toHaveValue("2000000001");
+});
+
+test("a reload with the panel open waits for a late title on a page with no h1", async () => {
+  const listing = await context.newPage();
+  await listing.goto(DW_LATE_LISTING);
+  await listing.bringToFront();
+  const worker = context.serviceWorkers()[0];
+  const tabId = await worker?.evaluate(
+    async () => (await chrome.tabs.query({ active: true }))[0]?.id,
+  );
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  const title = panel.getByRole("heading", {
+    name: "Ruhige 3-Zimmer-Wohnung mit Aufzug",
+  });
+  await expect(title).toBeVisible();
+
+  await listing.reload();
+  await listing.locator(".real-estate-hero .headlines > .headline").waitFor();
   // Long enough for the panel to have asked again and drawn its answer.
   await panel.waitForTimeout(500);
   await expect(panel.getByText("Untitled listing")).toBeHidden();

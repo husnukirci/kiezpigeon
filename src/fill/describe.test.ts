@@ -38,6 +38,38 @@ describe("describeFields on a select hidden behind a styled widget", () => {
     ).toBe(false);
   });
 
+  it("counts a select when a second widget, drawn right after its own, is visible", () => {
+    expect(
+      visibility(
+        `${HIDDEN_SELECT}<div class="ss-main" data-id="ss-1" style="display: none;"></div><div class="ss-main" data-id="ss-9"></div>`,
+      ),
+    ).toBe(true);
+  });
+
+  it("does not count a select when every widget beside it is hidden", () => {
+    expect(
+      visibility(
+        `${HIDDEN_SELECT}<div class="ss-main" data-id="ss-1" style="display: none;"></div><div class="ss-main" data-id="ss-9" style="display: none;"></div>`,
+      ),
+    ).toBe(false);
+  });
+
+  it("does not count a select whose own widget is hidden, beside something else visible", () => {
+    expect(
+      visibility(
+        `${HIDDEN_SELECT}<div class="ss-main" data-id="ss-1" style="display: none;"></div><div data-id="ss-9">not a widget</div>`,
+      ),
+    ).toBe(false);
+  });
+
+  it("does not count a select with no widget of its own, whatever stands behind", () => {
+    expect(
+      visibility(
+        `${HIDDEN_SELECT}<div class="ss-main" data-id="ss-2" style="display: none;"></div><div class="ss-main" data-id="ss-3"></div>`,
+      ),
+    ).toBe(false);
+  });
+
   it("does not count a select beside another select's widget", () => {
     expect(
       visibility(`${HIDDEN_SELECT}<div class="ss-main" data-id="ss-2"></div>`),

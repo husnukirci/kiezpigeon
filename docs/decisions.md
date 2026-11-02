@@ -702,3 +702,24 @@ schema bump. An imported file can never carry a key or a script link into
 the panel. The running probes are the `newApplication` and
 `parseApplication` tests in `src/rules/`, the add and change tests in
 `src/storage/storage.test.ts`, and `e2e/tracker.spec.ts`.
+
+**Amendment (2026-11-02): Deutsche Wohnen, the same platform.** A new content
+script matches `https://www.deutsche-wohnen.com/mieten/mietangebote/*`. This is
+a new match on a new host and adds no entry to `permissions` or
+`host_permissions`. The site runs Vonovia's platform, so what the two share moved
+into one builder, `estatePlatformAdapter` in `src/adapters/estatePlatform.ts`,
+which takes a site's id, name and listing address, and each site is a thin call
+to it. Nothing in the builder tests a site by name, which leaves a label or a
+class renamed on the platform breaking both at once. The sites differ in three
+ways the builder absorbs: the title is an `h1` or an `h2` in the hero, the
+availability figure has either of two labels, and the frame of a listing page
+is what tells it from a search page. `isReady` holds until the title and the
+rows are both there on a page with that frame, because the frame and rows
+arrive in the first HTML and the title follows it. The site sometimes draws the
+hero and the contact overlay twice on a first visit; only the overlay the user
+opened is active, and filling stays inside it. That first visit also sets up
+the dropdown widgets twice: the select's own widget is hidden and a second, with
+another `data-id`, is drawn right after it. So a select also counts as visible
+when a widget directly behind its own is visible. A select with no widget of its
+own stays a possible spam trap. The running probes are the Deutsche Wohnen and
+late title runs in `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
