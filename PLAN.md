@@ -217,6 +217,8 @@ audit for shapes that had shipped without an entry.
   adapter's content script.
 - A content script match on `https://www.vonovia.de/zuhause-finden/immobilien/*`:
   the second adapter (ADR 8 amendment, Phase 10).
+- A content script match on `https://www.deutsche-wohnen.com/mieten/mietangebote/*`:
+  the third, on Vonovia's platform (ADR 8 amendment, Phase 11).
 - Host permission for `https://api.anthropic.com/*` (ADR 4, Phase 4).
 
 No `tabs`, `history`, `webRequest`, `cookies` or `<all_urls>`.
