@@ -30,8 +30,9 @@ call to Claude, made with your own API key when you ask for a letter.
    card says how many of the contact form's fields it can fill ("14 of 15
    matched"), which ones it leaves to you and which prefilled values it
    would replace. "Fill the form" fills; you press Send.
-4. **Your pigeons.** When you tell it you sent the application, it is
-   tracked as Sent, then Viewing or Closed, with counts and filters.
+4. **Your pigeons.** Every letter that went into a form is kept, marked
+   Filled. When you tell it you sent the application, it becomes Sent, then
+   Viewing or Closed, with counts and filters.
 
 **Other sites.** On a listing anywhere else, "Use this page" reads
 the page's contact form; you type the few listing facts the letter needs,
