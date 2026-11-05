@@ -243,7 +243,8 @@ export interface FieldMapping {
   replaces?: boolean;
 }
 
-export type ApplicationStatus = "sent" | "viewing" | "closed";
+/** `filled`: the letter went into a form; only the user can say it was sent. */
+export type ApplicationStatus = "filled" | "sent" | "viewing" | "closed";
 
 export interface Application {
   /** `app_<random>`, random part passed in. */
@@ -254,6 +255,7 @@ export interface Application {
   warmmieteCents?: Cents;
   letter: string;
   status: ApplicationStatus;
-  sentAt: IsoDateTime;
+  /** When the user said they sent it; absent while the status is `filled`. */
+  sentAt?: IsoDateTime;
   statusChangedAt: IsoDateTime;
 }

@@ -2,14 +2,15 @@
 // until "Write my letter", then the letter with its tab's contact form. On
 // an unknown site (ADR 12) the facts were typed, so the listing screen has
 // a Back to them, the form is read through the injected reader, and the
-// form card lists every pair for the user to confirm before filling. After
-// a fill, "Yes, I sent it" saves the application to the tracker.
+// form card lists every pair for the user to confirm before filling. A fill
+// that wrote keeps the letter in the tracker, marked filled; "Yes, I sent
+// it" marks it sent.
 import { useState, type ComponentProps } from "react";
 import { injectFallback } from "../../../messaging/fallback";
 import { createLetterRequest } from "../../../rules/letterPrompt";
-import { newApplication } from "../../../rules/tracker";
+import { newApplication, refill, setStatus } from "../../../rules/tracker";
 import type { Listing, Profile } from "../../../rules/types";
-import { addApplication } from "../../../storage/storage";
+import { addApplication, changeApplication } from "../../../storage/storage";
 import { useContactForm } from "../../hooks/useContactForm";
 import { useLetter } from "../../hooks/useLetter";
 import { useStored } from "../../hooks/useStored";
@@ -95,6 +96,7 @@ type LetterScreenProps = Omit<
   | "listingTitle"
   | "saved"
   | "saveFailed"
+  | "onFilled"
   | "onSent"
 > & { ownTab: number | undefined; unknownSite: boolean; listing: Listing };
 
@@ -114,15 +116,38 @@ function LetterScreen({
       ? applications.value?.find((a) => a.listingUrl === listing.url)
       : undefined;
 
+  const failed = (what: string) => (error: unknown) => {
+    setSaveFailed(`${what}: ${String(error)}`);
+  };
+  const add = (letter: string, status: "filled" | "sent"): Promise<void> =>
+    addApplication(
+      newApplication(listing, letter, {
+        now: new Date().toISOString(),
+        random: crypto.randomUUID().replaceAll("-", "").slice(0, 12),
+        status,
+      }),
+    );
+
+  // The fill wrote: the letter is a pigeon from now on. A second fill while
+  // it is still only filled carries the newer letter over.
+  const onFilled = (letter: string): void => {
+    setSaveFailed(undefined);
+    const kept = saved
+      ? changeApplication(saved.id, (a) => refill(a, letter))
+      : add(letter, "filled");
+    kept.catch(failed("It could not be kept in your pigeons"));
+  };
+
+  // Only the user says it was sent. Without a record (the fill's save
+  // failed, or the list was still loading) the sent one is made here.
   const onSent = (letter: string): void => {
     setSaveFailed(undefined);
-    const application = newApplication(listing, letter, {
-      now: new Date().toISOString(),
-      random: crypto.randomUUID().replaceAll("-", "").slice(0, 12),
-    });
-    addApplication(application).catch((error: unknown) => {
-      setSaveFailed(`It could not be saved: ${String(error)}`);
-    });
+    const marked = saved
+      ? changeApplication(saved.id, (a) =>
+          setStatus(a, "sent", new Date().toISOString()),
+        )
+      : add(letter, "sent");
+    marked.catch(failed("It could not be marked sent"));
   };
 
   return (
@@ -135,6 +160,7 @@ function LetterScreen({
       onFill={form.fill}
       saved={saved}
       saveFailed={saveFailed}
+      onFilled={onFilled}
       onSent={onSent}
     />
   );

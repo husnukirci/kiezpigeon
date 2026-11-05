@@ -71,7 +71,7 @@ describe("read and write", () => {
     expect(result).toEqual({
       ok: false,
       problems: [
-        "applications[1].status: must be one of sent, viewing, closed",
+        "applications[1].status: must be one of filled, sent, viewing, closed",
       ],
     });
   });

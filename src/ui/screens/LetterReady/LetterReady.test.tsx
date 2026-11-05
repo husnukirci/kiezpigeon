@@ -76,6 +76,7 @@ function renderWith(
     onBack: vi.fn(),
     onCheckForm: vi.fn(),
     onFill: vi.fn(),
+    onFilled: vi.fn(),
     onSent: vi.fn(),
   };
   const ui = (form: ContactFormState, saved?: Application) => (
@@ -234,6 +235,7 @@ describe("LetterReady", () => {
         onTone={vi.fn()}
         onRewrite={vi.fn()}
         onBack={vi.fn()}
+        onFilled={vi.fn()}
         onSent={vi.fn()}
       />
     );
@@ -321,6 +323,33 @@ describe("LetterReady", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
     props.rerender({ ...contactForm, changed: true });
     expect(screen.queryByText("Did you send it?")).toBeNull();
+    expect(props.onFilled).not.toHaveBeenCalled();
+  });
+
+  it("keeps the letter as a pigeon the moment a fill wrote it, once", () => {
+    const props = renderWith(ready, contactForm);
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, report: filledReport });
+    // Renders after the fill, with the same report, do not keep it again.
+    props.rerender({ ...contactForm, report: filledReport });
+    expect(props.onFilled).toHaveBeenCalledExactlyOnceWith(passingLetter);
+    expect(props.onSent).not.toHaveBeenCalled();
+  });
+
+  it("still asks about sending while the pigeon is only filled", () => {
+    const filled: Application = {
+      id: "app_k3x9",
+      listingUrl: kreuzbergListing.url,
+      letter: passingLetter,
+      status: "filled",
+      statusChangedAt: "2027-02-01T09:30:00.000Z",
+    };
+    const props = renderWith(ready, contactForm, false, filled);
+    fireEvent.click(screen.getByRole("button", { name: "Fill the form" }));
+    props.rerender({ ...contactForm, report: filledReport }, filled);
+    expect(screen.getByText(/In your pigeons, marked Filled/)).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Yes, I sent it" }));
+    expect(props.onSent).toHaveBeenCalledExactlyOnceWith(passingLetter);
   });
 
   it("shows the listing is already in your pigeons instead of asking again", () => {

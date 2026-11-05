@@ -231,8 +231,9 @@ test("Fill the form fills the contact form and never sends it", async () => {
     form.locator("#is24-checkbox-isRelocationOfferChecked-input"),
   ).not.toBeChecked();
 
-  // Only the user says it was sent; then it is tracked, and still nothing
-  // reached the page.
+  // The fill alone keeps the letter, marked Filled; only the user says it
+  // was sent, and still nothing reached the page.
+  await expect(panel.getByText(/In your pigeons, marked Filled/)).toBeVisible();
   await panel.getByRole("button", { name: "Yes, I sent it" }).click();
   await expect(panel.getByText(/In your pigeons, marked Sent/)).toBeVisible();
   await panel.getByRole("button", { name: "Your pigeons" }).click();

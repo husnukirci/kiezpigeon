@@ -87,6 +87,39 @@ describe("Tracker", () => {
     expect(rowTitles()).toHaveLength(3);
   });
 
+  it("keeps a filled letter apart from the sent ones until it is marked sent", async () => {
+    const filled: Application = {
+      ...app("app_100000004", "filled", "Hinterhaus in Neukölln"),
+      statusChangedAt: "2027-02-05T18:00:00.000Z",
+    };
+    delete filled.sentAt;
+    await write("applications", [...three, filled]);
+    render(<Tracker onClose={vi.fn()} />);
+    const row = (await screen.findByText("Hinterhaus in Neukölln")).closest(
+      "li",
+    );
+    if (!row) throw new Error("no row");
+
+    expect(tile("Sent")).toBe("3");
+    expect(rowTitles()).toHaveLength(4);
+    expect(within(row).getByText("Filled")).toBeDefined();
+    expect(within(row).getByText(/· filled 05\.02\.2027$/)).toBeDefined();
+    const filters = screen.getByRole("group", { name: "Filter" });
+    fireEvent.click(within(filters).getByRole("button", { name: "Filled" }));
+    expect(rowTitles()).toEqual(["Hinterhaus in Neukölln"]);
+
+    fireEvent.click(within(row).getByRole("button", { name: "Mark as sent" }));
+    await waitFor(() => {
+      expect(tile("Sent")).toBe("4");
+    });
+    const stored = await read("applications");
+    const marked = stored.ok
+      ? stored.value?.find((a) => a.id === "app_100000004")
+      : undefined;
+    expect(marked?.status).toBe("sent");
+    expect(marked?.sentAt).toBeDefined();
+  });
+
   it("names each status in words and links the listing", async () => {
     render(<Tracker onClose={vi.fn()} />);
     const row = (await screen.findByText("Neubau an der Spree")).closest("li");

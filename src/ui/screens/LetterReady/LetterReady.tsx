@@ -4,7 +4,7 @@
 // writes the letter as edited. On an unknown site the card lists every pair
 // first and Fill the form writes only those left on (ADR 12). The user
 // presses Send on the page, then tells the panel so it can be tracked.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fillSteps, type FillReport, type FillStep } from "../../../fill/fill";
 import { mapFields } from "../../../rules/fieldMatch";
 import { countWords, validateLetter } from "../../../rules/letterValidate";
@@ -48,6 +48,8 @@ interface LetterReadyProps {
   saved?: Application | undefined;
   /** Why saving it failed, if it did. */
   saveFailed?: string | undefined;
+  /** A fill wrote this letter into the form: keep it as a filled pigeon. */
+  onFilled: (letter: string) => void;
   /** "Yes, I sent it", with the letter as it went into the form. */
   onSent: (letter: string) => void;
 }
@@ -65,6 +67,7 @@ export function LetterReady({
   onBack,
   saved,
   saveFailed,
+  onFilled,
   onSent,
 }: LetterReadyProps) {
   // Edits belong to one draft; a new draft starts clean.
@@ -91,14 +94,22 @@ export function LetterReady({
   // the form whose own report says it wrote. The previous report stays on
   // screen while a fill runs, so a click remembers the report it saw and
   // only a new one counts. Checking the form again drops the report, not
-  // the letter in the form, so the question stays.
+  // the letter in the form, so the question stays. The moment a fill wrote
+  // is also when the letter becomes a pigeon, marked filled.
   const report = form.status === "form" ? form.report : undefined;
   const [pending, setPending] = useState<{ text: string; seen?: FillReport }>();
-  const [written, setWritten] = useState<string>();
+  const [written, setWritten] = useState<{ text: string }>();
   if (pending && report && report !== pending.seen) {
     setPending(undefined);
-    if (report.filled.length > 0) setWritten(pending.text);
+    if (report.filled.length > 0) setWritten({ text: pending.text });
   }
+  // Each fill that wrote is a new `written`, kept once.
+  const kept = useRef<{ text: string }>(undefined);
+  useEffect(() => {
+    if (written === undefined || written === kept.current) return;
+    kept.current = written;
+    onFilled(written.text);
+  }, [written, onFilled]);
   const confirm = confirmFirst
     ? {
         optedOut,
@@ -168,7 +179,7 @@ export function LetterReady({
               saved={saved}
               failed={saveFailed}
               onSent={() => {
-                if (written !== undefined) onSent(written);
+                if (written !== undefined) onSent(written.text);
               }}
             />
           )}

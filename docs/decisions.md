@@ -723,3 +723,18 @@ another `data-id`, is drawn right after it. So a select also counts as visible
 when a widget directly behind its own is visible. A select with no widget of its
 own stays a possible spam trap. The running probes are the Deutsche Wohnen and
 late title runs in `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
+
+**Amendment (2026-11-05): a filled letter is a pigeon.** `status` gains
+`filled`, the first status of every record from Phase 12 on: the panel saves
+the application as soon as a fill's report says the letter went into the
+form, with the letter as it went in. `sentAt` becomes optional and the
+validator requires it for every status but `filled`, so a send date exists
+only once the user has said "Yes, I sent it" or marked a row sent, viewing or
+closed; `setStatus` sets it on the first step out of `filled` and drops it on
+the way back. A later fill that wrote replaces the letter of a filled record;
+a sent record keeps the letter that was sent. Nothing detects a send: Filled
+says only what the extension did itself. The export version stays 2, since
+the file's shape is unchanged; a build before this amendment refuses a file
+holding a filled record the way it refuses any unknown value, all or nothing,
+and every file written before it still imports. The running probes are the
+`filled` tests in `src/rules/tracker.test.ts` and `src/rules/profile.test.ts`.

@@ -28,12 +28,13 @@ import styles from "./Tracker.module.css";
 
 const FILTERS: { value: TrackerFilter; label: string }[] = [
   { value: "all", label: "All" },
+  { value: "filled", label: "Filled" },
   { value: "sent", label: "Sent" },
   { value: "viewing", label: "Viewing" },
   { value: "closed", label: "Closed" },
 ];
 
-const STATUSES: ApplicationStatus[] = ["sent", "viewing", "closed"];
+const STATUSES: ApplicationStatus[] = ["filled", "sent", "viewing", "closed"];
 
 export function Tracker({ onClose }: { onClose: () => void }) {
   const stored = useStored("applications");
@@ -75,7 +76,7 @@ export function Tracker({ onClose }: { onClose: () => void }) {
     content = (
       <>
         <StatRow>
-          <StatTile label="Sent" value={String(stats.total)} />
+          <StatTile label="Sent" value={String(stats.sentTotal)} />
           <StatTile label="Viewings" value={String(stats.viewing)} positive />
           <StatTile label="Waiting" value={String(stats.sent)} />
         </StatRow>
@@ -187,18 +188,24 @@ function ApplicationRow({
   );
 }
 
-/** "Kreuzberg · 1.400 € Warmmiete · sent 01.02.2027", in local time. */
-function meta({ district, warmmieteCents, sentAt }: Application): string {
-  const sent = new Date(sentAt);
+/** "Kreuzberg · 1.400 € Warmmiete · sent 01.02.2027", in local time; a
+ *  letter nobody marked sent reads "filled 01.02.2027" instead. */
+function meta({
+  district,
+  warmmieteCents,
+  sentAt,
+  statusChangedAt,
+}: Application): string {
+  const at = new Date(sentAt ?? statusChangedAt);
   const day = [
-    sent.getFullYear(),
-    String(sent.getMonth() + 1).padStart(2, "0"),
-    String(sent.getDate()).padStart(2, "0"),
+    at.getFullYear(),
+    String(at.getMonth() + 1).padStart(2, "0"),
+    String(at.getDate()).padStart(2, "0"),
   ].join("-");
   return [
     district,
     warmmieteCents !== undefined && `${formatEuro(warmmieteCents)} Warmmiete`,
-    `sent ${formatDate(day)}`,
+    `${sentAt === undefined ? "filled" : "sent"} ${formatDate(day)}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -207,7 +214,12 @@ function meta({ district, warmmieteCents, sentAt }: Application): string {
 /** The pigeon speaks in first person (design system "Voice"). */
 function tip(stats: TrackerStats): string {
   if (stats.total === 0) {
-    return 'Nothing here yet. After you send a letter I filled in, answer "Did you send it?" on the letter screen and I\'ll keep it here.';
+    return "Nothing here yet. Fill a form with a letter I wrote and I'll keep it here, marked Filled until you tell me you sent it.";
+  }
+  if (stats.filled > 0 && stats.sentTotal === 0) {
+    const letters =
+      stats.filled === 1 ? "1 letter is" : `${stats.filled} letters are`;
+    return `${letters} filled, none marked sent yet. Once you have pressed Send on a page, mark it sent here or on the letter screen and I'll count it.`;
   }
   if (stats.viewing > 0) {
     return "You have a Besichtigung. Take your documents along, so you can hand them over on the day.";

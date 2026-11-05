@@ -17,6 +17,12 @@
   white-space: nowrap;
 }
 
+.filled {
+  background: var(--sun-deep);
+  color: var(--sun-soft);
+  white-space: nowrap;
+}
+
 .sent {
   background: var(--violet);
   color: var(--ink);
