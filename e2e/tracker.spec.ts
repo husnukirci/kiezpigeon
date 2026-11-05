@@ -1,6 +1,6 @@
-// The tracker's acceptance (PHASES.md Phase 7): three saved applications
-// across statuses show the right counts and filter correctly, and closing
-// Chrome keeps them. The built extension runs in Chromium on a profile
+// The tracker's acceptance (PHASES.md Phase 7, Phase 12): three sent
+// applications across statuses and one only filled show the right counts
+// and filter correctly, and closing Chrome keeps them. The built extension runs in Chromium on a profile
 // directory of its own, which is closed and opened again in between.
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,7 +61,7 @@ test.afterAll(() => {
   rmSync(profileDir, { recursive: true, force: true });
 });
 
-test("three applications keep their counts and filters after Chrome restarts", async () => {
+test("four applications keep their counts and filters after Chrome restarts", async () => {
   const first = await launch(profileDir);
   const worker = first.context.serviceWorkers()[0];
   await worker?.evaluate(
@@ -72,6 +72,11 @@ test("three applications keep their counts and filters after Chrome restarts", a
         app("app_100000001", "sent", "Altbau mit Balkon"),
         app("app_100000002", "viewing", "Dachgeschoss am Park"),
         app("app_100000003", "closed", "Neubau an der Spree"),
+        // A letter that went into a form; nobody said it was sent.
+        {
+          ...app("app_100000004", "filled", "Hinterhaus in Neukölln"),
+          sentAt: undefined,
+        },
       ],
     },
   );
@@ -97,8 +102,10 @@ test("three applications keep their counts and filters after Chrome restarts", a
     const rows = panel
       .getByRole("list", { name: "Applications" })
       .getByRole("listitem");
-    await expect(rows).toHaveCount(3);
+    await expect(rows).toHaveCount(4);
     const filters = panel.getByRole("group", { name: "Filter" });
+    await filters.getByRole("button", { name: "Filled" }).click();
+    await expect(rows).toHaveText([/Hinterhaus in Neukölln.*filled/s]);
     await filters.getByRole("button", { name: "Viewing" }).click();
     await expect(rows).toHaveCount(1);
     await expect(rows).toContainText("Dachgeschoss am Park");
