@@ -187,18 +187,24 @@ function ApplicationRow({
   );
 }
 
-/** "Kreuzberg · 1.400 € Warmmiete · sent 01.02.2027", in local time. */
-function meta({ district, warmmieteCents, sentAt }: Application): string {
-  const sent = new Date(sentAt);
+/** "Kreuzberg · 1.400 € Warmmiete · sent 01.02.2027", in local time; a
+ *  letter nobody marked sent reads "filled 01.02.2027" instead. */
+function meta({
+  district,
+  warmmieteCents,
+  sentAt,
+  statusChangedAt,
+}: Application): string {
+  const at = new Date(sentAt ?? statusChangedAt);
   const day = [
-    sent.getFullYear(),
-    String(sent.getMonth() + 1).padStart(2, "0"),
-    String(sent.getDate()).padStart(2, "0"),
+    at.getFullYear(),
+    String(at.getMonth() + 1).padStart(2, "0"),
+    String(at.getDate()).padStart(2, "0"),
   ].join("-");
   return [
     district,
     warmmieteCents !== undefined && `${formatEuro(warmmieteCents)} Warmmiete`,
-    `sent ${formatDate(day)}`,
+    `${sentAt === undefined ? "filled" : "sent"} ${formatDate(day)}`,
   ]
     .filter(Boolean)
     .join(" · ");

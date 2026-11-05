@@ -120,6 +120,8 @@ use), and how two applicants are related (so the letter stops guessing).
       interface with a second real site (next candidates: Immowelt,
       Kleinanzeigen, WG-Gesucht)
 - [x] Deutsche Wohnen (Phase 11), sharing Vonovia's platform reader
+- [x] Every letter that went into a form is a pigeon, marked Filled until
+      the user says it was sent (Phase 12)
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"

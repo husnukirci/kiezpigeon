@@ -6,6 +6,7 @@ import {
 import {
   filterApplications,
   newApplication,
+  refill,
   setStatus,
   trackerStats,
 } from "./tracker";
@@ -36,6 +37,19 @@ const apps = [
   app("app_e", "sent", "2027-02-10T11:59:59.000Z"),
 ];
 
+/** A letter that went into a form; nobody said it was sent. */
+function filled(id: string, statusChangedAt: string): Application {
+  return {
+    id,
+    listingUrl: `https://www.immobilienscout24.de/expose/${id}`,
+    letter: "Sehr geehrte Damen und Herren, ...",
+    status: "filled",
+    statusChangedAt,
+  };
+}
+
+const withFilled = [...apps, filled("app_f", "2027-02-09T20:00:00.000Z")];
+
 describe("newApplication", () => {
   it("saves the listing summary and the letter as sent, now", () => {
     expect(
@@ -54,6 +68,24 @@ describe("newApplication", () => {
       sentAt: now,
       statusChangedAt: now,
     });
+  });
+
+  it("saves a filled letter without a send date", () => {
+    expect(
+      newApplication(kreuzbergListing, "Hallo", {
+        now,
+        random: "k3x9",
+        status: "filled",
+      }),
+    ).toMatchObject({ id: "app_k3x9", status: "filled", statusChangedAt: now });
+    expect(
+      "sentAt" in
+        newApplication(kreuzbergListing, "Hallo", {
+          now,
+          random: "k3x9",
+          status: "filled",
+        }),
+    ).toBe(false);
   });
 
   it("leaves out what the listing did not show", () => {
@@ -77,8 +109,42 @@ describe("setStatus", () => {
     expect(changed.sentAt).toBe("2027-02-09T08:00:00.000Z");
   });
 
+  it("sets the send date when a filled letter is first marked sent", () => {
+    const sent = setStatus(
+      filled("x", "2027-02-01T00:00:00.000Z"),
+      "sent",
+      now,
+    );
+    expect(sent).toEqual({
+      ...filled("x", "2027-02-01T00:00:00.000Z"),
+      status: "sent",
+      sentAt: now,
+      statusChangedAt: now,
+    });
+    // Straight to a viewing is still a send the user is telling us about.
+    expect(
+      setStatus(filled("x", "2027-02-01T00:00:00.000Z"), "viewing", now).sentAt,
+    ).toBe(now);
+  });
+
+  it("drops the send date when a letter goes back to filled", () => {
+    const back = setStatus(
+      app("x", "sent", "2027-02-01T00:00:00.000Z"),
+      "filled",
+      now,
+    );
+    expect(back.status).toBe("filled");
+    expect("sentAt" in back).toBe(false);
+    expect(back.statusChangedAt).toBe(now);
+  });
+
   it("allows any status from any other, so mistakes can be corrected", () => {
-    const statuses: ApplicationStatus[] = ["sent", "viewing", "closed"];
+    const statuses: ApplicationStatus[] = [
+      "filled",
+      "sent",
+      "viewing",
+      "closed",
+    ];
     for (const from of statuses) {
       for (const to of statuses) {
         expect(setStatus(app("x", from, now), to, now).status).toBe(to);
@@ -98,10 +164,30 @@ describe("setStatus", () => {
   });
 });
 
+describe("refill", () => {
+  it("replaces the letter of a filled record", () => {
+    const again = refill(filled("x", now), "Sehr geehrte Frau Weber, neu.");
+    expect(again.letter).toBe("Sehr geehrte Frau Weber, neu.");
+    expect(again.status).toBe("filled");
+  });
+
+  it("keeps the letter that was sent", () => {
+    const sent = app("x", "sent", now);
+    expect(refill(sent, "Anders")).toBe(sent);
+  });
+
+  it("leaves the record alone when the letter is the same", () => {
+    const same = filled("x", now);
+    expect(refill(same, same.letter)).toBe(same);
+  });
+});
+
 describe("trackerStats", () => {
   it("counts per status and the applications sent in the last 7 days", () => {
-    expect(trackerStats(apps, now)).toEqual({
-      total: 5,
+    expect(trackerStats(withFilled, now)).toEqual({
+      total: 6,
+      filled: 1,
+      sentTotal: 5,
       sent: 3,
       viewing: 1,
       closed: 1,
@@ -127,6 +213,8 @@ describe("trackerStats", () => {
   it("is all zeros for no applications", () => {
     expect(trackerStats([], now)).toEqual({
       total: 0,
+      filled: 0,
+      sentTotal: 0,
       sent: 0,
       viewing: 0,
       closed: 0,
@@ -157,6 +245,21 @@ describe("filterApplications", () => {
     ]);
     expect(filterApplications(apps, "closed").map((a) => a.id)).toEqual([
       "app_c",
+    ]);
+  });
+
+  it("places a filled letter by the day it was filled, and filters it", () => {
+    // app_f was filled on the 9th at 20:00, after app_a was sent that morning.
+    expect(filterApplications(withFilled, "all").map((a) => a.id)).toEqual([
+      "app_e",
+      "app_f",
+      "app_a",
+      "app_b",
+      "app_d",
+      "app_c",
+    ]);
+    expect(filterApplications(withFilled, "filled").map((a) => a.id)).toEqual([
+      "app_f",
     ]);
   });
 

@@ -1,6 +1,6 @@
 // StatusPill (design system components/StatusPill/README.md): the detected
-// badge, the form's match count and an application's Sent, Viewing or
-// Closed. The word carries the meaning, colour reinforces.
+// badge, the form's match count and an application's Filled, Sent, Viewing
+// or Closed. The word carries the meaning, colour reinforces.
 import type { ApplicationStatus } from "../../../rules/types";
 import { cx } from "../../cx";
 import styles from "./StatusPill.module.css";
@@ -37,12 +37,14 @@ export function MatchPill({
 }
 
 export const STATUS_WORD: Record<ApplicationStatus, string> = {
+  filled: "Filled",
   sent: "Sent",
   viewing: "Viewing",
   closed: "Closed",
 };
 
-/** An application's status: teal Viewing, violet Sent, night Closed. */
+/** An application's status: sun Filled (the system's pending role), violet
+ *  Sent, teal Viewing, night Closed. */
 export function ApplicationPill({ status }: { status: ApplicationStatus }) {
   return (
     <p className={cx(styles.pill, styles[status], "type-caption")}>

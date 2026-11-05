@@ -81,6 +81,7 @@ const RELATIONSHIPS: readonly Relationship[] = [
 ];
 const MOVE_IN_KINDS: readonly MoveIn["kind"][] = ["date", "asap", "flexible"];
 const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
+  "filled",
   "sent",
   "viewing",
   "closed",
@@ -247,6 +248,11 @@ class Reader {
     return "";
   }
 
+  optionalDateTime(key: string): string | undefined {
+    if (this.source[key] === undefined) return undefined;
+    return this.dateTime(key);
+  }
+
   object(key: string): Reader | undefined {
     return Reader.of(
       this.problems,
@@ -376,6 +382,7 @@ function readMoveIn(r: Reader): MoveIn {
 }
 
 function readApplication(r: Reader): Application {
+  const status = r.oneOf("status", APPLICATION_STATUSES);
   return withoutUndefined({
     id: r.text("id"),
     listingUrl: r.webUrl("listingUrl"),
@@ -383,8 +390,10 @@ function readApplication(r: Reader): Application {
     district: r.optionalText("district"),
     warmmieteCents: r.optionalCents("warmmieteCents"),
     letter: r.text("letter"),
-    status: r.oneOf("status", APPLICATION_STATUSES),
-    sentAt: r.dateTime("sentAt"),
+    status,
+    // Only a filled letter has no send date: nobody has said it was sent.
+    sentAt:
+      status === "filled" ? r.optionalDateTime("sentAt") : r.dateTime("sentAt"),
     statusChangedAt: r.dateTime("statusChangedAt"),
   });
 }

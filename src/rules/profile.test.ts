@@ -208,9 +208,19 @@ describe("parseApplication", () => {
     expect(result).toEqual({
       ok: false,
       problems: [
-        "status: must be one of sent, viewing, closed",
+        "status: must be one of filled, sent, viewing, closed",
         "sentAt: must be a date and time",
       ],
+    });
+  });
+
+  it("accepts a filled letter without a send date, and nothing else without one", () => {
+    const { sentAt, ...filled } = { ...application, status: "filled" as const };
+    expect(sentAt).toBeDefined();
+    expect(parseApplication(filled)).toEqual({ ok: true, value: filled });
+    expect(parseApplication({ ...filled, status: "sent" })).toEqual({
+      ok: false,
+      problems: ["sentAt: must be a date and time"],
     });
   });
 
@@ -338,7 +348,7 @@ describe("export and import", () => {
       ok: false,
       problems: [
         "profile.hasWbs: must be true or false",
-        "applications[1].status: must be one of sent, viewing, closed",
+        "applications[1].status: must be one of filled, sent, viewing, closed",
       ],
     });
   });
