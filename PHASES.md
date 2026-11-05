@@ -856,3 +856,61 @@ and map id included; no personal circumstances of the author in fixtures, logs
 or the PR; `package.json` version `1.3.0`, tag `v1.3.0` pushed after merging.
 
 **PR:** `feat(adapters): deutsche wohnen, sharing vonovia's platform reader`
+
+---
+
+## Phase 12: Filled pigeons
+
+**Context for a fresh session:** v1.3.0 is released (Phases 0 to 11). The
+tracker saves an application only when the user presses "Yes, I sent it"
+after a fill (Phase 7). In use that question is easy to walk past: the
+letter is written, the form filled, Send pressed on the page, the tab
+closed, and the tracker never hears of it.
+
+**Objective:** every letter that went into a form is a pigeon from that
+moment, marked Filled until the user says it was sent. The extension still
+never detects or claims sending; Filled says only what it did itself.
+
+**In scope**
+
+1. Rules (strict tier, ADR 13 amendment in the same commit).
+   `ApplicationStatus` gains `filled`. `sentAt` becomes optional and the
+   validator requires it for every status but `filled`. `newApplication`
+   can save a filled record, which has no `sentAt`. `setStatus` sets
+   `sentAt` when a record first leaves `filled` and drops it on the way
+   back, so a sent date is never invented. `refill` replaces the letter of
+   a filled record after a later fill that wrote; a sent record keeps the
+   letter that was sent. Stats gain `filled` and `sentTotal`;
+   `sentLast7Days` counts only records with a send date. Order is by
+   `sentAt`, else by `statusChangedAt`. The export version stays 2: the
+   file's shape is unchanged, and a build before this phase refuses the new
+   status the way it refuses any unknown value, all or nothing.
+2. Letter screen. After a fill whose report says it wrote, the application
+   is saved as filled with the letter as it went into the form; a later
+   fill that wrote replaces the letter while the record is still filled.
+   The card below the form then says it is in your pigeons, marked Filled,
+   and asks "Did you send it?"; "Yes, I sent it" marks it sent. If saving
+   failed, the card says why and the button still saves a sent record, as
+   it did before.
+3. Tracker. The Filled pill uses the design system's pending role
+   (`sun-deep` with `sun-soft`); a Filled filter chip; "Mark as filled" as
+   the correction for a record marked sent by mistake; the meta line reads
+   "filled 01.02.2027" until there is a send date; the Sent tile counts
+   only records that were sent; a tip for filled letters never marked sent.
+4. End to end: `e2e/tracker.spec.ts` gains a filled record among the
+   counts and filters; `e2e/never-submit.spec.ts` sees the filled pigeon
+   before the click and the sent one after it.
+5. README and the tip copy say what happens now.
+
+**Out of scope:** detecting a send (never), reminders (Tier 2), letter
+history (Tier 2).
+
+**Acceptance:** fill a form on a fixture page; the tracker shows the row as
+Filled with no further click; "Yes, I sent it" turns it Sent with today's
+date; an export written before this phase still imports.
+
+**Phase review checklist:** no copy claims a letter was sent; status is
+never colour alone; stats come from the rules function; `sentAt` is never
+set by anything but the user's word.
+
+**PR:** `feat(tracker): keep every filled letter as a pigeon`
