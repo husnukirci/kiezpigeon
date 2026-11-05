@@ -35,8 +35,11 @@
   flex: 1;
 }
 
-.back {
-  /* Room for "Back" at the README's secondary height. */
+.actions > .back {
+  /* Room for "Back"; it matches the teal button's height and radius so the
+     pair reads as one row. Scoped under .actions because the Button
+     component's own secondary height has equal specificity and its sheet
+     can land later in the bundle; a bare .back lost that tie. */
   --back-width: 96px;
 
   flex: 0 0 var(--back-width);
