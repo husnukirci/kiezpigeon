@@ -28,12 +28,13 @@ import styles from "./Tracker.module.css";
 
 const FILTERS: { value: TrackerFilter; label: string }[] = [
   { value: "all", label: "All" },
+  { value: "filled", label: "Filled" },
   { value: "sent", label: "Sent" },
   { value: "viewing", label: "Viewing" },
   { value: "closed", label: "Closed" },
 ];
 
-const STATUSES: ApplicationStatus[] = ["sent", "viewing", "closed"];
+const STATUSES: ApplicationStatus[] = ["filled", "sent", "viewing", "closed"];
 
 export function Tracker({ onClose }: { onClose: () => void }) {
   const stored = useStored("applications");
@@ -75,7 +76,7 @@ export function Tracker({ onClose }: { onClose: () => void }) {
     content = (
       <>
         <StatRow>
-          <StatTile label="Sent" value={String(stats.total)} />
+          <StatTile label="Sent" value={String(stats.sentTotal)} />
           <StatTile label="Viewings" value={String(stats.viewing)} positive />
           <StatTile label="Waiting" value={String(stats.sent)} />
         </StatRow>
@@ -213,7 +214,12 @@ function meta({
 /** The pigeon speaks in first person (design system "Voice"). */
 function tip(stats: TrackerStats): string {
   if (stats.total === 0) {
-    return 'Nothing here yet. After you send a letter I filled in, answer "Did you send it?" on the letter screen and I\'ll keep it here.';
+    return "Nothing here yet. Fill a form with a letter I wrote and I'll keep it here, marked Filled until you tell me you sent it.";
+  }
+  if (stats.filled > 0 && stats.sentTotal === 0) {
+    const letters =
+      stats.filled === 1 ? "1 letter is" : `${stats.filled} letters are`;
+    return `${letters} filled, none marked sent yet. Once you have pressed Send on a page, mark it sent here or on the letter screen and I'll count it.`;
   }
   if (stats.viewing > 0) {
     return "You have a Besichtigung. Take your documents along, so you can hand them over on the day.";
