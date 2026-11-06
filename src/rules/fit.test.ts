@@ -6,6 +6,7 @@ import {
   sparseListing,
 } from "../../test-support/sample-profiles";
 import { checkFit } from "./fit";
+import { NO_HINTS } from "./rentalHints";
 import type { FitLine, FitRule, Listing, Profile } from "./types";
 
 function line(profile: Profile, listing: Listing, rule: FitRule): FitLine {
@@ -258,6 +259,23 @@ describe("WBS line", () => {
     expect(
       line(soloStudent, listingWith({ wbsRequired: false }), "wbs"),
     ).toEqual({ rule: "wbs", status: "ok", reason: "No WBS needed" });
+  });
+
+  it("points at the text when it mentions WBS without a row", () => {
+    expect(
+      line(
+        coupleWithDog,
+        listingWith({
+          wbsRequired: undefined,
+          hints: { ...NO_HINTS, wbsMentioned: true },
+        }),
+        "wbs",
+      ),
+    ).toEqual({
+      rule: "wbs",
+      status: "unknown",
+      reason: "The text mentions WBS. Check what it asks for.",
+    });
   });
 
   it("is unknown when the listing is silent", () => {

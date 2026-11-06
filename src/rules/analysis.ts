@@ -77,7 +77,13 @@ function kindLine(listing: Listing): AnalysisLine {
       : facts.length > 0
         ? `${sentence}. ${NO_KIND}`
         : NO_KIND;
-  return { id: "kind", status: "info", text };
+  // A WBS the text mentions without asking for one, and no row to settle
+  // it: say so rather than claim either way.
+  const check =
+    listing.wbsRequired === undefined && hints.wbsMentioned && !hints.wbs
+      ? " The text mentions WBS without saying it is required. Check what it asks for."
+      : "";
+  return { id: "kind", status: "info", text: text + check };
 }
 
 function priceLine(listing: Listing): AnalysisLine {
