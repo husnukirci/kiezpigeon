@@ -23,23 +23,27 @@ export const NO_HINTS: RentalHints = {
 
 /**
  * Phrases that rule a thing out, removed before the positive patterns run,
- * so "provisionsfrei" never counts as a Provision and "WG-geeignet" (the
- * ImmoScout24 feature tag) never counts as a WG room.
+ * so "provisionsfrei" never counts as a Provision, "unbefristet" never as
+ * befristet, "Kein WBS erforderlich" never as WBS, and "WG-geeignet" or
+ * "Suitable for shared flats" (the ImmoScout24 feature tag in either
+ * language) never as a WG room. One test per phrasing in the test file; an
+ * over-flag would be a wrong claim on the card, so this list grows with
+ * every phrasing a page shows.
  */
 const NEGATIONS =
-  /provisionsfrei|keine provision|ohne provision|courtagefrei|keine courtage|commission[- ]free|no commission|nicht möbliert|unmöbliert|unfurnished|wg-geeignet|suitable for (?:a )?shared flats?|flat[- ]share suitable/gi;
+  /provisionsfrei|keine provision|ohne provision|courtagefrei|keine courtage|commission[- ]free|no commission|nicht möbliert|unmöbliert|unfurnished|not furnished|wg-geeignet|suitable for (?:a )?shared flats?|flat[- ]share suitable|unbefristet\w*|kein(?:en|e)? wbs\b|wbs (?:ist )?nicht erforderlich|kein wohnberechtigungsschein|wohnberechtigungsschein (?:ist )?nicht erforderlich|keine untervermietung|untervermietung (?:ist )?nicht (?:gestattet|erlaubt|möglich)|nicht für wohngemeinschaften|keine wohngemeinschaft\w*|keine wg\b|keine? (?:staffel|index)miete|kein erstbezug|cooperative shares/gi;
 
 const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   sublet: /untermiete|untervermiet|\bsublet/i,
   interim: /zwischenmiete|interim (?:let|rent|tenancy)/i,
-  fixedTerm: /befristet|zeitmietvertrag|fixed[- ]term/i,
+  fixedTerm: /(?<!un)befristet|zeitmietvertrag|fixed[- ]term/i,
   // "Teilmöbliert" in a fixture title counts: partly furnished is furnished.
   furnished: /möbliert|moebliert|furnished/i,
   sharedFlat:
     /wg-zimmer|zimmer in (?:einer |der )?wg\b|wohngemeinschaft|shared flat|flat ?share/i,
   // The Kosten row is labelled "Kaution o. Genossenschaftsanteile" on every
   // ImmoScout24 page; only the cooperative itself counts.
-  cooperative: /genossenschaft(?!s?anteil)/i,
+  cooperative: /genossenschaft(?!s?anteil)|cooperative/i,
   wbs: /wohnberechtigungsschein|\bwbs\b/i,
   // The English fixture's condition row: "First-time occupancy after refurbishment".
   firstOccupancy: /erstbezug|first[- ]time occupancy|first occupancy/i,
@@ -47,11 +51,16 @@ const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   index: /indexmiete/i,
   // The complete fixture rules a Provision out under § 2 WoVermG; see NEGATIONS.
   commission: /\bprovision\b|courtage|maklergebühr|\bcommission\b/i,
+  // "Besichtigungsanfragen" is a plea, not a refusal: no "s" may follow.
   noViewing:
-    /keine besichtigung|ohne besichtigung|besichtigung(?:en)? (?:ist |sind |derzeit )?nicht möglich|no viewing|without (?:a )?viewing|viewing (?:is )?not possible/i,
+    /keine besichtigung(?!s)|ohne besichtigung(?!s)|besichtigung(?:en)? (?:ist |sind |derzeit |leider )*nicht möglich|no viewing(?!s)|without (?:a )?viewing|viewing (?:is )?not possible/i,
+  // A payment word and the timing together, in either order; "before the
+  // viewing" alone is how a landlord asks for documents.
   paymentFirst:
-    /vorab (?:zu )?(?:überweisen|zahlen|bezahlen)|vorkasse|anzahlung|western union|moneygram|paypal|airbnb|before (?:the |a )?viewing|wire transfer/i,
-  abroad: /im ausland|nicht in deutschland|\babroad\b|out of the country/i,
+    /(?:kaution|miete|geld|betrag|zahlung|deposit|payment|rent|money)\W+(?:\w+\W+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?:vor der besichtigung|vorab|before (?:the |a )?viewing)\W+(?:\w+\W+){0,4}?(?:überweis\w*|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
+  // The landlord abroad, not applicants from abroad.
+  abroad:
+    /(?:ich|wir|vermieter\w*|eigentümer\w*|besitzer\w*)\W+(?:\w+\W+){0,5}?(?:im ausland|nicht in deutschland)|(?:i am|i'm|we are|we're|owner is|landlord is)\W+(?:\w+\W+){0,4}?(?:abroad|out of the country|not in germany)/i,
 };
 
 export function rentalHints(text: string): RentalHints {

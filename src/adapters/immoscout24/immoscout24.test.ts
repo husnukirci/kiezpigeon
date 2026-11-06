@@ -58,11 +58,10 @@ describe("immoscout24.readListing", () => {
       // Near the end of the page: proves the whole fixture parsed.
       contactPerson: { firstName: "Lena", lastName: "Beispiel" },
       // The Kosten row reads a bare "1000"; the contact is "von privat";
-      // Teilmöbliert is in the title only, which is not scanned; the
-      // price block is empty on this page.
+      // the title says Teilmöbliert; the price block is empty on this page.
       kautionCents: 100000,
       offeredBy: "private",
-      hints: NO_HINTS,
+      hints: { ...NO_HINTS, furnished: true },
       features: [],
       missing: [
         "floor",
@@ -139,6 +138,16 @@ describe("immoscout24.readListing", () => {
     const listing = immoscout24.readListing(page, URL);
     expect(listing?.priceComparison).toBeUndefined();
     expect(listing?.missing).toContain("priceComparison");
+  });
+
+  it("leaves the price band out when its legend is not the one under Ø Angebotspreis", () => {
+    const page = loadFixture("immoscout24", "listing-complete.html");
+    for (const label of page.querySelectorAll(
+      '[data-testid="quickcheck-bar"] span',
+    )) {
+      if (/Angebotspreis/.test(label.textContent)) label.remove();
+    }
+    expect(immoscout24.readListing(page, URL)?.priceComparison).toBeUndefined();
   });
 
   it("says a search results page is not a listing", () => {

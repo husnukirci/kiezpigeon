@@ -422,7 +422,9 @@ five optional fields, each named in `missing` when a page lacks it:
 `offeredBy` from ImmoScout24's "von privat" or "Gewerblich" marker,
 `priceComparison` from the band ImmoScout24 prints as "Ø Angebotspreis" with
 its sample size and radius, and `hints`, the flags `rentalHints` scans from
-the description, the "Sonstiges" row and the condition row. The analysis
+the title, the description, the "Sonstiges" and condition rows and the
+feature tags (on the Vonovia platform: the title and the Beschreibung and
+Sonstige Angaben cards). The analysis
 rule reads only the flags, never the page's text. The running probes are the
 new fields in each adapter's fixture tests.
 
@@ -779,6 +781,9 @@ light (colour-only status, and a verdict).
 
 **Consequences.** Vonovia and Deutsche Wohnen show no price comparison. A
 changed page block degrades to an `unknown` line, never to a wrong claim.
-A keyword the scanner does not know stays unflagged, so the list can only
-ever be too short, which is the honest direction. The running probes are
+A keyword the scanner does not know stays unflagged. A phrase that rules a
+thing out ("unbefristet", "Kein WBS erforderlich", "Untervermietung nicht
+gestattet") is removed before scanning, and that list is kept with one test
+per phrasing found on a real page, because an over-flag would put a wrong
+claim on the card; the page's own WBS row outranks the text. The running probes are
 `src/rules/analysis.test.ts` and `src/rules/rentalHints.test.ts`.

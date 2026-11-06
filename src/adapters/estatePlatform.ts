@@ -68,7 +68,11 @@ function hintsOf(document: Document): RentalHints | undefined {
   const description = cardText(document, "Beschreibung");
   if (description === undefined) return undefined;
   return rentalHints(
-    [description, cardText(document, "Sonstige Angaben")].join("\n"),
+    [
+      titleOf(document),
+      description,
+      cardText(document, "Sonstige Angaben"),
+    ].join("\n"),
   );
 }
 

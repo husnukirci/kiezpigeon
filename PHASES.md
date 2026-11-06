@@ -946,9 +946,9 @@ and what is worth a second look.
    cheaper). ADR 14 and the ADR 8 amendment in the same commit.
 2. ImmoScout24 (fixture tier): the type and Kaution rows, the "von privat"
    or "Gewerblich" marker, the "Ø Angebotspreis" band with its sample size
-   and radius, all four numbers or nothing, and the hints from the
-   description, the Sonstiges and condition rows and the feature tags.
-3. Vonovia and Deutsche Wohnen: the Art and Kaution rows and the
+   and radius, all four numbers or nothing, and the hints from the title,
+   the description, the Sonstiges and condition rows and the feature tags.
+3. Vonovia and Deutsche Wohnen: the Art and Kaution rows and the title,
    Beschreibung and Sonstige Angaben cards. No offerer, no band.
 4. The card, between the stat tiles and the fit check, hidden on the
    typed-facts flow. Plain lines carry their label word, notes the
@@ -961,9 +961,10 @@ bundled market data, storing the analysis, detecting a send.
 
 **Acceptance:** on the complete ImmoScout24 fixture the card reads the kind
 and price lines and "Nothing on the page stood out." (its contact is a
-company, so no greeting); on the sparse fixture it reads "Offered
-privately", "This page shows no comparison" and the greeting "Guten Tag
-Lena Beispiel"; a Kaution above three Kaltmieten adds the deposit note.
+company, so no greeting); on the sparse fixture it reads "Möbliert,
+offered privately." from its title, "This page shows no comparison" and
+the greeting "Guten Tag Lena Beispiel"; a Kaution above three Kaltmieten
+adds the deposit note.
 
 **Phase review checklist:** no copy claims or judges, and the words scam,
 fraud, Betrug and warning appear nowhere; status is never colour alone;

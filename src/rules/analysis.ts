@@ -57,9 +57,9 @@ function kindLine(listing: Listing): AnalysisLine {
       text: "I could not read this page's description.",
     };
   }
-  const parts = KIND_PARTS.filter(
-    ([flag, word]) =>
-      hints[flag] || (word === "WBS required" && listing.wbsRequired === true),
+  // The page's own WBS row outranks a mention of WBS in its text.
+  const parts = KIND_PARTS.filter(([flag]) =>
+    flag === "wbs" ? (listing.wbsRequired ?? hints.wbs) : hints[flag],
   ).map(([, word]) => word);
   const offered =
     offeredBy === "private"
@@ -167,7 +167,7 @@ function notes(listing: Listing, price: AnalysisLine): AnalysisLine[] {
   if (hints?.commission) {
     note(
       "commission",
-      "The text mentions a Provision. Tenants pay none for a rental since 2015 (Bestellerprinzip).",
+      "The text mentions a Provision. A tenant who did not hire the agent pays none since 2015 (Bestellerprinzip).",
     );
   }
   if (hints?.noViewing) {

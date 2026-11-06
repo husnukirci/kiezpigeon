@@ -84,6 +84,63 @@ describe("rentalHints", () => {
     expect(rentalHints("I am currently abroad")).toEqual(only("abroad"));
   });
 
+  it("does not take a thing ruled out for a thing named", () => {
+    const quiet = [
+      "Unbefristeter Mietvertrag",
+      "Der Mietvertrag ist unbefristet",
+      "Kein WBS erforderlich",
+      "WBS nicht erforderlich",
+      "Untervermietung ist nicht gestattet",
+      "Keine Untervermietung",
+      "Nicht für Wohngemeinschaften geeignet",
+      "The flat is not furnished",
+      "Keine Indexmiete, keine Staffelmiete",
+      "Kein Erstbezug",
+      "security deposit or cooperative shares",
+    ];
+    for (const text of quiet) expect(rentalHints(text), text).toEqual(NO_HINTS);
+    expect(rentalHints("a housing cooperative")).toEqual(only("cooperative"));
+  });
+
+  it("asks for a payment first only when a payment is named with the timing", () => {
+    expect(
+      rentalHints("Bitte überweisen Sie die Kaution vor der Besichtigung"),
+    ).toEqual(only("paymentFirst"));
+    expect(rentalHints("The deposit must be paid before the viewing")).toEqual(
+      only("paymentFirst"),
+    );
+    const quiet = [
+      "Please bring your documents before the viewing",
+      "Mietzahlung per PayPal nicht möglich",
+      "Die Wohnung ist kein Airbnb",
+      "Keine Anzahlung nötig",
+    ];
+    for (const text of quiet) expect(rentalHints(text), text).toEqual(NO_HINTS);
+  });
+
+  it("sees the landlord abroad, not applicants from abroad", () => {
+    expect(rentalHints("Der Vermieter lebt im Ausland")).toEqual(
+      only("abroad"),
+    );
+    expect(rentalHints("The owner is currently out of the country")).toEqual(
+      only("abroad"),
+    );
+    const quiet = [
+      "Applicants from abroad are welcome",
+      "Bewerbungen aus dem Ausland sind willkommen",
+    ];
+    for (const text of quiet) expect(rentalHints(text), text).toEqual(NO_HINTS);
+  });
+
+  it("sees no viewing, not a plea against viewing requests", () => {
+    expect(
+      rentalHints("Bitte keine Besichtigungsanfragen per Telefon"),
+    ).toEqual(NO_HINTS);
+    expect(rentalHints("Keine Besichtigung möglich")).toEqual(
+      only("noViewing"),
+    );
+  });
+
   it("is all false for plain text", () => {
     expect(
       rentalHints(

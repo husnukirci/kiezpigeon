@@ -141,8 +141,17 @@ function priceComparisonOf(document: Document): PriceComparison | undefined {
   const intro = textOf(document, '[data-testid="quickcheck-intro"]');
   const sampleSize = map(/zu (\d+) /.exec(intro ?? "")?.[1], Number);
   const radiusM = map(/von (\d+) ?m\b/.exec(intro ?? "")?.[1], Number);
-  const legend = document.querySelector(
-    '[data-testid="quickcheck-bar"] [data-testid="legend-item"]',
+  // The band is the legend whose block is labelled "Ø Angebotspreis"; the
+  // other legend holds the scale's ends, which are not the band.
+  const legend = Array.from(
+    document.querySelectorAll(
+      '[data-testid="quickcheck-bar"] [data-testid="legend-item"]',
+    ),
+  ).find((item) =>
+    Array.from(item.parentElement?.children ?? []).some(
+      (sibling) =>
+        sibling.tagName === "SPAN" && /Angebotspreis/.test(sibling.textContent),
+    ),
   );
   const low = map(
     legend?.querySelector('[data-testid="left-value"]')?.textContent,
@@ -168,7 +177,10 @@ function priceComparisonOf(document: Document): PriceComparison | undefined {
  * feature tags, scanned for what kind of rental it is. Nothing without the
  * description block: the kind is then unknown, not "nothing special".
  */
-function hintsOf(document: Document): RentalHints | undefined {
+function hintsOf(
+  document: Document,
+  title: string | undefined,
+): RentalHints | undefined {
   const description = textOf(document, ".expose-description-wrapper");
   if (description === undefined) return undefined;
   const tags = Array.from(
@@ -177,6 +189,7 @@ function hintsOf(document: Document): RentalHints | undefined {
   );
   return rentalHints(
     [
+      title,
       description,
       firstText(document, ".is24qa-sonstiges"),
       firstText(
@@ -293,7 +306,7 @@ function readListing(document: Document, url: string): Listing | undefined {
     ),
     offeredBy: offeredByOf(document),
     priceComparison: priceComparisonOf(document),
-    hints: hintsOf(document),
+    hints: hintsOf(document, title),
   };
 
   return assembleListing(url, featuresOf(document, english), found);

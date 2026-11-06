@@ -82,6 +82,8 @@ describe("analyseListing: kind", () => {
         ...kreuzbergListing,
         flatType: undefined,
         offeredBy: undefined,
+        // No WBS row on this page, so the text's mention counts.
+        wbsRequired: undefined,
         hints: all,
       }).kind.text,
     ).toBe(
@@ -95,6 +97,16 @@ describe("analyseListing: kind", () => {
         wbsRequired: true,
       }).kind.text,
     ).toBe("WBS required.");
+    // The page's own WBS row outranks a scanned mention of WBS.
+    expect(
+      analyseListing({
+        ...kreuzbergListing,
+        flatType: undefined,
+        offeredBy: undefined,
+        wbsRequired: false,
+        hints: { ...NO_HINTS, wbs: true },
+      }).kind.text,
+    ).toBe(NO_KIND);
   });
 });
 
@@ -186,7 +198,7 @@ describe("analyseListing: worth a second look", () => {
       {
         id: "commission",
         status: "note",
-        text: "The text mentions a Provision. Tenants pay none for a rental since 2015 (Bestellerprinzip).",
+        text: "The text mentions a Provision. A tenant who did not hire the agent pays none since 2015 (Bestellerprinzip).",
       },
       {
         id: "noViewing",
