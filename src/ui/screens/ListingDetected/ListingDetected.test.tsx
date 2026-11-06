@@ -26,9 +26,7 @@ describe("ListingDetected", () => {
     const card = screen.getByRole("region", { name: "About this listing" });
     expect(card.textContent).toContain("Etagenwohnung, offered by a company.");
     expect(card.textContent).toContain("within the usual range");
-    expect(card.textContent).toContain(
-      'The letter will greet "Sehr geehrte Frau Weber".',
-    );
+    expect(card.textContent).not.toContain("greet");
     expect(card.textContent).toContain("more than three Kaltmieten");
     expect(card.textContent).not.toContain("Nothing on the page stood out");
     // Still exactly one teal button on the screen.

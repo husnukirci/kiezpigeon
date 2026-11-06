@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  kreuzbergListing,
-  sparseListing,
-} from "../../test-support/sample-profiles";
+import { kreuzbergListing } from "../../test-support/sample-profiles";
 import { analyseListing, centsPerM2 } from "./analysis";
 import { NO_HINTS } from "./rentalHints";
 import type { Listing, RentalHints } from "./types";
@@ -154,14 +151,13 @@ describe("analyseListing: price", () => {
   });
 });
 
-describe("analyseListing: greeting", () => {
-  it("shows how the letter will greet a named contact", () => {
-    expect(analyseListing(kreuzbergListing).greeting).toEqual({
-      id: "greeting",
-      status: "info",
-      text: 'The letter will greet "Sehr geehrte Frau Weber".',
-    });
-    expect(analyseListing(sparseListing).greeting).toBeUndefined();
+describe("analyseListing: shape", () => {
+  it("has the kind, the price and the notes, and nothing about the greeting", () => {
+    expect(Object.keys(analyseListing(kreuzbergListing)).sort()).toEqual([
+      "kind",
+      "notes",
+      "price",
+    ]);
   });
 });
 

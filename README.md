@@ -24,7 +24,7 @@ call to Claude, made with your own API key when you ask for a letter.
    against three times the Kaltmiete, pets, WBS and the move-in date. It
    informs; it never blocks. An "About this listing" card says what kind
    of rental the page describes, how the Kaltmiete sits against the offers
-   the page compares it with, how the letter will greet the contact, and
+   the page compares it with, and
    what is worth a second look. It informs; you decide. You pick a tone
    and one or two highlights.
 3. **Letter ready.** A German letter of at most 180 words, checked by a
