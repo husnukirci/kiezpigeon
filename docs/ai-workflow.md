@@ -181,6 +181,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P13 | Scanner: the English fixture's feature tag "Suitable for shared flats" tripped the WG-room flag through the adapter test; the hint tests alone had not seen it. | Added as a negation, test first.
 - P13 | Plan wrong: it said the complete fixture shows four lines; its contact is a company, so there is no greeting line. | The Phase 13 acceptance is written from what the fixtures give.
 - P13 | Chromium check: the kind line opened with a lowercase "offered privately." on the sparse page, which no unit test had asked for. | Test first, then the rule capitalises the line.
+- P13 | Branch review (a fresh reviewer, read-only, with a shell) probed the scanner with everyday Berlin phrasings and found it turning "unbefristet", "Kein WBS erforderlich" and "Untervermietung nicht gestattet" into befristet, WBS and Untermiete, and three notes firing on documents before a viewing, applicants from abroad and viewing requests. My own tests had only positive phrasings and the fixtures' one negation. | One fix pass, each finding reproduced by a failing test first; the negation list is now kept with a test per phrasing, and ADR 14 no longer claims the scanner can only under-flag.
 
 ## Per-phase narrative
 
