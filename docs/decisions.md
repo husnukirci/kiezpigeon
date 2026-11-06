@@ -416,6 +416,16 @@ the page only while a request is waiting. It does not read the page's JSON to
 get ahead of the drawing, and does not poll. The running probe is the late
 title run in `e2e/never-submit.spec.ts`.
 
+**Amendment (2026-11-06): fields for the analysis card.** `Listing` gains
+five optional fields, each named in `missing` when a page lacks it:
+`flatType` as the page states it, `kautionCents` from the Kosten row,
+`offeredBy` from ImmoScout24's "von privat" or "Gewerblich" marker,
+`priceComparison` from the band ImmoScout24 prints as "Ø Angebotspreis" with
+its sample size and radius, and `hints`, the flags `rentalHints` scans from
+the description, the "Sonstiges" row and the condition row. The analysis
+rule reads only the flags, never the page's text. The running probes are the
+new fields in each adapter's fixture tests.
+
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
 **Status.** Accepted.
@@ -738,3 +748,37 @@ the file's shape is unchanged; a build before this amendment refuses a file
 holding a filled record the way it refuses any unknown value, all or nothing,
 and every file written before it still imports. The running probes are the
 `filled` tests in `src/rules/tracker.test.ts` and `src/rules/profile.test.ts`.
+
+## ADR 14: Listing analysis reads the page only
+
+**Status.** Accepted (Phase 13).
+
+**Context.** Before asking for a letter, the user wants to know what they
+are looking at: what kind of rental it is, how the Kaltmiete sits against
+the neighbourhood, and whether anything on the page deserves a second look.
+Any price reference beyond the page would need data the extension does not
+have: a bundled rent table ages and needs an address and a location class;
+asking Claude adds a network call and a guess. Any verdict would read as a
+judgement the user did not ask for.
+
+**Decision.** `analyseListing` in `src/rules/analysis.ts` is a pure rule
+over the `Listing` the adapter already handed over. The only price
+reference is the band the page itself prints (ImmoScout24's
+"Ø Angebotspreis"); a page without one gets "This page shows no
+comparison". The kind line is built from positive signals only; when the
+description could not be read it says so. "Worth a second look" lists what
+the page says and why it matters, one line each, without the words scam,
+fraud or warning and without a score. Nothing is stored and nothing is sent.
+The card sits on the Listing detected screen and never touches the letter
+flow.
+
+Rejected: a bundled per-district rent table (stale within a year, needs an
+address to be fair); asking Claude for a price estimate (a second network
+destination and an estimate presented as a fact); a scam score or traffic
+light (colour-only status, and a verdict).
+
+**Consequences.** Vonovia and Deutsche Wohnen show no price comparison. A
+changed page block degrades to an `unknown` line, never to a wrong claim.
+A keyword the scanner does not know stays unflagged, so the list can only
+ever be too short, which is the honest direction. The running probes are
+`src/rules/analysis.test.ts` and `src/rules/rentalHints.test.ts`.
