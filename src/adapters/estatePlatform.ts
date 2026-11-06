@@ -3,7 +3,8 @@
 // parses the text beside them. The JSON the page also carries is never read
 // (ADR 8). A site differs only by its id, its name and its listing address.
 import { describeFields } from "../fill/describe";
-import type { Feature, Listing } from "../rules/types";
+import type { Feature, Listing, RentalHints } from "../rules/types";
+import { rentalHints } from "../rules/rentalHints";
 import { assembleListing } from "./listing";
 import {
   parseAvailability,
@@ -47,6 +48,28 @@ function row(document: Document, label: string): string | undefined {
     return clean(name.nextElementSibling?.textContent);
   }
   return undefined;
+}
+
+/**
+ * The text of the content card headed `label` (`Beschreibung`, `Sonstige
+ * Angaben`): the `.rte` block next to its headline.
+ */
+function cardText(document: Document, label: string): string | undefined {
+  for (const headline of document.querySelectorAll("h2.headline")) {
+    if (clean(headline.textContent) !== label) continue;
+    const card = headline.closest(".content");
+    return clean(card?.querySelector(".rte")?.textContent);
+  }
+  return undefined;
+}
+
+/** Nothing without the Beschreibung card: the kind is then unknown. */
+function hintsOf(document: Document): RentalHints | undefined {
+  const description = cardText(document, "Beschreibung");
+  if (description === undefined) return undefined;
+  return rentalHints(
+    [description, cardText(document, "Sonstige Angaben")].join("\n"),
+  );
 }
 
 /** `Zimmer` under `3`, in the key figures above the lists. */
@@ -139,6 +162,10 @@ function readListing(document: Document, url: string): Listing | undefined {
       textOf(document, ".teaser-m-person .headline"),
       parseContactName,
     ),
+    flatType: row(document, "Art"),
+    kautionCents: map(row(document, "Kaution"), parseEuroText),
+    // The platform prints no offerer marker and no price comparison.
+    hints: hintsOf(document),
   });
 }
 

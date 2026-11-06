@@ -2,6 +2,7 @@
 // exact Listing the adapter returns for it.
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
+import { NO_HINTS } from "../../rules/rentalHints";
 import { deutscheWohnen } from "./deutscheWohnen";
 
 const SEARCH = "https://www.deutsche-wohnen.com/mieten/zuhause-mieten";
@@ -77,15 +78,11 @@ describe("deutscheWohnen.readListing", () => {
         "Mehrfamilienhaus",
         "Badewanne eingemauert",
       ],
-      missing: [
-        "petPolicy",
-        "wbsRequired",
-        "flatType",
-        "kautionCents",
-        "offeredBy",
-        "priceComparison",
-        "hints",
-      ],
+      flatType: "Etagenwohnung",
+      kautionCents: 262962,
+      // One plain sentence of description: nothing special in it.
+      hints: NO_HINTS,
+      missing: ["petPolicy", "wbsRequired", "offeredBy", "priceComparison"],
     });
   });
 
@@ -103,11 +100,8 @@ describe("deutscheWohnen.readListing", () => {
       "petPolicy",
       "wbsRequired",
       "contactPerson",
-      "flatType",
-      "kautionCents",
       "offeredBy",
       "priceComparison",
-      "hints",
     ]);
     expect(listing?.address).toBe("10999 Berlin");
     expect(listing?.kaltmieteCents).toBe(87654);
