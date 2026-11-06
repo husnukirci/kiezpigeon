@@ -119,9 +119,63 @@ export interface Listing {
   petPolicy?: PetPolicy;
   wbsRequired?: boolean;
   contactPerson?: ContactPerson;
+  /** The flat type as the page states it: `Etagenwohnung`, `Dachgeschoss`. */
+  flatType?: string;
+  /** The Kaution row; on ImmoScout24 the row also holds cooperative shares. */
+  kautionCents?: Cents;
+  /** ImmoScout24's "von privat" or "Gewerblich" marker beside the contact. */
+  offeredBy?: "private" | "commercial";
+  /** The price band the page prints for nearby offers (ImmoScout24 only). */
+  priceComparison?: PriceComparison;
+  /** Flags scanned from the page's description text; absent when none was found. */
+  hints?: RentalHints;
   features: Feature[];
   /** Keys of the fields above the page did not show, e.g. `kaltmieteCents`. */
   missing: string[];
+}
+
+/** What a listing's free text says about the kind of rental (Phase 13). */
+export interface RentalHints {
+  sublet: boolean;
+  interim: boolean;
+  fixedTerm: boolean;
+  furnished: boolean;
+  sharedFlat: boolean;
+  cooperative: boolean;
+  wbs: boolean;
+  firstOccupancy: boolean;
+  staffel: boolean;
+  index: boolean;
+  commission: boolean;
+  noViewing: boolean;
+  paymentFirst: boolean;
+  abroad: boolean;
+}
+
+/** "Ø Angebotspreis" from `low` to `high` over `sampleSize` offers within `radiusM`. */
+export interface PriceComparison {
+  lowCentsPerM2: Cents;
+  highCentsPerM2: Cents;
+  radiusM: number;
+  sampleSize: number;
+}
+
+export type AnalysisStatus = "info" | "note" | "unknown";
+
+export interface AnalysisLine {
+  id: string;
+  status: AnalysisStatus;
+  text: string;
+}
+
+/** The "About this listing" card's lines, from the page alone. */
+export interface Analysis {
+  kind: AnalysisLine;
+  price: AnalysisLine;
+  /** Absent without a named contact person. */
+  greeting?: AnalysisLine;
+  /** "Worth a second look"; empty means nothing stood out. */
+  notes: AnalysisLine[];
 }
 
 /** The models a letter can be written with (ADR 4). */

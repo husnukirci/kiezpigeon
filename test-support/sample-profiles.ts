@@ -1,5 +1,6 @@
 // Invented people and an invented listing. Every test and screenshot uses
 // these; no value here belongs to a real person, flat or landlord.
+import { NO_HINTS } from "../src/rules/rentalHints";
 import type { Listing, Profile } from "../src/rules/types";
 
 /** Two earners, a dog, everything ready. The strong case. */
@@ -98,6 +99,16 @@ export const kreuzbergListing: Listing = {
   petPolicy: "by_arrangement",
   wbsRequired: false,
   contactPerson: { salutation: "Frau", lastName: "Weber" },
+  flatType: "Etagenwohnung",
+  kautionCents: 354000,
+  offeredBy: "commercial",
+  priceComparison: {
+    lowCentsPerM2: 1400,
+    highCentsPerM2: 2100,
+    radiusM: 1000,
+    sampleSize: 500,
+  },
+  hints: NO_HINTS,
   features: ["Balkon", "Altbau", "Einbauküche"],
   missing: [],
 };
@@ -113,5 +124,10 @@ export const sparseListing: Listing = {
     "petPolicy",
     "wbsRequired",
     "contactPerson",
+    "flatType",
+    "kautionCents",
+    "offeredBy",
+    "priceComparison",
+    "hints",
   ],
 };

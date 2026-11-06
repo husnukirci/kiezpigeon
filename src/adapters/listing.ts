@@ -18,6 +18,11 @@ export const LISTING_FIELDS = [
   "petPolicy",
   "wbsRequired",
   "contactPerson",
+  "flatType",
+  "kautionCents",
+  "offeredBy",
+  "priceComparison",
+  "hints",
 ] as const satisfies readonly (keyof Listing)[];
 
 export type ListingFields = Partial<

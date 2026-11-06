@@ -63,6 +63,11 @@ describe("immoscout24.readListing", () => {
         "yearBuilt",
         "petPolicy",
         "wbsRequired",
+        "flatType",
+        "kautionCents",
+        "offeredBy",
+        "priceComparison",
+        "hints",
       ],
     });
   });
@@ -88,7 +93,15 @@ describe("immoscout24.readListing", () => {
       petPolicy: "allowed",
       features: ["Balkon", "Keller", "Personenaufzug", "Stufenloser Zugang"],
       // Neither saved page showed a WBS field; a company gets no name.
-      missing: ["wbsRequired", "contactPerson"],
+      missing: [
+        "wbsRequired",
+        "contactPerson",
+        "flatType",
+        "kautionCents",
+        "offeredBy",
+        "priceComparison",
+        "hints",
+      ],
     });
   });
 

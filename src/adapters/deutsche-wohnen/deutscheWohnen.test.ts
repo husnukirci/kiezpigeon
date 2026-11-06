@@ -77,7 +77,15 @@ describe("deutscheWohnen.readListing", () => {
         "Mehrfamilienhaus",
         "Badewanne eingemauert",
       ],
-      missing: ["petPolicy", "wbsRequired"],
+      missing: [
+        "petPolicy",
+        "wbsRequired",
+        "flatType",
+        "kautionCents",
+        "offeredBy",
+        "priceComparison",
+        "hints",
+      ],
     });
   });
 
@@ -95,6 +103,11 @@ describe("deutscheWohnen.readListing", () => {
       "petPolicy",
       "wbsRequired",
       "contactPerson",
+      "flatType",
+      "kautionCents",
+      "offeredBy",
+      "priceComparison",
+      "hints",
     ]);
     expect(listing?.address).toBe("10999 Berlin");
     expect(listing?.kaltmieteCents).toBe(87654);
