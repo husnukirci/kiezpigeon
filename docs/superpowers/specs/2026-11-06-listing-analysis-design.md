@@ -66,10 +66,12 @@ Four lines or groups, in this order:
    "offered by a company") are shown on the same line when read. When the
    page's description could not be read, the line says so instead:
    "I could not read this page's description." (status `unknown`).
-2. **Price.** "Kaltmiete 19,99 €/m². Nearby offers average 9,70 €/m²
-   (ImmoScout24, 500 flats within 1000 m), so this is well above." The
-   verdict word comes from the rule's thresholds (below). On a page without
-   a comparison: "Kaltmiete 12,60 €/m². This page shows no comparison."
+2. **Price.** "Kaltmiete 19,99 €/m². Nearby offers mostly run 9,70 to
+   17,90 €/m² (500 flats within 1000 m on this site): above the usual
+   range." ImmoScout24's block prints a band labelled "Ø Angebotspreis",
+   not one average (checked in the fixture), so the verdict is against
+   that band, from the rule's thresholds (below). On a page without a
+   comparison: "Kaltmiete 12,60 €/m². This page shows no comparison."
    English ImmoScout24 pages print no comparison (checked in the fixture).
 3. **Greeting.** Shown whenever a contact person was read: "The letter
    will greet 'Sehr geehrter Herr Muster'." Display only (see Decisions
@@ -133,11 +135,11 @@ Provision" do not set `commission`; "nicht möbliert" does not set
 `furnished`. The keyword lists live in the rule file with a comment per
 entry saying which fixture or probe showed it.
 
-Price verdict thresholds, on Kaltmiete per m² against the page's average:
-well above at +25 % and more, above from +10 %, around within ±10 %,
-below from −10 %, well below at −25 % and less. "Well below" also adds the
-"much cheaper" note. Thresholds are constants in the rule, tested at the
-boundaries. (My call; easy to retune.)
+Price verdict, on Kaltmiete per m² against the page's band: "well above"
+at 25 % and more over the band's top, "above" over the top, "within" in
+the band, "below" under the bottom, "well below" at 25 % and more under
+the bottom. "Well below" also adds the "much cheaper" note. Thresholds are
+constants in the rule, tested at the boundaries. (My call; easy to retune.)
 
 Deposit note at `kautionCents > 3 × kaltmieteCents`. Nebenkosten note at
 `nebenkostenCents > kaltmieteCents / 2` (my call).
@@ -148,16 +150,18 @@ Deposit note at `kautionCents > 3 × kaltmieteCents`. Nebenkosten note at
 
 - `flatType?: string` as the page states it (Etagenwohnung, Dachgeschoss).
 - `kautionCents?: Cents`.
-- `priceComparison?: { averageCentsPerM2: Cents; radiusM: number; sampleSize: number }`
-  from ImmoScout24's "Preis- und Lageinformationen" block, which every
-  probe page and fixture shows. Vonovia and Deutsche Wohnen print none.
+- `priceComparison?: { lowCentsPerM2: Cents; highCentsPerM2: Cents; radiusM: number; sampleSize: number }`
+  from ImmoScout24's "Preis- und Lageinformationen" block: the
+  "Ø Angebotspreis" band and the intro sentence's two numbers. Printed
+  on German exposés; empty on the sparse fixture and on `/en/`. Vonovia
+  and Deutsche Wohnen print none.
 - `offeredBy?: "private" | "commercial"`, from ImmoScout24's marker beside
   the contact: "von privat" in the private-offer logo (shown in
   `listing-missing-fields.html`) or "Gewerblich" in the verified box
   (`listing-complete.html`). It feeds the kind line only.
 - `hints?: RentalHints` from `rentalHints` over the description, the
   "Sonstiges" row and the boolean criteria tags, so the analysis rule
-  never sees raw text. Absent, with `description` in `missing`, when the
+  never sees raw text. Absent, with `hints` in `missing`, when the
   page's description could not be found; the kind line is then `unknown`.
   The typed-facts listing of the unknown-site flow never has it.
 
