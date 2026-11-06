@@ -97,6 +97,28 @@ describe("analyseListing: kind", () => {
         wbsRequired: true,
       }).kind.text,
     ).toBe("WBS required.");
+    // A WBS mentioned without being required gets a check, not a claim.
+    expect(
+      analyseListing({
+        ...kreuzbergListing,
+        flatType: undefined,
+        offeredBy: undefined,
+        wbsRequired: undefined,
+        hints: { ...NO_HINTS, wbsMentioned: true },
+      }).kind.text,
+    ).toBe(
+      `${NO_KIND} The text mentions WBS without saying it is required. Check what it asks for.`,
+    );
+    // The page's own WBS row says no: the mention adds nothing.
+    expect(
+      analyseListing({
+        ...kreuzbergListing,
+        flatType: undefined,
+        offeredBy: undefined,
+        wbsRequired: false,
+        hints: { ...NO_HINTS, wbsMentioned: true },
+      }).kind.text,
+    ).toBe(NO_KIND);
     // The page's own WBS row outranks a scanned mention of WBS.
     expect(
       analyseListing({
