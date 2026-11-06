@@ -2,6 +2,7 @@
 // exact Listing the adapter returns for it.
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
+import { NO_HINTS } from "../../rules/rentalHints";
 import { vonovia } from "./vonovia";
 
 const URL =
@@ -64,7 +65,11 @@ describe("vonovia.readListing", () => {
         "Mehrfamilienhaus",
         "Badewanne eingemauert",
       ],
-      missing: ["petPolicy", "wbsRequired"],
+      flatType: "Etagenwohnung",
+      kautionCents: 296295,
+      // One plain sentence of description: nothing special in it.
+      hints: NO_HINTS,
+      missing: ["petPolicy", "wbsRequired", "offeredBy", "priceComparison"],
     });
   });
 
@@ -82,6 +87,8 @@ describe("vonovia.readListing", () => {
       "petPolicy",
       "wbsRequired",
       "contactPerson",
+      "offeredBy",
+      "priceComparison",
     ]);
     expect(listing?.address).toBe("10999 Berlin");
     expect(listing?.kaltmieteCents).toBe(98765);

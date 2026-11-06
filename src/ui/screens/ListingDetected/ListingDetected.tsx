@@ -1,5 +1,7 @@
 // "Listing detected" (design system screen 2): the badge, title and meta
-// line, three stat tiles, the fit check, tone and up to two highlights.
+// line, three stat tiles, what the page says about the listing (not for
+// typed facts, which have no page text), the fit check, tone and up to two
+// highlights.
 // "Write my letter" hands the tone and highlights to the caller; nothing is
 // sent before that click.
 import { useId, useState } from "react";
@@ -28,6 +30,7 @@ import { DetectedBadge } from "../../components/StatusPill/StatusPill";
 import { cx } from "../../cx";
 import { TONES } from "../profileForm/ProfileSections";
 import screen from "../Screen.module.css";
+import { AnalysisCard } from "./AnalysisCard";
 import styles from "./ListingDetected.module.css";
 
 const MAX_HIGHLIGHTS = 2;
@@ -90,6 +93,8 @@ export function ListingDetected({
           }
         />
       </StatRow>
+
+      {!onEditFacts && <AnalysisCard listing={listing} />}
 
       <FitCard lines={checkFit(profile, listing)} />
 

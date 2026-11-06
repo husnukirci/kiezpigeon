@@ -3,7 +3,14 @@
 // text inside them, German or, on the site's `/en/` address, English. The
 // page's tracking data and inline scripts are never read.
 import { describeFields } from "../../fill/describe";
-import type { Feature, Listing, PetPolicy } from "../../rules/types";
+import { rentalHints } from "../../rules/rentalHints";
+import type {
+  Feature,
+  Listing,
+  PetPolicy,
+  PriceComparison,
+  RentalHints,
+} from "../../rules/types";
 import { assembleListing, type ListingFields } from "../listing";
 import {
   parseContactName,
@@ -108,6 +115,93 @@ function rowByLabel(document: Document, label: RegExp): string | undefined {
   return undefined;
 }
 
+/**
+ * "von privat" in the private-offer logo (the sparse fixture) or
+ * "Gewerblich" / "Commercial" in the verified box (the complete fixtures).
+ */
+function offeredByOf(document: Document): Listing["offeredBy"] {
+  const privately = textOf(document, '[class*="private-offer-logo-content"]');
+  if (privately !== undefined && /privat|private/i.test(privately)) {
+    return "private";
+  }
+  const verified = textOf(document, ".verifiedBox");
+  if (verified !== undefined && /gewerblich|commercial/i.test(verified)) {
+    return "commercial";
+  }
+  return undefined;
+}
+
+/**
+ * The "Preis- und Lageinformationen" block: "Preis der Immobilie im
+ * Vergleich zu 500 Immobilien im Umkreis von 1000m." and the first legend
+ * under the bar, the "Ø Angebotspreis" band. All four numbers or nothing;
+ * the sparse fixture and the English page have an empty block.
+ */
+function priceComparisonOf(document: Document): PriceComparison | undefined {
+  const intro = textOf(document, '[data-testid="quickcheck-intro"]');
+  const sampleSize = map(/zu (\d+) /.exec(intro ?? "")?.[1], Number);
+  const radiusM = map(/von (\d+) ?m\b/.exec(intro ?? "")?.[1], Number);
+  // The band is the legend whose block is labelled "Ø Angebotspreis"; the
+  // other legend holds the scale's ends, which are not the band.
+  const legend = Array.from(
+    document.querySelectorAll(
+      '[data-testid="quickcheck-bar"] [data-testid="legend-item"]',
+    ),
+  ).find((item) =>
+    Array.from(item.parentElement?.children ?? []).some(
+      (sibling) =>
+        sibling.tagName === "SPAN" && /Angebotspreis/.test(sibling.textContent),
+    ),
+  );
+  const low = map(
+    legend?.querySelector('[data-testid="left-value"]')?.textContent,
+    parseEuroText,
+  );
+  const high = map(
+    legend?.querySelector('[data-testid="right-value"]')?.textContent,
+    parseEuroText,
+  );
+  if (
+    sampleSize === undefined ||
+    radiusM === undefined ||
+    low === undefined ||
+    high === undefined
+  ) {
+    return undefined;
+  }
+  return { lowCentsPerM2: low, highCentsPerM2: high, radiusM, sampleSize };
+}
+
+/**
+ * The description block with the "Sonstiges" and condition rows and the
+ * feature tags, scanned for what kind of rental it is. Nothing without the
+ * description block: the kind is then unknown, not "nothing special".
+ */
+function hintsOf(
+  document: Document,
+  title: string | undefined,
+): RentalHints | undefined {
+  const description = textOf(document, ".expose-description-wrapper");
+  if (description === undefined) return undefined;
+  const tags = Array.from(
+    document.querySelectorAll('#is24-boolean-criteria [data-qa$="-label"]'),
+    (tag) => tag.textContent,
+  );
+  return rentalHints(
+    [
+      title,
+      description,
+      firstText(document, ".is24qa-sonstiges"),
+      firstText(
+        document,
+        ".is24qa-objektzustand",
+        ".is24qa-condition-of-the-property",
+      ),
+      ...tags,
+    ].join("\n"),
+  );
+}
+
 /** The feature tags under the key numbers: `Balkon/ Terrasse` → `Balkon`. */
 function featuresOf(document: Document, english: boolean): Feature[] {
   const features: Feature[] = [];
@@ -198,6 +292,21 @@ function readListing(document: Document, url: string): Listing | undefined {
       textOf(document, '[data-qa="contactName"]'),
       parseContactName,
     ),
+    // The `/en/` page keeps the German class on the type row.
+    flatType: firstText(document, ".is24qa-typ", ".is24qa-type"),
+    // "Kaution o. Genossenschaftsanteile": the row keeps the German number
+    // format on `/en/` too, and the sparse fixture reads a bare "1000".
+    kautionCents: map(
+      firstText(
+        document,
+        ".is24qa-kaution-o-genossenschaftsanteile",
+        ".is24qa-deposit",
+      ) ?? rowByLabel(document, /kaution|deposit/i),
+      parseEuroText,
+    ),
+    offeredBy: offeredByOf(document),
+    priceComparison: priceComparisonOf(document),
+    hints: hintsOf(document, title),
   };
 
   return assembleListing(url, featuresOf(document, english), found);

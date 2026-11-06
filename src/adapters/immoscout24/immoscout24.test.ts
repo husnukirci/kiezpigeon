@@ -7,6 +7,7 @@ import {
   soloStudent,
 } from "../../../test-support/sample-profiles";
 import { mapFields } from "../../rules/fieldMatch";
+import { NO_HINTS } from "../../rules/rentalHints";
 import { immoscout24 } from "./immoscout24";
 
 const URL = "https://www.immobilienscout24.de/expose/100000003";
@@ -56,6 +57,11 @@ describe("immoscout24.readListing", () => {
       rooms: 2,
       // Near the end of the page: proves the whole fixture parsed.
       contactPerson: { firstName: "Lena", lastName: "Beispiel" },
+      // The Kosten row reads a bare "1000"; the contact is "von privat";
+      // the title says Teilmöbliert; the price block is empty on this page.
+      kautionCents: 100000,
+      offeredBy: "private",
+      hints: { ...NO_HINTS, furnished: true },
       features: [],
       missing: [
         "floor",
@@ -63,6 +69,8 @@ describe("immoscout24.readListing", () => {
         "yearBuilt",
         "petPolicy",
         "wbsRequired",
+        "flatType",
+        "priceComparison",
       ],
     });
   });
@@ -86,6 +94,18 @@ describe("immoscout24.readListing", () => {
       availability: { kind: "date", date: "2027-02-01" },
       yearBuilt: 2016,
       petPolicy: "allowed",
+      flatType: "Etagenwohnung",
+      kautionCents: 308487,
+      offeredBy: "commercial",
+      // "Ø Angebotspreis" 9,70 to 17,90 €/m² over 500 flats within 1000 m.
+      priceComparison: {
+        lowCentsPerM2: 970,
+        highCentsPerM2: 1790,
+        radiusM: 1000,
+        sampleSize: 500,
+      },
+      // Its text rules a Provision out under § 2 WoVermG: no hint.
+      hints: NO_HINTS,
       features: ["Balkon", "Keller", "Personenaufzug", "Stufenloser Zugang"],
       // Neither saved page showed a WBS field; a company gets no name.
       missing: ["wbsRequired", "contactPerson"],
@@ -102,6 +122,32 @@ describe("immoscout24.readListing", () => {
       URL,
     );
     expect(now).toEqual({ ...complete, availability: { kind: "immediately" } });
+  });
+
+  it("reads no hints when the description block is gone", () => {
+    const page = loadFixture("immoscout24", "listing-complete.html");
+    page.querySelector(".expose-description-wrapper")?.remove();
+    const listing = immoscout24.readListing(page, URL);
+    expect(listing?.hints).toBeUndefined();
+    expect(listing?.missing).toContain("hints");
+  });
+
+  it("leaves the price band out when one of its numbers is missing", () => {
+    const page = loadFixture("immoscout24", "listing-complete.html");
+    page.querySelector('[data-testid="quickcheck-intro"]')?.remove();
+    const listing = immoscout24.readListing(page, URL);
+    expect(listing?.priceComparison).toBeUndefined();
+    expect(listing?.missing).toContain("priceComparison");
+  });
+
+  it("leaves the price band out when its legend is not the one under Ø Angebotspreis", () => {
+    const page = loadFixture("immoscout24", "listing-complete.html");
+    for (const label of page.querySelectorAll(
+      '[data-testid="quickcheck-bar"] span',
+    )) {
+      if (/Angebotspreis/.test(label.textContent)) label.remove();
+    }
+    expect(immoscout24.readListing(page, URL)?.priceComparison).toBeUndefined();
   });
 
   it("says a search results page is not a listing", () => {
@@ -257,12 +303,14 @@ describe("immoscout24.readListing on the English page", () => {
       GERMAN_URL,
     );
     const english = immoscout24.readListing(englishPage(), ENGLISH_URL);
-    // The site translates the landlord's title by machine, so the title
-    // and the address of the page are what legitimately differ.
-    expect({ ...english, url: "", title: "" }).toEqual({
+    // The site translates the landlord's title and the flat type by
+    // machine, so those and the address of the page are what legitimately
+    // differ.
+    expect({ ...english, url: "", title: "", flatType: "" }).toEqual({
       ...german,
       url: "",
       title: "",
+      flatType: "",
     });
     expect(english?.url).toBe(ENGLISH_URL);
     expect(english?.title).toBeTruthy();
@@ -278,7 +326,16 @@ describe("immoscout24.readListing on the English page", () => {
       floor: 5,
       availability: { kind: "date", date: "2025-11-01" },
       petPolicy: "not_allowed",
+      flatType: "Other",
+      // The Kaution row keeps the German number format on /en/.
+      kautionCents: 259500,
+      offeredBy: "commercial",
+      // From the condition row "First-time occupancy after refurbishment".
+      hints: { ...NO_HINTS, firstOccupancy: true },
     });
+    expect(
+      immoscout24.readListing(englishPage(), ENGLISH_URL)?.missing,
+    ).toContain("priceComparison");
   });
 
   it("names features in German, so a letter stays German", () => {

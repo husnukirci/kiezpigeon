@@ -42,6 +42,11 @@ const FACT_FIELDS = [
   "petPolicy",
   "wbsRequired",
   "contactPerson",
+  "flatType",
+  "kautionCents",
+  "offeredBy",
+  "priceComparison",
+  "hints",
 ] as const;
 
 /** `Balkon, Altbau;Aufzug` → three features; blanks and repeats dropped. */

@@ -27,6 +27,13 @@ export function formatEuro(cents: Cents): string {
   return `${sign}${euros}${decimals} €`;
 }
 
+/** `1999` → `19,99 €/m²`, always two decimals, for the price per m². */
+export function formatEuroPerM2(centsPerM2: Cents): string {
+  const euros = Math.floor(centsPerM2 / 100);
+  const rest = String(centsPerM2 % 100).padStart(2, "0");
+  return `${groupThousands(String(euros))},${rest} €/m²`;
+}
+
 /** `62` → `62 m²`, `62.5` → `62,5 m²`. */
 export function formatArea(squareMetres: number): string {
   return `${formatNumber(squareMetres, 1)} m²`;

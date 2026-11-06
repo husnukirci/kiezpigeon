@@ -914,3 +914,61 @@ never colour alone; stats come from the rules function; `sentAt` is never
 set by anything but the user's word.
 
 **PR:** `feat(tracker): keep every filled letter as a pigeon`
+
+---
+
+## Phase 13: About this listing
+
+**Context for a fresh session:** v1.4.0 is released (Phases 0 to 12). The
+Listing detected screen shows the rent, size and rooms and the fit check,
+and nothing about what kind of rental the page describes, how its price
+sits, or whether anything on it deserves a second look. The design is in
+`docs/superpowers/specs/2026-11-06-listing-analysis-design.md` and the
+plan in `docs/superpowers/plans/2026-11-06-listing-analysis.md`.
+
+**Objective:** an "About this listing" card, from the page alone, that
+informs and never judges: the kind of rental, the Kaltmiete per m² against
+the band the page itself prints, how the letter will greet the contact,
+and what is worth a second look.
+
+**In scope**
+
+1. Rules (strict tier). `Listing` gains `flatType`, `kautionCents`,
+   `offeredBy`, `priceComparison` and `hints`, all optional and named in
+   `missing`. `rentalHints` scans page text into flags; phrases that rule
+   a thing out are removed first. `analyseListing` builds the lines with
+   exact copy: the kind from positive signals only, `unknown` when the
+   description could not be read; the price against the band, "well
+   above" and "well below" as notes; the greeting from the letter's own
+   salutation; the notes in a fixed order (Kaution over three Kaltmieten
+   unless a Genossenschaft, Nebenkosten over half the Kaltmiete, a
+   Provision asked, no viewing, payment first, a landlord abroad, much
+   cheaper). ADR 14 and the ADR 8 amendment in the same commit.
+2. ImmoScout24 (fixture tier): the type and Kaution rows, the "von privat"
+   or "Gewerblich" marker, the "Ø Angebotspreis" band with its sample size
+   and radius, all four numbers or nothing, and the hints from the title,
+   the description, the Sonstiges and condition rows and the feature tags.
+3. Vonovia and Deutsche Wohnen: the Art and Kaution rows and the title,
+   Beschreibung and Sonstige Angaben cards. No offerer, no band.
+4. The card, between the stat tiles and the fit check, hidden on the
+   typed-facts flow. Plain lines carry their label word, notes the
+   exclamation, nothing found the tick. Checked in Chromium on the
+   complete and the sparse ImmoScout24 fixture.
+5. README, PLAN.md, this spec, the friction log, release 1.5.0.
+
+**Out of scope:** a Frau/Herr switch for the greeting (display only),
+bundled market data, storing the analysis, detecting a send.
+
+**Acceptance:** on the complete ImmoScout24 fixture the card reads the kind
+and price lines and "Nothing on the page stood out." (its contact is a
+company, so no greeting); on the sparse fixture it reads "Möbliert,
+offered privately." from its title, "This page shows no comparison" and
+the greeting "Guten Tag Lena Beispiel"; a Kaution above three Kaltmieten
+adds the deposit note.
+
+**Phase review checklist:** no copy claims or judges, and the words scam,
+fraud, Betrug and warning appear nowhere; status is never colour alone;
+the letter flow is untouched; rules stay pure; `missing` names every
+field a page lacks.
+
+**PR:** `feat(listing): the about-this-listing card`

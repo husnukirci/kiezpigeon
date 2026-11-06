@@ -4,6 +4,7 @@ import {
   formatAvailability,
   formatDate,
   formatEuro,
+  formatEuroPerM2,
   formatFloor,
   formatNumber,
 } from "./format";
@@ -78,5 +79,13 @@ describe("formatAvailability", () => {
     expect(formatAvailability({ kind: "by_arrangement" })).toBe(
       "Free by arrangement",
     );
+  });
+});
+
+describe("formatEuroPerM2", () => {
+  it("formats cents per square metre in German style", () => {
+    expect(formatEuroPerM2(1999)).toBe("19,99 €/m²");
+    expect(formatEuroPerM2(970)).toBe("9,70 €/m²");
+    expect(formatEuroPerM2(1200)).toBe("12,00 €/m²");
   });
 });

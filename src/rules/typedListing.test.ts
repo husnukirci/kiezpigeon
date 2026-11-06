@@ -67,6 +67,11 @@ describe("listingFromFacts", () => {
           "yearBuilt",
           "petPolicy",
           "wbsRequired",
+          "flatType",
+          "kautionCents",
+          "offeredBy",
+          "priceComparison",
+          "hints",
         ],
       },
     });
@@ -92,6 +97,11 @@ describe("listingFromFacts", () => {
         "petPolicy",
         "wbsRequired",
         "contactPerson",
+        "flatType",
+        "kautionCents",
+        "offeredBy",
+        "priceComparison",
+        "hints",
       ],
     });
   });
