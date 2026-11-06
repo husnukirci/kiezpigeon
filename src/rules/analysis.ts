@@ -70,11 +70,12 @@ function kindLine(listing: Listing): AnalysisLine {
   const facts = [flatType, ...parts, offered].filter(
     (part): part is string => part !== undefined,
   );
+  const sentence = facts.join(", ").replace(/^./, (c) => c.toUpperCase());
   const text =
     parts.length > 0
-      ? `${facts.join(", ")}.`
+      ? `${sentence}.`
       : facts.length > 0
-        ? `${facts.join(", ")}. ${NO_KIND}`
+        ? `${sentence}. ${NO_KIND}`
         : NO_KIND;
   return { id: "kind", status: "info", text };
 }

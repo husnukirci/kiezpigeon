@@ -51,6 +51,14 @@ describe("analyseListing: kind", () => {
     expect(analyseListing(kreuzbergListing).kind.text).toBe(
       `Etagenwohnung, offered by a company. ${NO_KIND}`,
     );
+    // Without a flat type the offerer opens the line, as a sentence.
+    expect(
+      analyseListing({
+        ...kreuzbergListing,
+        flatType: undefined,
+        offeredBy: "private",
+      }).kind.text,
+    ).toBe(`Offered privately. ${NO_KIND}`);
   });
 
   it("lists the forms the page names, in a fixed order", () => {

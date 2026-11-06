@@ -14,6 +14,58 @@ function chip(name: string): HTMLElement {
 }
 
 describe("ListingDetected", () => {
+  it("tells what the listing is, how its price sits and what to look at twice", () => {
+    render(
+      <ListingDetected
+        profile={coupleWithDog}
+        siteName="ImmoScout24"
+        listing={{ ...kreuzbergListing, kautionCents: 450000 }}
+        onWrite={vi.fn()}
+      />,
+    );
+    const card = screen.getByRole("region", { name: "About this listing" });
+    expect(card.textContent).toContain("Etagenwohnung, offered by a company.");
+    expect(card.textContent).toContain("within the usual range");
+    expect(card.textContent).toContain(
+      'The letter will greet "Sehr geehrte Frau Weber".',
+    );
+    expect(card.textContent).toContain("more than three Kaltmieten");
+    expect(card.textContent).not.toContain("Nothing on the page stood out");
+    // Still exactly one teal button on the screen.
+    expect(
+      screen
+        .getAllByRole("button")
+        .filter((b) => b.className.includes("primary")),
+    ).toHaveLength(1);
+  });
+
+  it("says nothing stood out on a plain listing, and shows no card for typed facts", () => {
+    const { unmount } = render(
+      <ListingDetected
+        profile={coupleWithDog}
+        siteName="ImmoScout24"
+        listing={kreuzbergListing}
+        onWrite={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("region", { name: "About this listing" }).textContent,
+    ).toContain("Nothing on the page stood out.");
+    unmount();
+    render(
+      <ListingDetected
+        profile={coupleWithDog}
+        siteName="Example"
+        listing={sparseListing}
+        onEditFacts={vi.fn()}
+        onWrite={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("region", { name: "About this listing" }),
+    ).toBeNull();
+  });
+
   it("shows the badge, numbers, fit lines, tone and highlights", () => {
     render(
       <ListingDetected

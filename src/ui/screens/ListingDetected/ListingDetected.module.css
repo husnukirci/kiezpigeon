@@ -17,6 +17,15 @@
   color: var(--ink);
 }
 
+.marker {
+  /* The label word that marks a plain line, where a note has its icon. */
+  --marker-width: 64px;
+
+  flex-shrink: 0;
+  min-width: var(--marker-width);
+  color: var(--ink-muted);
+}
+
 .highlights {
   display: flex;
   flex-direction: column;
