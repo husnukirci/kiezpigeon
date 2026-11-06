@@ -30,6 +30,8 @@ describe("rentalHints", () => {
   it("sees a WG room, not a flat that is WG-geeignet", () => {
     expect(rentalHints("WG-Zimmer in Neukölln")).toEqual(only("sharedFlat"));
     expect(rentalHints("WG-geeignet").sharedFlat).toBe(false);
+    // The English page's tag for the same feature.
+    expect(rentalHints("Suitable for shared flats").sharedFlat).toBe(false);
   });
 
   it("sees a Genossenschaft, not the Kosten row's label", () => {

@@ -27,7 +27,7 @@ export const NO_HINTS: RentalHints = {
  * ImmoScout24 feature tag) never counts as a WG room.
  */
 const NEGATIONS =
-  /provisionsfrei|keine provision|ohne provision|courtagefrei|keine courtage|commission[- ]free|no commission|nicht möbliert|unmöbliert|unfurnished|wg-geeignet/gi;
+  /provisionsfrei|keine provision|ohne provision|courtagefrei|keine courtage|commission[- ]free|no commission|nicht möbliert|unmöbliert|unfurnished|wg-geeignet|suitable for (?:a )?shared flats?|flat[- ]share suitable/gi;
 
 const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   sublet: /untermiete|untervermiet|\bsublet/i,
