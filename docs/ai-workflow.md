@@ -176,6 +176,11 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P12 | Process: the author asked for the feature in one line ("keep it as a pigeon once the form is filled"), with no spec. As in Phase 10, the spec and the build ran in one session, so its self-contained rule went untested by a fresh reader. | Spec written and committed first, then built against it.
 - P12 | Design: the literal reading, save as Sent after a fill, would have the extension claim a send it cannot see, against the product invariant. | A fourth status, Filled, with no send date until the user says so; `setStatus` sets the date on the first step out of Filled, so no date is ever invented.
 - P12 | My first letter-screen change called the save callback from a `useEffect` that also set state, which the repo's React hooks lint forbids. | The fill's result is recognised at render time as before; the effect only reports it once per fill, by identity.
+- P13 | Process: a brainstorm from one line ("analyse, what kind of rental, scam meter"), a design document with a reviewer pass, a plan, then the build, all in one session. The reviewer's six questions settled five from the fixtures; only the greeting switch was the author's call. | Design and plan committed before code; the author approved both with "go".
+- P13 | Recon: ImmoScout24's bot wall stops a scripted Chromium and Claude in Chrome was not connected, so the author's live listing could not be read. The fixtures answered instead, and better: the page prints a price band labelled "Ø Angebotspreis", not an average, which the design had assumed. | Price compares against the band; no bundled table (ADR 14).
+- P13 | Scanner: the English fixture's feature tag "Suitable for shared flats" tripped the WG-room flag through the adapter test; the hint tests alone had not seen it. | Added as a negation, test first.
+- P13 | Plan wrong: it said the complete fixture shows four lines; its contact is a company, so there is no greeting line. | The Phase 13 acceptance is written from what the fixtures give.
+- P13 | Chromium check: the kind line opened with a lowercase "offered privately." on the sparse page, which no unit test had asked for. | Test first, then the rule capitalises the line.
 
 ## Per-phase narrative
 

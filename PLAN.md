@@ -122,6 +122,9 @@ use), and how two applicants are related (so the letter stops guessing).
 - [x] Deutsche Wohnen (Phase 11), sharing Vonovia's platform reader
 - [x] Every letter that went into a form is a pigeon, marked Filled until
       the user says it was sent (Phase 12)
+- [x] An "About this listing" card: kind of rental, price against the
+      page's own band, how the letter will greet, things worth a second
+      look (Phase 13)
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"
@@ -206,7 +209,8 @@ Expected during the build:
 ADR 10 (move-in as a choice, schema 2) was added after Phase 4, which
 moved the two after it up by one, as PHASES.md already numbers them.
 ADR 13 (applications and the export file) was recorded in the Phase 8
-audit for shapes that had shipped without an entry.
+audit for shapes that had shipped without an entry. ADR 14 (listing
+analysis reads the page only) was added in Phase 13.
 
 ## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 
