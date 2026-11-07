@@ -1,7 +1,6 @@
 // "About this listing" (design system screen 2, Phase 13): what the page
 // says about the kind of rental, where its price sits against the band the
-// page prints, how the letter will greet the contact, and what is worth a
-// second look. It informs; the user decides. Status is never colour alone:
+// page prints, and what is worth a second look. It informs; the user decides. Status is never colour alone:
 // a note carries the exclamation, nothing found the tick, and the plain
 // lines their label word.
 import { analyseListing } from "../../../rules/analysis";
@@ -14,7 +13,6 @@ import styles from "./ListingDetected.module.css";
 const MARKER: Record<string, string> = {
   kind: "Kind",
   price: "Price",
-  greeting: "Greeting",
 };
 
 function Line({ line }: { line: AnalysisLine }) {
@@ -33,13 +31,12 @@ function Line({ line }: { line: AnalysisLine }) {
 }
 
 export function AnalysisCard({ listing }: { listing: Listing }) {
-  const { kind, price, greeting, notes } = analyseListing(listing);
+  const { kind, price, notes } = analyseListing(listing);
   return (
     <Card title="About this listing">
       <ul className={styles.lines}>
         <Line line={kind} />
         <Line line={price} />
-        {greeting && <Line line={greeting} />}
       </ul>
       <p className={cx(styles.label, "type-label")}>Worth a second look</p>
       <ul className={styles.lines}>

@@ -939,8 +939,7 @@ and what is worth a second look.
    a thing out are removed first. `analyseListing` builds the lines with
    exact copy: the kind from positive signals only, `unknown` when the
    description could not be read; the price against the band, "well
-   above" and "well below" as notes; the greeting from the letter's own
-   salutation; the notes in a fixed order (Kaution over three Kaltmieten
+   above" and "well below" as notes; the notes in a fixed order (Kaution over three Kaltmieten
    unless a Genossenschaft, Nebenkosten over half the Kaltmiete, a
    Provision asked, no viewing, payment first, a landlord abroad, much
    cheaper). ADR 14 and the ADR 8 amendment in the same commit.
@@ -956,15 +955,14 @@ and what is worth a second look.
    complete and the sparse ImmoScout24 fixture.
 5. README, PLAN.md, this spec, the friction log, release 1.5.0.
 
-**Out of scope:** a Frau/Herr switch for the greeting (display only),
-bundled market data, storing the analysis, detecting a send.
+**Out of scope:** a greeting line (built, then removed on the author's
+first use: it repeats what the letter screen shows), bundled market data, storing the analysis, detecting a send.
 
 **Acceptance:** on the complete ImmoScout24 fixture the card reads the kind
-and price lines and "Nothing on the page stood out." (its contact is a
-company, so no greeting); on the sparse fixture it reads "Möbliert,
-offered privately." from its title, "This page shows no comparison" and
-the greeting "Guten Tag Lena Beispiel"; a Kaution above three Kaltmieten
-adds the deposit note.
+and price lines and "Nothing on the page stood out."; on the sparse
+fixture it reads "Möbliert, offered privately." from its title and "This
+page shows no comparison"; a Kaution above three Kaltmieten adds the
+deposit note.
 
 **Phase review checklist:** no copy claims or judges, and the words scam,
 fraud, Betrug and warning appear nowhere; status is never colour alone;

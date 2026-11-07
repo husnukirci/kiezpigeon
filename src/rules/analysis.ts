@@ -1,10 +1,8 @@
 // "About this listing" (Phase 13, ADR 14): what the page says about the
 // kind of rental, where its Kaltmiete sits against the band the page itself
-// prints, how the letter will greet the contact, and what is worth a second
-// look. It informs; it never blocks writing a letter and never claims more
+// prints, and what is worth a second look. It informs; it never blocks writing a letter and never claims more
 // than the page shows. Every line is UI copy.
 import { formatEuro, formatEuroPerM2 } from "./format";
-import { namedContact, salutationFor } from "./letterPrompt";
 import type {
   Analysis,
   AnalysisLine,
@@ -120,16 +118,6 @@ function priceVerdict(own: Cents, low: Cents, high: Cents): string {
   return "within";
 }
 
-function greetingLine(listing: Listing): AnalysisLine | undefined {
-  if (namedContact(listing.contactPerson) === undefined) return undefined;
-  const greeting = salutationFor(listing.contactPerson).replace(/,$/, "");
-  return {
-    id: "greeting",
-    status: "info",
-    text: `The letter will greet "${greeting}".`,
-  };
-}
-
 function notes(listing: Listing, price: AnalysisLine): AnalysisLine[] {
   const {
     kaltmieteCents: kalt,
@@ -191,11 +179,9 @@ function notes(listing: Listing, price: AnalysisLine): AnalysisLine[] {
 
 export function analyseListing(listing: Listing): Analysis {
   const price = priceLine(listing);
-  const greeting = greetingLine(listing);
   return {
     kind: kindLine(listing),
     price,
-    ...(greeting && { greeting }),
     notes: notes(listing, price),
   };
 }

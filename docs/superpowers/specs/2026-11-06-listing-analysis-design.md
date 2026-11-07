@@ -1,8 +1,9 @@
 # Listing analysis: the "About this listing" card
 
 Status: approved by the author on 2026-11-06, with the greeting line
-display-only. Written from a brainstorm; the Phase 13 spec in `PHASES.md`
-is derived from it.
+display-only; the greeting line was removed after the author's first use
+(it repeats what the letter screen shows). Written from a brainstorm; the
+Phase 13 spec in `PHASES.md` is derived from it.
 
 ## Intent
 
@@ -55,7 +56,7 @@ the unknown-site flow, where the user typed the facts, the card is not
 shown (my call: there is no page text to analyse, and a card that says
 "nothing known" three times is noise).
 
-Four lines or groups, in this order:
+Three lines or groups, in this order:
 
 1. **Kind of rental.** One line built only from positive signals the page
    gives: "Möbliert, Zwischenmiete, befristet" or "Genossenschaft, WBS
@@ -73,18 +74,14 @@ Four lines or groups, in this order:
    that band, from the rule's thresholds (below). On a page without a
    comparison: "Kaltmiete 12,60 €/m². This page shows no comparison."
    English ImmoScout24 pages print no comparison (checked in the fixture).
-3. **Greeting.** Shown whenever a contact person was read: "The letter
-   will greet 'Sehr geehrter Herr Muster'." Display only (see Decisions
-   left to the author). It sits here, not under the second look, so a
-   normal contact never counts as something odd.
-4. **Worth a second look.** Zero or more lines, each with the exclamation
+3. **Worth a second look.** Zero or more lines, each with the exclamation
    icon in the design system's warning role. With none, one line with the
    tick icon: "Nothing on the page stood out."
 
 Icons: the second-look lines carry the exclamation, the empty second look
 the tick, and a price line at "well above" or "well below" the
-exclamation. The kind, greeting and other price lines carry their label
-word ("Kind", "Price", "Greeting") as the marker instead of an icon, since
+exclamation. The kind and other price lines carry their label word
+("Kind", "Price") as the marker instead of an icon, since
 a tick would read as approval and an info glyph would be a new icon. (My
 call.) Example lines, as copy:
 
@@ -114,7 +111,6 @@ from the fixtures.)
 interface Analysis {
   kind: Line; // one line, status "info" | "unknown"
   price: Line; // one line, status "info" | "note" | "unknown"
-  greeting?: Line; // status "info"; absent without a contact person
   notes: Line[]; // "Worth a second look"; empty means nothing stood out
 }
 interface Line {
@@ -204,18 +200,12 @@ commercial marker, a Genossenschaft row and a "möbliert" description.
 
 ## Decisions left to the author
 
-- **The greeting line.** Default in this design: the line only shows how
-  the letter will greet the contact, so a wrong salutation is seen before
-  it is written. The alternative is a Frau/Herr switch next to it that
-  overrides the salutation for the letter. The switch is small but is the
-  only part of this feature that touches the letter: the letter request,
-  the salutation check in the validator and the resume of the last letter
-  for a listing all read the contact person.
+- **The greeting line.** Decided display-only, built, and removed after
+  the author's first use: it repeats what the letter screen shows.
 
 ## Left to the builder
 
 Exact selectors; the keyword lists and their fixture comments; the line
 ids; which icon size the check lines use; whether `rentalHints` and the
 analysis rule share one file or two; the order of notes when several
-apply (suggested: money first, then viewing and payment, then the
-greeting).
+apply (suggested: money first, then viewing and payment).
