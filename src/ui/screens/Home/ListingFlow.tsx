@@ -25,8 +25,8 @@ interface ListingFlowProps {
   profile: Profile;
   siteName: string;
   listing: Listing;
-  /** Pages the panel's tab has loaded; the form is read again on each. UnknownSite
-   *  starts over per page instead, so it passes none. */
+  /** Pages the panel's tab has loaded; the form is read again on each.
+   *  UnknownSite starts over per page instead, so it passes none. */
   pageLoads?: number;
   /** Set on a site without an adapter, where the user typed the facts. */
   unknownSite?: { onEditFacts: () => void } | undefined;
