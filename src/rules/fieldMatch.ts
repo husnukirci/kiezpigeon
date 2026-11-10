@@ -278,12 +278,20 @@ function isFillable(field: FormField): boolean {
   );
 }
 
+/** What the whole form says about its fields, worked out once per form. */
+interface FormFacts {
+  /** At most one field asks for the full name, so it takes both names. */
+  fullName: boolean;
+  /** Some field of the form takes the house number on its own. */
+  houseNumberField: boolean;
+}
+
 function valueFor(
   kind: FieldKind,
   field: FormField,
   profile: Profile,
   letter: string,
-  fullName: boolean,
+  facts: FormFacts,
 ): FieldValue | undefined {
   if (field.type === "select") {
     return optionFor(kind, field, profile);
@@ -295,7 +303,7 @@ function valueFor(
     case "firstName":
       return applicant?.firstName;
     case "lastName":
-      return fullName && asksForFullName(field)
+      return facts.fullName && asksForFullName(field)
         ? [applicant?.firstName, applicant?.lastName]
             .filter(Boolean)
             .join(" ") || undefined
@@ -305,9 +313,12 @@ function valueFor(
     case "phone":
       return contact.phone;
     case "street":
+      // A street-address token takes the number too, unless the form has a
+      // field of its own for it.
       return matches("houseNumber", hay) ||
         COMBINED_NR.test(words([field.label, field.placeholder].join(" "))) ||
-        COMBINED_STREET_TOKENS.has(autocompleteToken(field))
+        (COMBINED_STREET_TOKENS.has(autocompleteToken(field)) &&
+          !facts.houseNumberField)
         ? `${contact.street} ${contact.houseNumber}`.trim()
         : contact.street;
     case "houseNumber":
@@ -626,14 +637,21 @@ export function mapFields(
   // One "Vor- und Nachname" field takes both names; a label shared by
   // several inputs is not a full-name question.
   const fullName = fillable.filter(asksForFullName).length < 2;
-  const leftAlone = fillable.filter(
-    (f) => classifyField(f, fullName) === "consent",
-  );
-  const mappings = fillable
-    .filter((field) => !leftAlone.includes(field))
-    .map((field) => {
-      const kind = classifyField(field, fullName);
-      const found = valueFor(kind, field, profile, letter, fullName);
+  const classified = fillable.map((field) => ({
+    field,
+    kind: classifyField(field, fullName),
+  }));
+  const facts: FormFacts = {
+    fullName,
+    houseNumberField: classified.some((c) => c.kind === "houseNumber"),
+  };
+  const leftAlone = classified
+    .filter((c) => c.kind === "consent")
+    .map((c) => c.field);
+  const mappings = classified
+    .filter(({ kind }) => kind !== "consent")
+    .map(({ field, kind }) => {
+      const found = valueFor(kind, field, profile, letter, facts);
       const value = found === "" ? undefined : found;
       return {
         field,

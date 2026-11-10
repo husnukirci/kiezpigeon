@@ -880,4 +880,19 @@ describe("final review findings", () => {
     expect(leftAlone).toContain(others[3]);
     expect(mappings.some((m) => m.field === others[3])).toBe(false);
   });
+
+  it("writes the street alone into a street-address field beside a Hausnummer field", () => {
+    for (const autocomplete of ["street-address", "address-line1"]) {
+      const fields = [
+        field({ autocomplete, name: "x" }),
+        field({ label: "Hausnummer" }),
+      ];
+      expect(
+        mapFields(fields, coupleWithDog, "").mappings.map((m) => m.value),
+      ).toEqual([
+        coupleWithDog.contact.street,
+        coupleWithDog.contact.houseNumber,
+      ]);
+    }
+  });
 });
