@@ -123,7 +123,7 @@ use), and how two applicants are related (so the letter stops guessing).
 - [x] Every letter that went into a form is a pigeon, marked Filled until
       the user says it was sent (Phase 12)
 - [x] An "About this listing" card: kind of rental, price against the
-      page's own band, how the letter will greet, things worth a second
+      page's own band, things worth a second
       look (Phase 13)
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)

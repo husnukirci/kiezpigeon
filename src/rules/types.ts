@@ -175,8 +175,6 @@ export interface AnalysisLine {
 export interface Analysis {
   kind: AnalysisLine;
   price: AnalysisLine;
-  /** Absent without a named contact person. */
-  greeting?: AnalysisLine;
   /** "Worth a second look"; empty means nothing stood out. */
   notes: AnalysisLine[];
 }

@@ -279,3 +279,106 @@ describe.each(["contact-form.html", "contact-form-placeholders.html"])(
     });
   },
 );
+
+describe("fillForm read-back", () => {
+  function formWith(html: string): HTMLFormElement {
+    const form = new DOMParser()
+      .parseFromString(`<form>${html}</form>`, "text/html")
+      .querySelector("form");
+    if (!form) throw new Error("no form");
+    return form;
+  }
+
+  // happy-dom keeps whatever it is given, where Chromium drops a value that is
+  // not a number or a date and trims an email or url (e2e/read-back.spec.ts
+  // shows the real browser). The stub makes the prototype setter sanitise the
+  // way Chromium's does.
+  const restores: (() => void)[] = [];
+  function sanitiseLikeChromium(): void {
+    const proto = HTMLInputElement.prototype;
+    const real = Object.getOwnPropertyDescriptor(proto, "value");
+    // `set` is only ever invoked with `.call`, never detached.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const original = real?.set;
+    if (!real || !original) throw new Error("no value setter");
+    const valid: Record<string, RegExp | undefined> = {
+      number: /^-?\d+(\.\d+)?$/,
+      date: /^\d{4}-\d{2}-\d{2}$/,
+    };
+    const trimmed = new Set(["email", "url"]);
+    Object.defineProperty(proto, "value", {
+      ...real,
+      set(this: HTMLInputElement, value: string) {
+        const rule = valid[this.type];
+        const kept = !rule || rule.test(value) ? value : "";
+        original.call(this, trimmed.has(this.type) ? kept.trim() : kept);
+      },
+    });
+    restores.push(() => Object.defineProperty(proto, "value", real));
+  }
+
+  afterEach(() => {
+    restores.splice(0).forEach((restore) => {
+      restore();
+    });
+  });
+
+  it("reports a value the field did not keep as rejected", () => {
+    sanitiseLikeChromium();
+    const form = formWith(
+      '<input name="income" type="number"><input name="moveIn" type="date">',
+    );
+    const report = fillForm(form, [
+      { key: "name:income", kind: "income", value: "viertausend" },
+      { key: "name:moveIn", kind: "moveInDate", value: "01.03.2027" },
+    ]);
+    expect(report.filled).toEqual([]);
+    expect(report.skipped).toEqual([
+      { key: "name:income", reason: "rejected" },
+      { key: "name:moveIn", reason: "rejected" },
+    ]);
+  });
+
+  it("reports a value the field kept as filled", () => {
+    sanitiseLikeChromium();
+    const form = formWith(
+      '<input name="income" type="number"><input name="moveIn" type="date">',
+    );
+    const report = fillForm(form, [
+      { key: "name:income", kind: "income", value: "4600" },
+      { key: "name:moveIn", kind: "moveInDate", value: "2027-03-01" },
+    ]);
+    expect(report.filled).toEqual(["name:income", "name:moveIn"]);
+  });
+
+  it("does not call a textarea's line-ending normalisation a rejection", () => {
+    const form = formWith('<textarea name="message"></textarea>');
+    const report = fillForm(form, [
+      { key: "name:message", kind: "message", value: "Hallo\r\nDanke" },
+    ]);
+    expect(report.filled).toEqual(["name:message"]);
+    expect(report.skipped).toEqual([]);
+  });
+
+  it("puts back what a field held when it rejects the new value", () => {
+    sanitiseLikeChromium();
+    const form = formWith('<input name="income" type="number" value="1200">');
+    const report = fillForm(form, [
+      { key: "name:income", kind: "income", value: "viertausend" },
+    ]);
+    expect(report.skipped).toEqual([
+      { key: "name:income", reason: "rejected" },
+    ]);
+    expect(form.querySelector("input")?.value).toBe("1200");
+  });
+
+  it("does not call the trimming of an email address a rejection", () => {
+    sanitiseLikeChromium();
+    const form = formWith('<input name="email" type="email">');
+    const report = fillForm(form, [
+      { key: "name:email", kind: "email", value: " mara@example.test " },
+    ]);
+    expect(report.filled).toEqual(["name:email"]);
+    expect(form.querySelector("input")?.value).toBe("mara@example.test");
+  });
+});

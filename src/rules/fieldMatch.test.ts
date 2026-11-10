@@ -215,6 +215,23 @@ describe("mapFields", () => {
     ).toEqual([true, true, false]);
   });
 
+  it("inverts the value for a no-pets field", () => {
+    for (const label of [
+      "Keine Haustiere",
+      "Ohne Haustiere",
+      "No pets",
+      "Haustiere: keine",
+    ]) {
+      const box = field({ label, type: "checkbox" });
+      expect(mapFields([box], coupleWithDog, "").mappings[0]?.value).toBe(
+        false,
+      );
+      expect(mapFields([box], soloStudent, "").mappings[0]?.value).toBe(true);
+    }
+    const plain = field({ label: "Haustiere", type: "checkbox" });
+    expect(mapFields([plain], coupleWithDog, "").mappings[0]?.value).toBe(true);
+  });
+
   it("joins street and number, and postcode and city, for combined fields", () => {
     const fields = [
       field({ label: "Straße und Hausnummer" }),
@@ -527,9 +544,258 @@ describe("mapFields on select fields", () => {
     const income = select("Einkommen", ["X", "3.000 € abzüglich Steuern"]);
     expect(valueOf(coupleWithDog, income)).toBeUndefined();
   });
+
+  // Options whose values equal their labels, and the value for a profile.
+  const choice = (label: string, labels: string[]) =>
+    select(label, ...labels.map((text): [string, string] => [text, text]));
+  const chosen = (f: FormField, profile: Profile) => valueOf(profile, f);
+  const family: Profile = {
+    ...coupleWithDog,
+    household: { ...coupleWithDog.household, children: 1 },
+  };
+
+  it("never picks a no-answer option", () => {
+    const pets = choice("Haustiere", [
+      "Bitte wählen",
+      "Keine Angabe",
+      "Ja",
+      "Nein",
+    ]);
+    expect(chosen(pets, soloStudent)).toBe("Nein");
+    expect(chosen(pets, coupleWithDog)).toBe("Ja");
+  });
+
+  it("tells a household with children from one without", () => {
+    const household = choice("Haushaltsgröße", [
+      "Single",
+      "Paar ohne Kinder",
+      "Paar mit Kindern",
+    ]);
+    expect(chosen(household, family)).toBe("Paar mit Kindern");
+    expect(chosen(household, coupleWithDog)).toBe("Paar ohne Kinder");
+    const reversed = choice("Haushaltsgröße", [
+      "Paar mit Kindern",
+      "Paar ohne Kinder",
+    ]);
+    expect(chosen(reversed, coupleWithDog)).toBe("Paar ohne Kinder");
+  });
+
+  it("counts a singular Kind option as a household with children", () => {
+    const options = ["2 Erwachsene, 1 Kind", "2 Erwachsene"];
+    const household = choice("Haushaltsgröße", options);
+    expect(chosen(household, family)).toBe("2 Erwachsene, 1 Kind");
+    expect(chosen(household, coupleWithDog)).toBe("2 Erwachsene");
+    const reversed = choice("Haushaltsgröße", [
+      "2 Erwachsene mit Kind",
+      "2 Erwachsene",
+    ]);
+    expect(chosen(reversed, coupleWithDog)).toBe("2 Erwachsene");
+    expect(chosen(reversed, family)).toBe("2 Erwachsene mit Kind");
+  });
+
+  it("reads income bands written with cents", () => {
+    const income = choice("Haushaltsnettoeinkommen", [
+      "bis 2.000,00 €",
+      "2.000,01 - 4.000,00 €",
+      "4.000,01 - 5.000,00 €",
+      "über 5.000,00 €",
+    ]);
+    expect(chosen(income, coupleWithDog)).toBe("4.000,01 - 5.000,00 €");
+  });
+
+  it("writes no income when none was given", () => {
+    const profile = defaultProfile();
+    const text = field({ label: "Nettoeinkommen" });
+    const band = choice("Nettoeinkommen", ["bis 1.000 €", "über 1.000 €"]);
+    const { mappings, matched } = mapFields([text, band], profile, "");
+    expect(mappings.map((m) => m.value)).toEqual([undefined, undefined]);
+    expect(matched).toBe(0);
+  });
+});
+
+describe("autocomplete tokens and phone formats", () => {
+  it("reads the field name out of a multi-token autocomplete", () => {
+    expect(
+      classifyField(field({ autocomplete: "shipping given-name", name: "x" })),
+    ).toBe("firstName");
+    expect(
+      classifyField(
+        field({ autocomplete: "section-a billing postal-code", name: "x" }),
+      ),
+    ).toBe("postcode");
+    expect(classifyField(field({ autocomplete: "home tel", name: "x" }))).toBe(
+      "phone",
+    );
+    expect(
+      classifyField(field({ autocomplete: "off", label: "Vorname" })),
+    ).toBe("firstName");
+  });
+
+  it("writes street and number into a street-address field", () => {
+    for (const autocomplete of ["street-address", "address-line1"]) {
+      const { mappings } = mapFields(
+        [field({ autocomplete, name: "x" })],
+        coupleWithDog,
+        "",
+      );
+      expect(mappings[0]?.value).toBe(
+        `${coupleWithDog.contact.street} ${coupleWithDog.contact.houseNumber}`,
+      );
+    }
+  });
+
+  it("reads +49 (0)30 as the same number as 030", () => {
+    const phone = field({ label: "Telefon", value: "+49 (0)30 1234567" });
+    const profile = {
+      ...coupleWithDog,
+      contact: { ...coupleWithDog.contact, phone: "030 1234567" },
+    };
+    expect(mapFields([phone], profile, "").mappings[0]?.replaces).toBe(false);
+  });
+
+  it("lets a given-name autocomplete decide whatever the label says", () => {
+    const fields = [
+      field({ autocomplete: "given-name", label: "Vor- und Nachname" }),
+      field({ autocomplete: "family-name", label: "Vor- und Nachname" }),
+    ];
+    const { mappings } = mapFields(fields, coupleWithDog, "");
+    expect(mappings.map((m) => m.value)).toEqual(["Mara", "Testmann"]);
+  });
+
+  it("fills the full name only when one field asks for it", () => {
+    const shared = "Vor- und Nachname";
+    const two = [
+      field({ name: "vorname", label: shared }),
+      field({ name: "nachname", label: shared }),
+    ];
+    expect(
+      mapFields(two, coupleWithDog, "").mappings.map((m) => m.value),
+    ).toEqual(["Mara", "Testmann"]);
+    const one = [field({ label: shared })];
+    expect(mapFields(one, coupleWithDog, "").mappings[0]?.value).toBe(
+      "Mara Testmann",
+    );
+  });
+
+  it("ignores autocomplete tokens that are not field names", () => {
+    expect(
+      classifyField(field({ autocomplete: "constructor", label: "Vorname" })),
+    ).toBe("firstName");
+  });
 });
 
 describe("review findings", () => {
+  it.each([
+    "Einzugsermächtigung IBAN",
+    "IBAN für Einzug",
+    "Kontoinhaber",
+    "BIC",
+    "Ausweis-Nr.",
+    "Steuer-ID",
+    "SEPA-Lastschrift",
+  ])("leaves %s unknown", (label) => {
+    expect(classifyField(field({ label }))).toBe("unknown");
+  });
+
+  it("keeps income after tax and leaves identity documents alone", () => {
+    expect(
+      classifyField(field({ label: "Nettoeinkommen (nach Steuern)" })),
+    ).toBe("income");
+    expect(
+      classifyField(field({ label: "Monatliches Einkommen nach Steuern" })),
+    ).toBe("income");
+    expect(classifyField(field({ label: "Personalausweis-Nr." }))).toBe(
+      "unknown",
+    );
+    expect(classifyField(field({ label: "Steuernummer" }))).toBe("unknown");
+  });
+
+  it("takes a bare Nr. from the label when there is one", () => {
+    expect(classifyField(field({ label: "Kunden-Nr.", name: "nr" }))).toBe(
+      "unknown",
+    );
+    expect(classifyField(field({ label: "Nr.", name: "kunde" }))).toBe(
+      "houseNumber",
+    );
+  });
+
+  it("joins the number into a street field only when its text says so", () => {
+    const { mappings } = mapFields(
+      [field({ label: "Straße", id: "field-nr-3" })],
+      soloStudent,
+      "",
+    );
+    expect(mappings[0]?.value).toBe("Ausgedachter Weg");
+    const combined = mapFields(
+      [field({ label: "Straße/Nr." })],
+      soloStudent,
+      "",
+    );
+    expect(combined.mappings[0]?.value).toBe("Ausgedachter Weg 12a");
+  });
+
+  it("reads a bare Nr. as the house number, not a number of something else", () => {
+    expect(classifyField(field({ label: "Nr." }))).toBe("houseNumber");
+    expect(classifyField(field({ name: "nr" }))).toBe("houseNumber");
+    expect(classifyField(field({ label: "WBS-Nr." }))).toBe("wbs");
+    expect(classifyField(field({ label: "Kunden-Nr." }))).toBe("unknown");
+  });
+
+  it("writes no yes or no into a text field", () => {
+    const { mappings } = mapFields(
+      [field({ label: "WBS-Nr." })],
+      coupleWithDog,
+      "",
+    );
+    expect(mappings[0]?.value).toBeUndefined();
+  });
+
+  it("writes first and last name into a field that asks for both", () => {
+    for (const label of [
+      "Vor- und Nachname",
+      "Vor- und Zuname",
+      "Vollständiger Name",
+      "Full name",
+      "Vorname und Nachname",
+      "Vorname, Nachname",
+      "Vorname/Nachname",
+      "Name, Vorname",
+    ]) {
+      const { mappings } = mapFields([field({ label })], coupleWithDog, "");
+      expect(mappings[0]?.value).toBe("Mara Testmann");
+    }
+    const separate = mapFields(
+      [field({ label: "Vorname" }), field({ label: "Nachname" })],
+      coupleWithDog,
+      "",
+    );
+    expect(separate.mappings.map((m) => m.value)).toEqual(["Mara", "Testmann"]);
+    const { mappings } = mapFields(
+      [field({ label: "Nachname" })],
+      coupleWithDog,
+      "",
+    );
+    expect(mappings[0]?.value).toBe("Testmann");
+  });
+
+  it("does not read the willig in freiwillig as consent", () => {
+    expect(classifyField(field({ label: "Telefonnummer (freiwillig)" }))).toBe(
+      "phone",
+    );
+    expect(classifyField(field({ label: "Freiwillige Angabe: Beruf" }))).toBe(
+      "employment",
+    );
+  });
+
+  it.each([
+    "Einwilligung",
+    "Ich willige ein",
+    "Einwilligungserklärung Datenschutz",
+  ])("still reads %s as consent", (label) => {
+    expect(classifyField(field({ label, type: "checkbox" }))).toBe("consent");
+    expect(classifyField(field({ label }))).toBe("consent");
+  });
+
   it("does not read the mobil in Immobilie as a phone field", () => {
     expect(
       classifyField(
@@ -562,5 +828,123 @@ describe("review findings", () => {
     expect(replaces("0049 (30) 555-0123")).toBe(false);
     expect(replaces("030/5550123")).toBe(false);
     expect(replaces("+49 30 5550999")).toBe(true);
+  });
+});
+
+describe("final review findings", () => {
+  it("reads a Name label over a Vorname or Nachname placeholder as one name each", () => {
+    const fields = [
+      field({ label: "Name", placeholder: "Vorname" }),
+      field({ label: "Name", placeholder: "Nachname" }),
+    ];
+    expect(
+      mapFields(fields, coupleWithDog, "").mappings.map((m) => m.value),
+    ).toEqual(["Mara", "Testmann"]);
+    const placeholderAlone = [field({ placeholder: "Vorname Nachname" })];
+    expect(
+      mapFields(placeholderAlone, coupleWithDog, "").mappings[0]?.value,
+    ).toBe("Mara Testmann");
+  });
+
+  it("judges only the shared-label name fields by their own text", () => {
+    const shared = "Vor- und Nachname";
+    const names = [
+      field({ name: "vorname", label: shared }),
+      field({ name: "nachname", label: shared }),
+    ];
+    const others = [
+      field({ label: "Haustiere (Art, Anzahl)", type: "textarea" }),
+      field({ label: "Datenschutz gelesen", name: "email" }),
+      field({ label: "Kunden-Nr.", name: "nr" }),
+      field({
+        label: "Ich akzeptiere die Datenschutzerklärung",
+        name: "pets",
+        type: "checkbox",
+      }),
+    ];
+    const kindIn = (fields: FormField[], f: FormField) => {
+      const result = mapFields(fields, coupleWithDog, "");
+      return result.leftAlone.includes(f)
+        ? "left alone"
+        : result.mappings.find((m) => m.field === f)?.kind;
+    };
+    const inForm = [...names, ...others];
+    for (const other of others) {
+      expect(kindIn(inForm, other)).toBe(kindIn([other], other));
+    }
+    const { mappings, leftAlone } = mapFields(inForm, coupleWithDog, "");
+    expect(mappings.map((m) => m.value).slice(0, 2)).toEqual([
+      "Mara",
+      "Testmann",
+    ]);
+    expect(leftAlone).toContain(others[3]);
+    expect(mappings.some((m) => m.field === others[3])).toBe(false);
+  });
+
+  it("writes the street alone into a street-address field beside a Hausnummer field", () => {
+    for (const autocomplete of ["street-address", "address-line1"]) {
+      const fields = [
+        field({ autocomplete, name: "x" }),
+        field({ label: "Hausnummer" }),
+      ];
+      expect(
+        mapFields(fields, coupleWithDog, "").mappings.map((m) => m.value),
+      ).toEqual([
+        coupleWithDog.contact.street,
+        coupleWithDog.contact.houseNumber,
+      ]);
+    }
+  });
+
+  it("reads a trailing keine as no pets only when it ends the label", () => {
+    const optional = field({
+      label: "Haustiere (keine Pflicht)",
+      type: "checkbox",
+    });
+    expect(mapFields([optional], coupleWithDog, "").mappings[0]?.value).toBe(
+      true,
+    );
+    const none = field({ label: "Haustiere: keine", type: "checkbox" });
+    expect(mapFields([none], coupleWithDog, "").mappings[0]?.value).toBe(false);
+  });
+
+  it("picks the option with children that also fits the number of adults", () => {
+    const options = (labels: string[]) =>
+      field({
+        label: "Haushaltsgröße",
+        type: "select",
+        options: labels.map((label) => ({ value: label, label })),
+      });
+    const coupleWithChild: Profile = {
+      ...coupleWithDog,
+      household: { ...coupleWithDog.household, children: 1 },
+    };
+    const singleParent: Profile = {
+      ...coupleWithChild,
+      household: { ...coupleWithChild.household, adults: 1 },
+    };
+    const labels = ["Alleinerziehend mit Kind", "Paar mit Kind", "Paar"];
+    for (const order of [labels, [...labels].reverse()]) {
+      const household = options(order);
+      expect(
+        mapFields([household], coupleWithChild, "").mappings[0]?.value,
+      ).toBe("Paar mit Kind");
+      expect(mapFields([household], singleParent, "").mappings[0]?.value).toBe(
+        "Alleinerziehend mit Kind",
+      );
+    }
+  });
+
+  it("keeps a bracketed zero that follows no country code", () => {
+    const profile = {
+      ...coupleWithDog,
+      contact: { ...coupleWithDog.contact, phone: "030 1234567" },
+    };
+    const replaces = (value: string) =>
+      mapFields([field({ label: "Telefon", value })], profile, "").mappings[0]
+        ?.replaces;
+    expect(replaces("(0)30 1234567")).toBe(false);
+    expect(replaces("+49 (0)30 1234567")).toBe(false);
+    expect(replaces("0049 (0)30 1234567")).toBe(false);
   });
 });

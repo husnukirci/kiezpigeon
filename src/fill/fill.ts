@@ -12,7 +12,7 @@ export interface FillStep {
   value: FieldValue;
 }
 
-export type SkipReason = "missing" | "refused" | "no_option";
+export type SkipReason = "missing" | "refused" | "no_option" | "rejected";
 
 export interface FillReport {
   filled: string[];
@@ -82,7 +82,24 @@ function fillOne(root: ParentNode, step: FillStep): SkipReason | undefined {
     }
     setNative(element, "value", value);
   } else {
-    setNative(element, "value", String(step.value));
+    const value = String(step.value);
+    const before = element.value;
+    setNative(element, "value", value);
+    // A number or date input drops a value it cannot hold, so the field is
+    // read back: a fill only reports what the field kept, and a field that
+    // dropped it gets back what it held. A textarea turns line endings into
+    // "\n" and an email or url input trims spaces, which loses nothing.
+    const lossFree = (text: string): string =>
+      element instanceof HTMLTextAreaElement
+        ? text.replace(/\r\n?/g, "\n")
+        : element instanceof HTMLInputElement &&
+            (element.type === "email" || element.type === "url")
+          ? text.trim()
+          : text;
+    if (lossFree(element.value) !== lossFree(value)) {
+      setNative(element, "value", before);
+      return "rejected";
+    }
   }
   announce(element);
   return undefined;

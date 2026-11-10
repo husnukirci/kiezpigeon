@@ -1,14 +1,18 @@
 // A hidden select counts only when a visible styled widget stands in for
 // it; every other hidden field stays a possible spam trap (ADR 8, ADR 12).
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { describeFields } from "./describe";
 
-function visibility(html: string): boolean | undefined {
+function formWith(html: string): HTMLFormElement {
   const form = new DOMParser()
     .parseFromString(`<form>${html}</form>`, "text/html")
     .querySelector("form");
   if (!form) throw new Error("no form");
-  return describeFields(form)[0]?.visible;
+  return form;
+}
+
+function visibility(html: string): boolean | undefined {
+  return describeFields(formWith(html))[0]?.visible;
 }
 
 const HIDDEN_SELECT =
@@ -90,5 +94,37 @@ describe("describeFields on a select hidden behind a styled widget", () => {
         '<input name="trap" data-id="ss-1" aria-hidden="true" /><div class="ss-main" data-id="ss-1"></div>',
       ),
     ).toBe(false);
+  });
+});
+
+describe("describeFields on fields hidden by style", () => {
+  afterEach(() => {
+    document.body.replaceChildren();
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    '<input name="trap" style="opacity: 0">',
+    '<input name="trap" style="visibility: hidden">',
+    '<div style="opacity: 0"><input name="trap"></div>',
+  ])("does not count %s", (html) => {
+    expect(visibility(html)).toBe(false);
+  });
+
+  it("does not count a field placed left of or above the page", () => {
+    const form = formWith('<input name="trap">');
+    document.body.append(form);
+    const input = form.querySelector("input") as HTMLInputElement; // just parsed above
+    input.getBoundingClientRect = () => new DOMRect(-5000, 10, 100, 20);
+    expect(describeFields(form)[0]?.visible).toBe(false);
+  });
+
+  it("counts a field scrolled out of view", () => {
+    const form = formWith('<input name="name">');
+    document.body.append(form);
+    const input = form.querySelector("input") as HTMLInputElement; // just parsed above
+    input.getBoundingClientRect = () => new DOMRect(10, -800, 100, 20);
+    vi.stubGlobal("scrollY", 1200);
+    expect(describeFields(form)[0]?.visible).toBe(true);
   });
 });
