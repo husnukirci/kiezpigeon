@@ -9,7 +9,7 @@ import type { ClaudeModel } from "../rules/types";
 
 export const API_ORIGIN = "https://api.anthropic.com";
 
-/** Long enough for adaptive thinking plus a 180-word letter. */
+/** Room for the model's reasoning at low effort plus a 180-word letter. */
 const MAX_TOKENS = 8000;
 const TIMEOUT_MS = 60_000;
 
@@ -21,6 +21,9 @@ export type ClaudeErrorCode =
   | "network"
   | "timeout"
   | "refused"
+  | "no_credit"
+  | "model_unavailable"
+  | "cut_off"
   | "failed";
 
 export const ERROR_MESSAGES: Record<ClaudeErrorCode, string> = {
@@ -32,8 +35,12 @@ export const ERROR_MESSAGES: Record<ClaudeErrorCode, string> = {
   network: "Kiezpigeon could not reach Claude. Check your connection.",
   timeout: "Claude took too long to answer. Try again.",
   refused: "Claude declined to write this letter. Try another tone.",
-  failed:
-    "Claude could not write the letter. Check your key's credit in the Anthropic console, then try again.",
+  no_credit:
+    "Your Anthropic account has no credit left. Add credit in the Anthropic console, then try again.",
+  model_unavailable:
+    "Your key cannot use this model. Choose another model in settings.",
+  cut_off: "Claude's answer was cut off. Try again.",
+  failed: "Claude could not write the letter. Try again.",
 };
 
 export class ClaudeError extends Error {
@@ -67,7 +74,19 @@ export function toClaudeError(error: unknown): ClaudeError {
     return new ClaudeError("invalid_key");
   }
   if (error instanceof Anthropic.PermissionDeniedError) {
-    return new ClaudeError("invalid_key");
+    // A key without access to the chosen model is a 403 naming the model.
+    return new ClaudeError(
+      /\bmodel\b/i.test(error.message) ? "model_unavailable" : "invalid_key",
+    );
+  }
+  if (error instanceof Anthropic.NotFoundError) {
+    return new ClaudeError("model_unavailable");
+  }
+  if (
+    error instanceof Anthropic.BadRequestError &&
+    /credit balance/i.test(error.message)
+  ) {
+    return new ClaudeError("no_credit");
   }
   if (error instanceof Anthropic.RateLimitError) {
     return new ClaudeError("rate_limited");
@@ -120,6 +139,9 @@ export function createClaudeClient(
       const text = message.content
         .flatMap((block) => (block.type === "text" ? [block.text] : []))
         .join("");
+      if (message.stop_reason === "max_tokens") {
+        throw new ClaudeError("cut_off");
+      }
       if (message.stop_reason !== "end_turn" || text.trim() === "") {
         throw new ClaudeError("failed");
       }

@@ -128,7 +128,35 @@ describe("createClaudeClient", () => {
     const cut = await failure(
       respond(200, message({ stop_reason: "max_tokens" })),
     );
-    expect((cut as ClaudeError).code).toBe("failed");
+    expect((cut as ClaudeError).code).toBe("cut_off");
+  });
+
+  it.each<[number, string, ClaudeErrorCode]>([
+    [
+      400,
+      "Your credit balance is too low to access the Anthropic API.",
+      "no_credit",
+    ],
+    [400, "max_tokens: must be at least 1", "failed"],
+    [404, "model: claude-nope", "model_unavailable"],
+    [
+      403,
+      "Your API key does not have access to model: claude-nope",
+      "model_unavailable",
+    ],
+    [403, "Request not allowed", "invalid_key"],
+  ])("maps a %d saying %s to %s", async (status, text, code) => {
+    const error = await failure(
+      respond(status, {
+        type: "error",
+        error: { type: "invalid_request_error", message: text },
+      }),
+    );
+    expect(error).toMatchObject({ code, message: ERROR_MESSAGES[code] });
+  });
+
+  it("no longer blames credit for an unknown failure", () => {
+    expect(ERROR_MESSAGES.failed).not.toMatch(/credit/i);
   });
 
   it("logs nothing, not even on a failure", async () => {
