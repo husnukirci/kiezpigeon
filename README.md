@@ -67,7 +67,7 @@ Kiezpigeon can read it.
 - **What is stored:** your profile (applicants, income, household, move-in,
   contact details, budget, documents checklist), your settings (model), the
   letters you filled into a form and the applications you marked as sent
-  (listing title and address, the letter, status, dates), and your API key.
+  (the listing's title, web address, district and Warmmiete, the letter, the status and its dates), and your API key.
 - **Where:** in Chrome's local extension storage on this computer
   (`chrome.storage.local`). Nothing is synced to your Google account and
   there is no Kiezpigeon server.
