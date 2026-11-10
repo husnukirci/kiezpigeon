@@ -431,18 +431,6 @@ the page only while a request is waiting. It does not read the page's JSON to
 get ahead of the drawing, and does not poll. The running probe is the late
 title run in `e2e/never-submit.spec.ts`.
 
-**Amendment (2026-11-06): fields for the analysis card.** `Listing` gains
-five optional fields, each named in `missing` when a page lacks it:
-`flatType` as the page states it, `kautionCents` from the Kosten row,
-`offeredBy` from ImmoScout24's "von privat" or "Gewerblich" marker,
-`priceComparison` from the band ImmoScout24 prints as "Ø Angebotspreis" with
-its sample size and radius, and `hints`, the flags `rentalHints` scans from
-the title, the description, the "Sonstiges" and condition rows and the
-feature tags (on the Vonovia platform: the title and the Beschreibung and
-Sonstige Angaben cards). The analysis
-rule reads only the flags, never the page's text. The running probes are the
-new fields in each adapter's fixture tests.
-
 **Amendment (2026-11-02): Deutsche Wohnen, the same platform.** A new content
 script matches `https://www.deutsche-wohnen.com/mieten/mietangebote/*`. This is
 a new match on a new host and adds no entry to `permissions` or
@@ -463,6 +451,18 @@ another `data-id`, is drawn right after it. So a select also counts as visible
 when a widget directly behind its own is visible. A select with no widget of its
 own stays a possible spam trap. The running probes are the Deutsche Wohnen and
 late title runs in `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
+
+**Amendment (2026-11-06): fields for the analysis card.** `Listing` gains
+five optional fields, each named in `missing` when a page lacks it:
+`flatType` as the page states it, `kautionCents` from the Kosten row,
+`offeredBy` from ImmoScout24's "von privat" or "Gewerblich" marker,
+`priceComparison` from the band ImmoScout24 prints as "Ø Angebotspreis" with
+its sample size and radius, and `hints`, the flags `rentalHints` scans from
+the title, the description, the "Sonstiges" and condition rows and the
+feature tags (on the Vonovia platform: the title and the Beschreibung and
+Sonstige Angaben cards). The analysis
+rule reads only the flags, never the page's text. The running probes are the
+new fields in each adapter's fixture tests.
 
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
