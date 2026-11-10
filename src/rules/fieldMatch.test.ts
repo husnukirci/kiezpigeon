@@ -215,6 +215,23 @@ describe("mapFields", () => {
     ).toEqual([true, true, false]);
   });
 
+  it("inverts the value for a no-pets field", () => {
+    for (const label of [
+      "Keine Haustiere",
+      "Ohne Haustiere",
+      "No pets",
+      "Haustiere: keine",
+    ]) {
+      const box = field({ label, type: "checkbox" });
+      expect(mapFields([box], coupleWithDog, "").mappings[0]?.value).toBe(
+        false,
+      );
+      expect(mapFields([box], soloStudent, "").mappings[0]?.value).toBe(true);
+    }
+    const plain = field({ label: "Haustiere", type: "checkbox" });
+    expect(mapFields([plain], coupleWithDog, "").mappings[0]?.value).toBe(true);
+  });
+
   it("joins street and number, and postcode and city, for combined fields", () => {
     const fields = [
       field({ label: "Straße und Hausnummer" }),

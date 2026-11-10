@@ -143,6 +143,8 @@ const COMBINED_NR = new RegExp(word("nr"), "u");
 const FULL_NAME_FIELD =
   /vor(?:name)? und (?:nach|zu)name|vollständiger name|full ?name/u;
 const NON_SMOKER = /nichtraucher|non ?smok/u;
+const NO_PETS =
+  /(?:keine?|ohne|no) (?:haus)?(?:tiere?|pets?)|(?:haustiere?|pets?) keine?/u;
 const NOT_COUNTED_TYPES = new Set([
   "hidden",
   "submit",
@@ -309,8 +311,10 @@ function yesNoFor(
 ): boolean {
   const { household } = profile;
   switch (kind) {
-    case "pets":
-      return household.pets.some((pet) => pet.count > 0);
+    case "pets": {
+      const hasPets = household.pets.some((pet) => pet.count > 0);
+      return NO_PETS.test(hay) ? !hasPets : hasPets;
+    }
     case "smoker":
       return NON_SMOKER.test(hay) ? !household.smoker : household.smoker;
     case "wbs":
