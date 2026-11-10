@@ -25,6 +25,9 @@ interface ListingFlowProps {
   profile: Profile;
   siteName: string;
   listing: Listing;
+  /** Pages the panel's tab has loaded; the form is read again on each.
+   *  UnknownSite starts over per page instead, so it passes none. */
+  pageLoads?: number;
   /** Set on a site without an adapter, where the user typed the facts. */
   unknownSite?: { onEditFacts: () => void } | undefined;
 }
@@ -34,6 +37,7 @@ export function ListingFlow({
   profile,
   siteName,
   listing,
+  pageLoads = 0,
   unknownSite,
 }: ListingFlowProps) {
   const letter = useLetter();
@@ -50,6 +54,7 @@ export function ListingFlow({
     return (
       <LetterScreen
         ownTab={ownTab}
+        pageLoads={pageLoads}
         unknownSite={unknownSite !== undefined}
         state={ours}
         profile={profile}
@@ -98,17 +103,27 @@ type LetterScreenProps = Omit<
   | "saveFailed"
   | "onFilled"
   | "onSent"
-> & { ownTab: number | undefined; unknownSite: boolean; listing: Listing };
+> & {
+  ownTab: number | undefined;
+  pageLoads: number;
+  unknownSite: boolean;
+  listing: Listing;
+};
 
 /** The letter screen with its tab's contact form, read when it opens, and
  *  the tracker's record for its listing. */
 function LetterScreen({
   ownTab,
+  pageLoads,
   unknownSite,
   listing,
   ...props
 }: LetterScreenProps) {
-  const form = useContactForm(ownTab, unknownSite ? injectFallback : undefined);
+  const form = useContactForm(
+    ownTab,
+    unknownSite ? injectFallback : undefined,
+    pageLoads,
+  );
   const applications = useStored("applications");
   const [saveFailed, setSaveFailed] = useState<string>();
   const saved =

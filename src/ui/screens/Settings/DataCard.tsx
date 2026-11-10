@@ -71,7 +71,14 @@ export function DataCard({ profile, onImported, onDeleted }: DataCardProps) {
     // Reset so choosing the same file again still fires a change.
     input.value = "";
     if (!file) return;
-    const result = importData(await file.text());
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      setFlow({ step: "problems", problems: ["That file could not be read."] });
+      return;
+    }
+    const result = importData(text);
     setFlow(
       result.ok
         ? { step: "confirmImport", ...result.value }

@@ -352,6 +352,21 @@ describe("LetterReady", () => {
     expect(props.onSent).toHaveBeenCalledExactlyOnceWith(passingLetter);
   });
 
+  it("marks a pigeon filled earlier as sent without a new fill", () => {
+    const filled: Application = {
+      id: "app_k3x9",
+      listingUrl: kreuzbergListing.url,
+      letter: "Der Brief von gestern.",
+      status: "filled",
+      statusChangedAt: "2027-02-01T09:30:00.000Z",
+    };
+    const props = renderWith(ready, contactForm, false, filled);
+    fireEvent.click(screen.getByRole("button", { name: "Yes, I sent it" }));
+    expect(props.onSent).toHaveBeenCalledTimes(1);
+    expect(props.onSent).toHaveBeenCalledWith("Der Brief von gestern.");
+    expect(props.onFilled).not.toHaveBeenCalled();
+  });
+
   it("shows the listing is already in your pigeons instead of asking again", () => {
     const saved: Application = {
       id: "app_k3x9",

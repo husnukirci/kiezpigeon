@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -10,6 +11,7 @@ import { fakeBrowser } from "wxt/testing/fake-browser";
 import { coupleWithDog } from "../../../../test-support/sample-profiles";
 import { exportData } from "../../../rules/profile";
 import type { Application } from "../../../rules/types";
+import * as storage from "../../../storage/storage";
 import { read, resetForTests, write } from "../../../storage/storage";
 import { Settings } from "./Settings";
 
@@ -32,6 +34,16 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 function chooseFile(text: string): void {
   const input = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -66,6 +78,46 @@ describe("Settings", () => {
     expect(stored.ok && stored.value?.contact.email).toBe(
       coupleWithDog.contact.email,
     );
+  });
+
+  it("keeps 'not saved' when an earlier save lands after an invalid edit", async () => {
+    const first = deferred<undefined>();
+    vi.spyOn(storage, "write").mockReturnValueOnce(first.promise);
+    render(<Settings profile={coupleWithDog} onClose={vi.fn()} />);
+    const [firstName] = screen.getAllByLabelText("First name");
+    fireEvent.change(firstName as HTMLElement, {
+      target: { value: "Marlene" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "" } });
+    await act(async () => {
+      first.resolve(undefined);
+      await first.promise;
+    });
+    expect(screen.getByText(/Not saved yet/)).toBeDefined();
+  });
+
+  it("ends saved when a failed save is followed by one that worked", async () => {
+    const first = deferred<undefined>();
+    const second = deferred<undefined>();
+    vi.spyOn(storage, "write")
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    render(<Settings profile={coupleWithDog} onClose={vi.fn()} />);
+    const [firstName] = screen.getAllByLabelText("First name");
+    fireEvent.change(firstName as HTMLElement, { target: { value: "Marle" } });
+    fireEvent.change(firstName as HTMLElement, {
+      target: { value: "Marlene" },
+    });
+    await act(async () => {
+      second.resolve(undefined);
+      await second.promise;
+    });
+    await act(async () => {
+      first.reject(new Error("quota"));
+      await first.promise.catch(() => undefined);
+    });
+    expect(screen.getByText("Changes are saved as you type.")).toBeDefined();
+    expect(screen.queryByText(/could not be saved/)).toBeNull();
   });
 
   it("shows how you two are related, and forgets it with the co-applicant", async () => {
@@ -109,6 +161,27 @@ describe("Settings", () => {
       screen.getByText("exportedAt: must be a date and time"),
     ).toBeDefined();
     expect(screen.getByText("profile: must be an object")).toBeDefined();
+    expect(await read("profile")).toEqual({ ok: true, value: coupleWithDog });
+  });
+
+  it("says so when the import file cannot be read", async () => {
+    render(<Settings profile={coupleWithDog} onClose={vi.fn()} />);
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error("no import input");
+    const file = new File(["{}"], "kiezpigeon.json", {
+      type: "application/json",
+    });
+    vi.spyOn(file, "text").mockRejectedValue(new Error("unreadable"));
+    Object.defineProperty(input, "files", {
+      value: [file],
+      configurable: true,
+    });
+    fireEvent.change(input);
+    expect(
+      await screen.findByText("That file could not be read."),
+    ).toBeDefined();
+    expect(screen.getByText(/can't be imported/)).toBeDefined();
     expect(await read("profile")).toEqual({ ok: true, value: coupleWithDog });
   });
 

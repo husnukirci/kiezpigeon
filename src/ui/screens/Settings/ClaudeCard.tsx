@@ -8,7 +8,7 @@ import { remove, write } from "../../../storage/storage";
 import { cx } from "../../cx";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
-import { TickIcon } from "../../components/Icons/Icons";
+import { ExclamationIcon, TickIcon } from "../../components/Icons/Icons";
 import { SelectField, TextField } from "../../components/TextField/TextField";
 import { useStored } from "../../hooks/useStored";
 import styles from "./ClaudeCard.module.css";
@@ -37,13 +37,30 @@ export function ClaudeCard() {
   const settings = useStored("settings");
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string>();
+  // A removal or model change storage refused; cleared by the next action.
+  const [failure, setFailure] = useState<string>();
   const connected = apiKey.status === "ready" && apiKey.value !== undefined;
   const { model } =
     settings.status === "ready" && settings.value
       ? settings.value
       : defaultSettings();
 
+  const onRemove = (): void => {
+    setFailure(undefined);
+    remove("apiKey").catch(() => {
+      setFailure("Your key could not be removed. Try again.");
+    });
+  };
+
+  const onModel = (next: ClaudeModel): void => {
+    setFailure(undefined);
+    write("settings", { model: next }).catch(() => {
+      setFailure("The model could not be changed. Try again.");
+    });
+  };
+
   const onSave = (): void => {
+    setFailure(undefined);
     const parsed = parseApiKey(typed);
     if (!parsed.ok) {
       setError("Paste the whole key. It has no spaces.");
@@ -68,13 +85,7 @@ export function ClaudeCard() {
             <TickIcon size={18} />
             Connected. Your key is saved in this browser only.
           </p>
-          <Button
-            onClick={() => {
-              void remove("apiKey");
-            }}
-          >
-            Remove key
-          </Button>
+          <Button onClick={onRemove}>Remove key</Button>
         </>
       ) : (
         <>
@@ -107,11 +118,15 @@ export function ClaudeCard() {
         label="Model"
         options={MODELS}
         value={model}
-        onChange={(next) => {
-          void write("settings", { model: next });
-        }}
+        onChange={onModel}
       />
       <p className={cx(styles.text, "type-body-sm")}>{MODEL_HINTS[model]}</p>
+      {failure && (
+        <p className={cx(styles.line, "type-body-sm")} role="alert">
+          <ExclamationIcon size={18} />
+          {failure}
+        </p>
+      )}
     </Card>
   );
 }

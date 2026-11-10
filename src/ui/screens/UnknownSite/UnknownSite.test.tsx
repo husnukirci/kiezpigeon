@@ -103,6 +103,35 @@ describe("UnknownSite", () => {
     ).toBeDefined();
   });
 
+  it("clears a fact's error when that fact is edited and keeps the others", async () => {
+    stubExecuteScript(() => Promise.resolve([{ frameId: 0, result: SITE }]));
+    render(<UnknownSite ownTab={7} profile={coupleWithDog} />);
+    usePage();
+    await screen.findByRole("heading", { name: "About this flat" });
+    for (const label of ["Kaltmiete in €", "Warmmiete in €"]) {
+      fireEvent.change(screen.getByLabelText(label), {
+        target: { value: "viel" },
+      });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(
+      screen.getAllByText("Write the amount like 2.600 or 2.600,50"),
+    ).toHaveLength(2);
+
+    fireEvent.change(screen.getByLabelText("Kaltmiete in €"), {
+      target: { value: "900" },
+    });
+    expect(
+      screen.getAllByText("Write the amount like 2.600 or 2.600,50"),
+    ).toHaveLength(1);
+    expect(
+      screen.getByLabelText("Kaltmiete in €").getAttribute("aria-invalid"),
+    ).toBeNull();
+    expect(
+      screen.getByLabelText("Warmmiete in €").getAttribute("aria-invalid"),
+    ).toBe("true");
+  });
+
   it("asks for the icon click when the page cannot be read", async () => {
     stubExecuteScript(() =>
       Promise.reject(new Error("Cannot access contents of the page.")),

@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import {
   afterEach,
   beforeEach,
@@ -110,6 +116,68 @@ describe("Home", () => {
     render(<Home profile={coupleWithDog} />);
     expect(await screen.findByText(reason)).toBeDefined();
     expect(screen.queryByRole("button", { name: "Use this page" })).toBeNull();
+  });
+
+  it("reads the contact form again on the letter screen when its tab loads another page", async () => {
+    window.history.replaceState(null, "", "?tabId=7");
+    let formReads = 0;
+    vi.mocked(browser.tabs.sendMessage).mockImplementation(((
+      _tab: number,
+      message: { type: string },
+    ) => {
+      if (message.type === "getContactForm") {
+        formReads += 1;
+        return Promise.resolve({
+          ok: true,
+          value:
+            formReads === 1
+              ? {
+                  kind: "form",
+                  fields: [
+                    {
+                      key: "name:firstName",
+                      type: "text",
+                      visible: true,
+                      disabled: false,
+                    },
+                  ],
+                }
+              : { kind: "no_form" },
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        value: {
+          kind: "listing",
+          siteName: "ImmoScout24",
+          listing: kreuzbergListing,
+        },
+      });
+    }) as never);
+    try {
+      render(<Home profile={coupleWithDog} />);
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Write my letter" }),
+      );
+      await screen.findByRole("heading", { name: "Letter ready" });
+      await waitFor(() => {
+        expect(formReads).toBe(1);
+      });
+      expect(
+        screen.queryByText(/Open the contact form on the listing first/),
+      ).toBeNull();
+
+      await fakeBrowser.tabs.onUpdated.trigger(7, { status: "complete" }, {
+        id: 7,
+      } as Browser.tabs.Tab);
+
+      expect(
+        await screen.findByText(/Open the contact form on the listing first/),
+      ).toBeDefined();
+      expect(formReads).toBe(2);
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
   });
 
   it("starts over on an unknown site when its tab loads another page", async () => {

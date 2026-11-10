@@ -49,7 +49,7 @@ export function SegmentedControl<T extends string>({
             className={cx(styles.option, "type-body-sm")}
             aria-pressed={option.value === value}
             onClick={() => {
-              onChange(option.value);
+              if (option.value !== value) onChange(option.value);
             }}
             onKeyDown={(e) => {
               onKeyDown(e, i);
