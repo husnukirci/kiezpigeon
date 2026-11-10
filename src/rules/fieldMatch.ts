@@ -465,7 +465,21 @@ function withChildren(text: string): boolean {
 
 function householdOption(field: FormField, profile: Profile) {
   const { adults, children, relationship } = profile.household;
-  if (children > 0) return optionWhere(field, withChildren);
+  if (children > 0) {
+    // "Alleinerziehend" (`allein`) or "Paar mit Kind": the option that
+    // also fits the number of adults wins, else the first with children.
+    const adultsPattern =
+      adults === 1
+        ? HOUSEHOLD_OPTIONS.one
+        : adults === 2
+          ? HOUSEHOLD_OPTIONS.two
+          : undefined;
+    return (
+      (adultsPattern &&
+        optionWhere(field, (t) => withChildren(t) && adultsPattern.test(t))) ??
+      optionWhere(field, withChildren)
+    );
+  }
   // Without children, an option that names them is never the answer.
   const childless = (test: RegExp) =>
     optionWhere(field, (t) => test.test(t) && !withChildren(t));

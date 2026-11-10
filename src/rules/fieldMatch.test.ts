@@ -907,4 +907,31 @@ describe("final review findings", () => {
     const none = field({ label: "Haustiere: keine", type: "checkbox" });
     expect(mapFields([none], coupleWithDog, "").mappings[0]?.value).toBe(false);
   });
+
+  it("picks the option with children that also fits the number of adults", () => {
+    const options = (labels: string[]) =>
+      field({
+        label: "Haushaltsgröße",
+        type: "select",
+        options: labels.map((label) => ({ value: label, label })),
+      });
+    const coupleWithChild: Profile = {
+      ...coupleWithDog,
+      household: { ...coupleWithDog.household, children: 1 },
+    };
+    const singleParent: Profile = {
+      ...coupleWithChild,
+      household: { ...coupleWithChild.household, adults: 1 },
+    };
+    const labels = ["Alleinerziehend mit Kind", "Paar mit Kind", "Paar"];
+    for (const order of [labels, [...labels].reverse()]) {
+      const household = options(order);
+      expect(
+        mapFields([household], coupleWithChild, "").mappings[0]?.value,
+      ).toBe("Paar mit Kind");
+      expect(mapFields([household], singleParent, "").mappings[0]?.value).toBe(
+        "Alleinerziehend mit Kind",
+      );
+    }
+  });
 });
