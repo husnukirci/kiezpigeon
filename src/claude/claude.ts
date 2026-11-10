@@ -66,17 +66,39 @@ interface ClientOptions {
   fetch?: typeof fetch;
 }
 
+/** The API's own message text. The SDK's `message` is the status plus the
+ *  whole JSON body, so it is the fallback only when the body has none. */
+function apiMessage(error: InstanceType<typeof Anthropic.APIError>): string {
+  const body: unknown = error.error;
+  if (typeof body === "object" && body !== null && "error" in body) {
+    const inner = body.error;
+    if (typeof inner === "object" && inner !== null && "message" in inner) {
+      if (typeof inner.message === "string") return inner.message;
+    }
+  }
+  return error.message;
+}
+
 /** Maps any failure from the SDK to one of our codes. Order matters:
  *  the SDK's timeout error is a kind of connection error. */
 export function toClaudeError(error: unknown): ClaudeError {
   if (error instanceof ClaudeError) return error;
+  // The SDK has no class for 402; its error type is the reliable signal.
+  if (
+    error instanceof Anthropic.APIError &&
+    (error.type === "billing_error" || error.status === 402)
+  ) {
+    return new ClaudeError("no_credit");
+  }
   if (error instanceof Anthropic.AuthenticationError) {
     return new ClaudeError("invalid_key");
   }
   if (error instanceof Anthropic.PermissionDeniedError) {
     // A key without access to the chosen model is a 403 naming the model.
     return new ClaudeError(
-      /\bmodel\b/i.test(error.message) ? "model_unavailable" : "invalid_key",
+      /\bmodel\b/i.test(apiMessage(error))
+        ? "model_unavailable"
+        : "invalid_key",
     );
   }
   if (error instanceof Anthropic.NotFoundError) {

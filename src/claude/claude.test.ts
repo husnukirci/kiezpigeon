@@ -155,6 +155,36 @@ describe("createClaudeClient", () => {
     expect(error).toMatchObject({ code, message: ERROR_MESSAGES[code] });
   });
 
+  it.each<[number, string]>([
+    [402, "Payment required."],
+    [400, "Please add funds to continue."],
+  ])("maps a %d billing_error saying %s to no_credit", async (status, text) => {
+    const error = await failure(
+      respond(status, {
+        type: "error",
+        error: { type: "billing_error", message: text },
+      }),
+    );
+    expect(error).toMatchObject({
+      code: "no_credit",
+      message: ERROR_MESSAGES.no_credit,
+    });
+  });
+
+  it("judges a 403 by the API's message, not by other parts of its body", async () => {
+    const error = await failure(
+      respond(403, {
+        type: "error",
+        model: "claude-sonnet-5-5",
+        error: { type: "permission_error", message: "Request not allowed" },
+      }),
+    );
+    expect(error).toMatchObject({
+      code: "invalid_key",
+      message: ERROR_MESSAGES.invalid_key,
+    });
+  });
+
   it("no longer blames credit for an unknown failure", () => {
     expect(ERROR_MESSAGES.failed).not.toMatch(/credit/i);
   });
