@@ -181,6 +181,8 @@ function FactsScreen({
     problems.find((p) => p.field === field)?.message;
   const set = (change: Partial<ListingFacts>): void => {
     onChange({ ...facts, ...change });
+    // An edited fact's problem is stale; the others stay until Continue.
+    setProblems((now) => now.filter((p) => !(p.field in change)));
   };
 
   return (
