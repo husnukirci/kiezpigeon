@@ -580,6 +580,19 @@ describe("mapFields on select fields", () => {
     expect(chosen(reversed, coupleWithDog)).toBe("Paar ohne Kinder");
   });
 
+  it("counts a singular Kind option as a household with children", () => {
+    const options = ["2 Erwachsene, 1 Kind", "2 Erwachsene"];
+    const household = choice("Haushaltsgröße", options);
+    expect(chosen(household, family)).toBe("2 Erwachsene, 1 Kind");
+    expect(chosen(household, coupleWithDog)).toBe("2 Erwachsene");
+    const reversed = choice("Haushaltsgröße", [
+      "2 Erwachsene mit Kind",
+      "2 Erwachsene",
+    ]);
+    expect(chosen(reversed, coupleWithDog)).toBe("2 Erwachsene");
+    expect(chosen(reversed, family)).toBe("2 Erwachsene mit Kind");
+  });
+
   it("reads income bands written with cents", () => {
     const income = choice("Haushaltsnettoeinkommen", [
       "bis 2.000,00 €",

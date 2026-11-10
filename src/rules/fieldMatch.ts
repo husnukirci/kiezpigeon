@@ -413,14 +413,14 @@ const EMPLOYMENT_OPTIONS: Record<EmploymentType, RegExp> = {
 };
 
 const HOUSEHOLD_OPTIONS = {
-  family: /famil|kinder|children/u,
+  family: new RegExp(`famil|kinder|children|${word("kind|child")}`, "u"),
   flatshare: new RegExp(word("wohngemeinschaft|wg|flatshare|shared"), "u"),
   one: /einperson|single|allein|(?:1|one|eine) person/u,
   two: /(?:zwei|2|two) (?:erwachsene|personen|adults|persons)|paar|couple/u,
 } as const;
 
 const CHILDLESS =
-  /ohne kinder|keine kinder|kinderlos|no children|without children/u;
+  /ohne kinder?|keine? kinder?|kinderlos|no child(?:ren)?|without children/u;
 
 /** An option that names children: "Familie", "Paar mit Kindern". */
 function withChildren(text: string): boolean {
