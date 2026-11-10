@@ -589,6 +589,15 @@ describe("mapFields on select fields", () => {
     ]);
     expect(chosen(income, coupleWithDog)).toBe("4.000,01 - 5.000,00 €");
   });
+
+  it("writes no income when none was given", () => {
+    const profile = defaultProfile();
+    const text = field({ label: "Nettoeinkommen" });
+    const band = choice("Nettoeinkommen", ["bis 1.000 €", "über 1.000 €"]);
+    const { mappings, matched } = mapFields([text, band], profile, "");
+    expect(mappings.map((m) => m.value)).toEqual([undefined, undefined]);
+    expect(matched).toBe(0);
+  });
 });
 
 describe("review findings", () => {

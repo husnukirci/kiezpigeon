@@ -301,7 +301,10 @@ function valueFor(
         ? yesNoFor(kind, hay, profile)
         : undefined;
     case "income":
-      return String(Math.floor(householdIncomeCents(profile) / 100));
+      // No income given is not an income of 0.
+      return householdIncomeCents(profile) === 0
+        ? undefined
+        : String(Math.floor(householdIncomeCents(profile) / 100));
     case "employment":
       // A text field asks for the job itself ("Beruf").
       return applicant?.job;
@@ -448,6 +451,7 @@ function incomeRange(
 }
 
 function incomeOption(field: FormField, profile: Profile): string | undefined {
+  if (householdIncomeCents(profile) === 0) return undefined;
   const euros = householdIncomeCents(profile) / 100;
   const optionWhereRange = (
     holds: (range: { above: number; upTo: number }) => boolean,
