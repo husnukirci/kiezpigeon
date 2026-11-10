@@ -40,6 +40,25 @@ function pattern(parts: { within?: string; whole?: string }): RegExp {
   return new RegExp(sources.join("|"), "u");
 }
 
+/** Bank, identity and tax data: never filled, whatever else the text says. */
+const SENSITIVE = pattern({
+  within:
+    "iban|kontoinhaber|kontonummer|lastschrift|kreditkarte|steuer ?id|steuer ?identifikation|steuernummer|steuer ?nr|steuerklasse|tax ?id|personalausweis|reisepass|ausweis ?nr|ausweisnummer|passport|id ?number",
+  whole: "bic|sepa|konto",
+});
+
+/** A bare `Nr.`: the house number, but only as a field's own whole text. */
+const BARE_NR = /^nr$/u;
+
+/** The text that names a field: its label, or without one its attributes. */
+function ownText(field: FormField): string[] {
+  return field.label?.trim()
+    ? [field.label]
+    : [field.name, field.id, field.placeholder].filter(
+        (part): part is string => part !== undefined,
+      );
+}
+
 // Checked in order; the first match wins. `within` matches inside longer
 // German compounds (`Haushaltsnettoeinkommen`), `whole` only as a word
 // (`ort` but not `Sortierung`).
@@ -48,8 +67,8 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
     "consent",
     pattern({
       within:
-        "datenschutz|privacy|consent|willig|einverstanden|newsletter|akzeptier|zustimm",
-      whole: "agb|terms",
+        "datenschutz|privacy|consent|einverstanden|newsletter|akzeptier|zustimm|einwillig",
+      whole: "agb|terms|willige|willigen",
     }),
   ],
   [
@@ -72,13 +91,14 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
   [
     "lastName",
     pattern({
-      within: "nachname|familienname|last ?name|family ?name|surname",
+      within:
+        "nachname|zuname|familienname|last ?name|family ?name|surname|vollständiger name|full ?name",
     }),
   ],
   ["street", pattern({ within: "stra(?:ss|ß)e|street", whole: "str" })],
   [
     "houseNumber",
-    pattern({ within: "hausnummer|hausnr|house ?(?:number|no)", whole: "nr" }),
+    pattern({ within: "hausnummer|hausnr|haus nr|house ?(?:number|no)" }),
   ],
   [
     "postcode",
@@ -128,7 +148,30 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
 const CHECKBOX_FACTS = new Set<FieldKind>(["pets", "smoker", "wbs"]);
 
 const CAPTCHA = /captcha/u;
+/** Autocomplete tokens whose field takes the street and the number. */
+const COMBINED_STREET_TOKENS = new Set(["street-address", "address-line1"]);
+const COMBINED_NR = new RegExp(word("nr"), "u");
+// "Vor- und Nachname", "Vorname, Nachname", "Name, Vorname": a label that
+// asks for both names. `full name` also counts in a name or id attribute.
+const FULL_NAME_LABEL =
+  /(?<![\p{L}])vor(?:name)? (?:und )?(?:nach|zu)name|(?<![\p{L}])(?:nach|zu)?name (?:und )?vorname/u;
+const FULL_NAME_ANYWHERE = /vollständiger name|full ?name/u;
+
+/**
+ * Label and placeholder are read one at a time: a "Name" label over a
+ * "Vorname" placeholder asks for one name, not for "Name, Vorname".
+ */
+function asksForFullName(field: FormField): boolean {
+  return (
+    [field.label, field.placeholder].some(
+      (text) => text !== undefined && FULL_NAME_LABEL.test(words(text)),
+    ) || FULL_NAME_ANYWHERE.test(haystack(field))
+  );
+}
 const NON_SMOKER = /nichtraucher|non ?smok/u;
+const NO_PETS = /(?:keine?|ohne|no) (?:haus)?(?:tiere?|pets?)/u;
+/** "Haustiere: keine", but not "Haustiere (keine Pflicht)": keine ends it. */
+const NO_PETS_AFTER = /(?:haustiere?|pets?) keine?$/u;
 const NOT_COUNTED_TYPES = new Set([
   "hidden",
   "submit",
@@ -141,38 +184,78 @@ const NOT_COUNTED_TYPES = new Set([
   "radio",
 ]);
 
-/** Name, id, label and placeholder as lower-case words. */
-function haystack(field: FormField): string {
-  return [field.name, field.id, field.label, field.placeholder]
-    .filter((part): part is string => part !== undefined)
-    .join(" ")
+/** Lower-case words of a text, camel case split. */
+function words(text: string): string {
+  return text
     .replace(/(\p{Ll})(\p{Lu})/gu, "$1 $2")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
+/**
+ * The field name of an autocomplete value: its last token, since the
+ * others are sections and `shipping` or `home` hints (`home tel`).
+ */
+function autocompleteToken(field: FormField): string {
+  return field.autocomplete?.trim().toLowerCase().split(/\s+/u).at(-1) ?? "";
+}
+
+function parts(field: FormField): string[] {
+  return [field.name, field.id, field.label, field.placeholder].filter(
+    (part): part is string => part !== undefined,
+  );
+}
+
+/** Name, id, label and placeholder as lower-case words. */
+function haystack(field: FormField): string {
+  return words(parts(field).join(" "));
+}
+
 function matches(kind: FieldKind, hay: string): boolean {
   return KEYWORDS.some(([k, re]) => k === kind && re.test(hay));
 }
 
-export function classifyField(field: FormField): FieldKind {
-  const kind = classifyByText(field);
+/**
+ * `fullName` is false for a form where several fields share a "Vor- und
+ * Nachname" label: then none of them is a full-name field.
+ */
+export function classifyField(field: FormField, fullName = true): FieldKind {
+  const kind = classifyByText(field, fullName);
   // Any other checkbox is an opt-in (profile sharing, newsletters, offers).
   return field.type === "checkbox" && !CHECKBOX_FACTS.has(kind)
     ? "consent"
     : kind;
 }
 
-function classifyByText(field: FormField): FieldKind {
-  const fromAutocomplete = field.autocomplete
-    ? AUTOCOMPLETE[field.autocomplete.trim().toLowerCase()]
-    : undefined;
-  if (fromAutocomplete) return fromAutocomplete;
-
+function classifyByText(
+  field: FormField,
+  fullName: boolean,
+  ownOnly = false,
+): FieldKind {
   const hay = haystack(field);
+  if (SENSITIVE.test(hay)) return "unknown";
+
+  const token = autocompleteToken(field);
+  if (Object.hasOwn(AUTOCOMPLETE, token))
+    return AUTOCOMPLETE[token] ?? "unknown";
+
+  if (asksForFullName(field)) {
+    // Before the keywords, whose `vorname` would read it as a first name.
+    if (fullName) return "lastName";
+    // A full-name label shared by several inputs says nothing about one of
+    // them, so the field's own name, id and placeholder are asked first.
+    // Every other field of the form is read as usual.
+    if (!ownOnly) {
+      const own = classifyByText({ ...field, label: undefined }, false, true);
+      if (own !== "unknown") return own;
+    }
+  }
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
+  if (ownText(field).some((part) => BARE_NR.test(words(part)))) {
+    return "houseNumber";
+  }
 
   switch (field.type) {
     case "email":
@@ -196,11 +279,20 @@ function isFillable(field: FormField): boolean {
   );
 }
 
+/** What the whole form says about its fields, worked out once per form. */
+interface FormFacts {
+  /** At most one field asks for the full name, so it takes both names. */
+  fullName: boolean;
+  /** Some field of the form takes the house number on its own. */
+  houseNumberField: boolean;
+}
+
 function valueFor(
   kind: FieldKind,
   field: FormField,
   profile: Profile,
   letter: string,
+  facts: FormFacts,
 ): FieldValue | undefined {
   if (field.type === "select") {
     return optionFor(kind, field, profile);
@@ -212,13 +304,22 @@ function valueFor(
     case "firstName":
       return applicant?.firstName;
     case "lastName":
-      return applicant?.lastName;
+      return facts.fullName && asksForFullName(field)
+        ? [applicant?.firstName, applicant?.lastName]
+            .filter(Boolean)
+            .join(" ") || undefined
+        : applicant?.lastName;
     case "email":
       return contact.email;
     case "phone":
       return contact.phone;
     case "street":
-      return matches("houseNumber", hay)
+      // A street-address token takes the number too, unless the form has a
+      // field of its own for it.
+      return matches("houseNumber", hay) ||
+        COMBINED_NR.test(words([field.label, field.placeholder].join(" "))) ||
+        (COMBINED_STREET_TOKENS.has(autocompleteToken(field)) &&
+          !facts.houseNumberField)
         ? `${contact.street} ${contact.houseNumber}`.trim()
         : contact.street;
     case "houseNumber":
@@ -240,9 +341,15 @@ function valueFor(
     case "pets":
     case "smoker":
     case "wbs":
-      return yesNoFor(kind, hay, profile);
+      // A text field ("WBS-Nr.") asks for something else than yes or no.
+      return field.type === "checkbox"
+        ? yesNoFor(kind, field, profile)
+        : undefined;
     case "income":
-      return String(Math.floor(householdIncomeCents(profile) / 100));
+      // No income given is not an income of 0.
+      return householdIncomeCents(profile) === 0
+        ? undefined
+        : String(Math.floor(householdIncomeCents(profile) / 100));
     case "employment":
       // A text field asks for the job itself ("Beruf").
       return applicant?.job;
@@ -271,13 +378,19 @@ function householdIncomeCents(profile: Profile): number {
 
 function yesNoFor(
   kind: "pets" | "smoker" | "wbs",
-  hay: string,
+  field: FormField,
   profile: Profile,
 ): boolean {
   const { household } = profile;
+  const hay = haystack(field);
   switch (kind) {
-    case "pets":
-      return household.pets.some((pet) => pet.count > 0);
+    case "pets": {
+      const hasPets = household.pets.some((pet) => pet.count > 0);
+      const noPets =
+        NO_PETS.test(hay) ||
+        ownText(field).some((part) => NO_PETS_AFTER.test(words(part)));
+      return noPets ? !hasPets : hasPets;
+    }
     case "smoker":
       return NON_SMOKER.test(hay) ? !household.smoker : household.smoker;
     case "wbs":
@@ -294,13 +407,18 @@ function optionText(option: FieldOption): string {
     .trim();
 }
 
+/** Placeholder options that answer nothing, whatever else they say. */
+const NO_ANSWER =
+  /keine angabe|bitte w[äa]hlen|please (?:choose|select)|not specified|ausw[äa]hlen/u;
+
 function optionWhere(
   field: FormField,
   test: (text: string) => boolean,
 ): string | undefined {
-  return field.options?.find(
-    (option) => option.value !== "" && test(optionText(option)),
-  )?.value;
+  return field.options?.find((option) => {
+    const text = optionText(option);
+    return option.value !== "" && !NO_ANSWER.test(text) && test(text);
+  })?.value;
 }
 
 const NO = new RegExp(word("nein|no|not|false|nicht|keine?|n|0"), "u");
@@ -331,23 +449,45 @@ const EMPLOYMENT_OPTIONS: Record<EmploymentType, RegExp> = {
 };
 
 const HOUSEHOLD_OPTIONS = {
-  family: /famil|kinder|children/u,
+  family: new RegExp(`famil|kinder|children|${word("kind|child")}`, "u"),
   flatshare: new RegExp(word("wohngemeinschaft|wg|flatshare|shared"), "u"),
   one: /einperson|single|allein|(?:1|one|eine) person/u,
   two: /(?:zwei|2|two) (?:erwachsene|personen|adults|persons)|paar|couple/u,
 } as const;
 
+const CHILDLESS =
+  /ohne kinder?|keine? kinder?|kinderlos|no child(?:ren)?|without children/u;
+
+/** An option that names children: "Familie", "Paar mit Kindern". */
+function withChildren(text: string): boolean {
+  return HOUSEHOLD_OPTIONS.family.test(text) && !CHILDLESS.test(text);
+}
+
 function householdOption(field: FormField, profile: Profile) {
   const { adults, children, relationship } = profile.household;
-  if (children > 0)
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.family.test(t));
-  if (profile.applicants.length === 2 && relationship === "flatmates") {
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.flatshare.test(t));
+  if (children > 0) {
+    // "Alleinerziehend" (`allein`) or "Paar mit Kind": the option that
+    // also fits the number of adults wins, else the first with children.
+    const adultsPattern =
+      adults === 1
+        ? HOUSEHOLD_OPTIONS.one
+        : adults === 2
+          ? HOUSEHOLD_OPTIONS.two
+          : undefined;
+    return (
+      (adultsPattern &&
+        optionWhere(field, (t) => withChildren(t) && adultsPattern.test(t))) ??
+      optionWhere(field, withChildren)
+    );
   }
-  if (adults === 1)
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.one.test(t));
-  if (adults === 2)
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.two.test(t));
+  // Without children, an option that names them is never the answer.
+  const childless = (test: RegExp) =>
+    optionWhere(field, (t) => test.test(t) && !withChildren(t));
+  if (profile.applicants.length === 2 && relationship === "flatmates") {
+    return childless(HOUSEHOLD_OPTIONS.flatshare);
+  }
+  if (adults === 1) return childless(HOUSEHOLD_OPTIONS.one);
+  if (adults === 2) return childless(HOUSEHOLD_OPTIONS.two);
   return undefined;
 }
 
@@ -358,9 +498,9 @@ const ABOVE = new RegExp(word("über|ueber|ab|over|more|mehr"), "u");
 function incomeRange(
   text: string,
 ): { above: number; upTo: number } | undefined {
-  const amounts = (text.match(/\d{1,3}(?:\.\d{3})+|\d+/gu) ?? []).map(
-    (amount) => Number(amount.replaceAll(".", "")),
-  );
+  const amounts = (
+    text.match(/\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?/gu) ?? []
+  ).map((amount) => Number(amount.replace(/,\d+$/u, "").replaceAll(".", "")));
   const [first, second] = amounts;
   if (first === undefined) return undefined;
   if (second !== undefined) return { above: first, upTo: second };
@@ -374,6 +514,7 @@ function incomeRange(
 }
 
 function incomeOption(field: FormField, profile: Profile): string | undefined {
+  if (householdIncomeCents(profile) === 0) return undefined;
   const euros = householdIncomeCents(profile) / 100;
   const optionWhereRange = (
     holds: (range: { above: number; upTo: number }) => boolean,
@@ -442,7 +583,7 @@ function optionFor(
     case "pets":
     case "smoker":
     case "wbs":
-      return yesNoOption(field, yesNoFor(kind, haystack(field), profile));
+      return yesNoOption(field, yesNoFor(kind, field, profile));
     case "moveInDate": {
       const moveIn = profile.moveIn;
       return (
@@ -492,9 +633,17 @@ function replacesCurrent(
   return current !== String(value);
 }
 
-/** A German phone number as digits, `+49` and `0049` read as `0`. */
+/**
+ * A German phone number as digits, `+49` and `0049` read as `0`. A `(0)`
+ * is the trunk zero only right after the country code; elsewhere it is
+ * the number's own zero.
+ */
 function phoneDigits(text: string): string {
-  return text.replace(/[^\d+]/gu, "").replace(/^(?:\+|00)49/u, "0");
+  return text
+    .trim()
+    .replace(/^((?:\+|00)\s*49)\s*\(0\)/u, "$1")
+    .replace(/[^\d+]/gu, "")
+    .replace(/^(?:\+|00)49/u, "0");
 }
 
 export function mapFields(
@@ -509,12 +658,24 @@ export function mapFields(
   leftAlone: FormField[];
 } {
   const fillable = fields.filter(isFillable);
-  const leftAlone = fillable.filter((f) => classifyField(f) === "consent");
-  const mappings = fillable
-    .filter((field) => !leftAlone.includes(field))
-    .map((field) => {
-      const kind = classifyField(field);
-      const found = valueFor(kind, field, profile, letter);
+  // One "Vor- und Nachname" field takes both names; a label shared by
+  // several inputs is not a full-name question.
+  const fullName = fillable.filter(asksForFullName).length < 2;
+  const classified = fillable.map((field) => ({
+    field,
+    kind: classifyField(field, fullName),
+  }));
+  const facts: FormFacts = {
+    fullName,
+    houseNumberField: classified.some((c) => c.kind === "houseNumber"),
+  };
+  const leftAlone = classified
+    .filter((c) => c.kind === "consent")
+    .map((c) => c.field);
+  const mappings = classified
+    .filter(({ kind }) => kind !== "consent")
+    .map(({ field, kind }) => {
+      const found = valueFor(kind, field, profile, letter, facts);
       const value = found === "" ? undefined : found;
       return {
         field,
