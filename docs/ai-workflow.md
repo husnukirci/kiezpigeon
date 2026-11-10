@@ -203,6 +203,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 3 | Letter screen: after Back and reopen, the pigeon filled earlier showed "Yes, I sent it" but the click did nothing, because the handler only knew a letter from a fill in this visit; the sent tests always filled first. | The handler falls back to the saved pigeon's letter, test first with no fill in the visit.
 - Audit 3 | Segmented control: a click on the already selected option still fired onChange, which the letter screen would treat as a tone change and rewrite the letter; no test existed for the control at all. | Click on the selected value is ignored, arrow keys unchanged, test first.
 - Audit 3 | Unknown site facts: an error stayed under a field after the user fixed it, until the next Continue; the test only covered the error appearing. | Editing a fact drops that fact's problems, test first with a second invalid field left alone.
+- Audit 3 | Settings: the save message showed the result of whichever write finished last, so a slow earlier save flipped "Not saved yet" to "saved" after an invalid edit, and a late failure overwrote a newer success; the tests only ever saved once at a time. | Only the latest edit sets the message, tested with deferred writes resolved out of order, test first.
 
 ## Per-phase narrative
 
