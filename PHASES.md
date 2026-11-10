@@ -136,8 +136,8 @@ design/tokens.json, do not edit */`. `scripts/build-tokens.test.ts`
    first real test; `wxt build`.
 8. Git hygiene: husky + lint-staged (Prettier, ESLint, stylelint on staged
    files), commitlint with `@commitlint/config-conventional`.
-9. CI in `.github/workflows/ci.yml`: on push and PR, Node 24, `npm ci`,
-   `lint`, `typecheck`, `test`, `build`; upload `.output/chrome-mv3/` as a
+9. CI in `.github/workflows/ci.yml`: on PRs and pushes to `main`, Node 24,
+   `npm ci`, `lint`, `test` (typechecks first), `build`; upload `.output/chrome-mv3/` as a
    workflow artifact. The Playwright job is added in Phase 5.
 10. `README.md` stub: one-liner, "build and load unpacked" steps, links to
     PLAN.md and PHASES.md, the "never submits" and "data stays on your

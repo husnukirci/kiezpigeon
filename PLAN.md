@@ -78,7 +78,7 @@ use), and how two applicants are related (so the letter stops guessing).
 - [x] Scaffold: extension skeleton with service worker, side panel and one
       content script; tokens pipeline from the design system's
       `tokens.json`; bundled Plus Jakarta Sans; lint, format, typecheck,
-      unit tests, build; CI on every push and PR
+      unit tests, build; CI on every PR and on `main`
 - [x] Rules core (strict TDD, no browser APIs):
   - [x] types: `Profile`, `Applicant`, `Household`, `Listing`, `FitLine`,
         `LetterRequest`, `LetterProblem`, `FormField`, `FieldMapping`,

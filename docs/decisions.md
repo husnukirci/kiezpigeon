@@ -213,6 +213,8 @@ the choice is logged). Fixtures are committed, scrubbed and versioned. The
 model writes both code and tests, so adapters are also checked against a
 live page by hand whenever they change.
 
+**Amendment (2026-11-10): one run per pull request.** CI runs on pull requests and on pushes to `main`; a push to a branch without a PR runs nothing, since the working agreement is PR-only. `npm test` typechecks, so there is no separate typecheck step.
+
 ## ADR 6: Single package with lint-enforced folder boundaries
 
 **Status.** Accepted.
