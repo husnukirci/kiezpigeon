@@ -21,6 +21,7 @@ export function Home({ profile }: { profile: Profile }) {
         profile={profile}
         siteName={active.siteName}
         listing={active.listing}
+        pageLoads={pageLoads}
       />
     );
   }

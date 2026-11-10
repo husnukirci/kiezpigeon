@@ -59,6 +59,8 @@ async function fillThenRead(
 export function useContactForm(
   ownTab: number | undefined,
   prepare?: Prepare,
+  /** Pages its tab has finished loading; a new one is a new form. */
+  pageLoads = 0,
 ): {
   state: ContactFormState;
   check: () => void;
@@ -67,6 +69,13 @@ export function useContactForm(
 } {
   const [state, setState] = useState<ContactFormState>({ status: "checking" });
   const latest = useRef(0);
+  // The form on screen belongs to the page it was read from: another page
+  // loading in the tab starts over from "checking", with no old report.
+  const [stateLoads, setStateLoads] = useState(pageLoads);
+  if (stateLoads !== pageLoads) {
+    setStateLoads(pageLoads);
+    setState({ status: "checking" });
+  }
 
   /** Shows the answer to the latest request only. */
   const settle = useCallback((work: Promise<ContactFormState>): void => {
@@ -103,11 +112,12 @@ export function useContactForm(
     [run, ownTab, prepare],
   );
 
-  // Reading the page the user is on, when its letter screen opens; the
-  // state already says "checking".
+  // Reading the page the user is on, when its letter screen opens and when
+  // its tab loads another page; the state already says "checking". An answer
+  // from the page before is dropped by `settle`.
   useEffect(() => {
     settle(read(ownTab, prepare));
-  }, [settle, ownTab, prepare]);
+  }, [settle, ownTab, prepare, pageLoads]);
 
   return { state, check, fill };
 }
