@@ -830,3 +830,19 @@ describe("review findings", () => {
     expect(replaces("+49 30 5550999")).toBe(true);
   });
 });
+
+describe("final review findings", () => {
+  it("reads a Name label over a Vorname or Nachname placeholder as one name each", () => {
+    const fields = [
+      field({ label: "Name", placeholder: "Vorname" }),
+      field({ label: "Name", placeholder: "Nachname" }),
+    ];
+    expect(
+      mapFields(fields, coupleWithDog, "").mappings.map((m) => m.value),
+    ).toEqual(["Mara", "Testmann"]);
+    const placeholderAlone = [field({ placeholder: "Vorname Nachname" })];
+    expect(
+      mapFields(placeholderAlone, coupleWithDog, "").mappings[0]?.value,
+    ).toBe("Mara Testmann");
+  });
+});

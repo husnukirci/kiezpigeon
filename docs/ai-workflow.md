@@ -193,6 +193,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 1 | Field matching: a household select with "2 Erwachsene, 1 Kind" was read as childless and "2 Erwachsene mit Kind" beat "2 Erwachsene" for a couple; the first fix only knew the plural "Kinder". | The family pattern also matches the whole words kind and child, and the childless pattern covers the singular, test first.
 - Audit 1 | Field matching: the autocomplete table was a plain object, so the token `constructor` came back as a prototype member instead of unknown; every test used real tokens. | The lookup uses Object.hasOwn, test first.
 - Audit 1 | Field matching: the full-name rule filled "Mara Testmann" into both inputs when one "Vor- und Nachname" label sat over a first-name and a last-name field (describe.ts gives a shared label to every input under it), and a given-name autocomplete had been made to lose to the label; my own full-name test used a single field. | The full-name rule applies only when exactly one field asks for it, otherwise each field is judged by its own name, id and placeholder; autocomplete decides again, test first.
+- Audit 1 | Field matching: a "Name" label over a "Vorname" placeholder read as "Name, Vorname" and got the full name, because label and placeholder were joined into one text before the full-name pattern ran; every full-name test put the words in the label alone. | Label and placeholder are tested one at a time, test first.
 
 ## Per-phase narrative
 

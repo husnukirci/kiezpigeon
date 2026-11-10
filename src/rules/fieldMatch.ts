@@ -157,10 +157,15 @@ const FULL_NAME_LABEL =
   /(?<![\p{L}])vor(?:name)? (?:und )?(?:nach|zu)name|(?<![\p{L}])(?:nach|zu)?name (?:und )?vorname/u;
 const FULL_NAME_ANYWHERE = /vollständiger name|full ?name/u;
 
+/**
+ * Label and placeholder are read one at a time: a "Name" label over a
+ * "Vorname" placeholder asks for one name, not for "Name, Vorname".
+ */
 function asksForFullName(field: FormField): boolean {
-  const label = words([field.label, field.placeholder].join(" "));
   return (
-    FULL_NAME_LABEL.test(label) || FULL_NAME_ANYWHERE.test(haystack(field))
+    [field.label, field.placeholder].some(
+      (text) => text !== undefined && FULL_NAME_LABEL.test(words(text)),
+    ) || FULL_NAME_ANYWHERE.test(haystack(field))
   );
 }
 const NON_SMOKER = /nichtraucher|non ?smok/u;
