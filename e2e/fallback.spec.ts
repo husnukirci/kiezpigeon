@@ -431,7 +431,9 @@ test("a field hidden by opacity is not read as visible and stays empty", async (
   await site.goto(`${ORIGIN}/wohnung/17`);
   await site.evaluate(() => {
     const trap = document.createElement("input");
-    trap.name = "website";
+    trap.name = "email2";
+    trap.type = "email";
+    trap.autocomplete = "email";
     trap.style.opacity = "0";
     document.querySelector("#anfrage")?.append(trap);
   });
@@ -448,11 +450,14 @@ test("a field hidden by opacity is not read as visible and stays empty", async (
   await panel.getByRole("button", { name: "Continue" }).click();
   await panel.getByRole("button", { name: "Write my letter" }).click();
 
-  await expect(panel.getByRole("button", { name: /→/ }).first()).toBeVisible();
-  await expect(panel.getByText(/website/i)).toHaveCount(0);
+  // The five pairs of the plain page: the trap adds none.
+  await expect(panel.getByRole("button", { name: /→/ })).toHaveCount(5);
+  await expect(panel.getByRole("button", { name: /^E-Mail/ })).toHaveCount(1);
   await panel.getByRole("button", { name: "Fill the form" }).click();
-  await expect(panel.getByText("Filled", { exact: false })).toBeVisible();
-  await expect(site.locator('[name="website"]')).toHaveValue("");
+  await expect(
+    panel.getByText("Filled 5 fields.", { exact: false }),
+  ).toBeVisible();
+  await expect(site.locator('[name="email2"]')).toHaveValue("");
   await site.close();
   await panel.close();
 });
