@@ -61,7 +61,7 @@ features; the **letter validator** accepts or rejects the generated text
 with named problems. **Form mapping** pairs each fillable form field with a
 profile value or the letter and reports how many matched. An
 **application** is a saved record of a letter for a listing with a status
-`sent | viewing | closed`. All rules are pure functions over plain data.
+`filled | sent | viewing | closed`. All rules are pure functions over plain data.
 
 **Profile fields added beyond the brief, confirmed by the author:** budget (the fit check
 needs it), WBS flag (the WBS rule needs it), contact details (every contact
