@@ -530,6 +530,52 @@ describe("mapFields on select fields", () => {
 });
 
 describe("review findings", () => {
+  it.each([
+    "Einzugsermächtigung IBAN",
+    "IBAN für Einzug",
+    "Kontoinhaber",
+    "BIC",
+    "Ausweis-Nr.",
+    "Steuer-ID",
+    "SEPA-Lastschrift",
+  ])("leaves %s unknown", (label) => {
+    expect(classifyField(field({ label }))).toBe("unknown");
+  });
+
+  it("reads a bare Nr. as the house number, not a number of something else", () => {
+    expect(classifyField(field({ label: "Nr." }))).toBe("houseNumber");
+    expect(classifyField(field({ name: "nr" }))).toBe("houseNumber");
+    expect(classifyField(field({ label: "WBS-Nr." }))).toBe("wbs");
+    expect(classifyField(field({ label: "Kunden-Nr." }))).toBe("unknown");
+  });
+
+  it("writes no yes or no into a text field", () => {
+    const { mappings } = mapFields(
+      [field({ label: "WBS-Nr." })],
+      coupleWithDog,
+      "",
+    );
+    expect(mappings[0]?.value).toBeUndefined();
+  });
+
+  it("writes first and last name into a field that asks for both", () => {
+    for (const label of [
+      "Vor- und Nachname",
+      "Vor- und Zuname",
+      "Vollständiger Name",
+      "Full name",
+    ]) {
+      const { mappings } = mapFields([field({ label })], coupleWithDog, "");
+      expect(mappings[0]?.value).toBe("Mara Testmann");
+    }
+    const { mappings } = mapFields(
+      [field({ label: "Nachname" })],
+      coupleWithDog,
+      "",
+    );
+    expect(mappings[0]?.value).toBe("Testmann");
+  });
+
   it("does not read the willig in freiwillig as consent", () => {
     expect(classifyField(field({ label: "Telefonnummer (freiwillig)" }))).toBe(
       "phone",

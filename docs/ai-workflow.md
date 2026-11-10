@@ -309,3 +309,4 @@ two-word street, real names in a PR description) got past the pattern
 checks and was found by reading. Reading stays part of the scrub.
 
 - Audit 1 | Field matching: the consent pattern matched `willig` inside "freiwillig", so "Telefonnummer (freiwillig)" was left alone as a consent field; the table of labels had no optional-field wording. | The pattern now needs `einwillig` or the whole words `willige` and `willigen`, test first.
+- Audit 1 | Field matching: "Einzugsermächtigung IBAN" read as a move-in date, "Ausweis-Nr." as a house number, "WBS-Nr." got a true or false, and "Vor- und Nachname" got only the surname; the label table held none of these shapes. | Bank, identity and tax words classify unknown first, a bare Nr. counts only as a field's whole text, yes/no kinds fill only checkboxes and selects, and full-name fields get both names, test first.

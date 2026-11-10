@@ -40,6 +40,16 @@ function pattern(parts: { within?: string; whole?: string }): RegExp {
   return new RegExp(sources.join("|"), "u");
 }
 
+/** Bank, identity and tax data: never filled, whatever else the text says. */
+const SENSITIVE = pattern({
+  within:
+    "iban|kontoinhaber|kontonummer|lastschrift|kreditkarte|ausweis|steuer",
+  whole: "bic|sepa|konto",
+});
+
+/** A bare `Nr.`: the house number, but only as a field's own whole text. */
+const BARE_NR = /^nr$/u;
+
 // Checked in order; the first match wins. `within` matches inside longer
 // German compounds (`Haushaltsnettoeinkommen`), `whole` only as a word
 // (`ort` but not `Sortierung`).
@@ -72,13 +82,14 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
   [
     "lastName",
     pattern({
-      within: "nachname|familienname|last ?name|family ?name|surname",
+      within:
+        "nachname|zuname|familienname|last ?name|family ?name|surname|vollständiger name|full ?name",
     }),
   ],
   ["street", pattern({ within: "stra(?:ss|ß)e|street", whole: "str" })],
   [
     "houseNumber",
-    pattern({ within: "hausnummer|hausnr|house ?(?:number|no)", whole: "nr" }),
+    pattern({ within: "hausnummer|hausnr|haus nr|house ?(?:number|no)" }),
   ],
   [
     "postcode",
@@ -128,6 +139,9 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
 const CHECKBOX_FACTS = new Set<FieldKind>(["pets", "smoker", "wbs"]);
 
 const CAPTCHA = /captcha/u;
+const COMBINED_NR = new RegExp(word("nr"), "u");
+const FULL_NAME_FIELD =
+  /vor(?:name)? und (?:nach|zu)name|vollständiger name|full ?name/u;
 const NON_SMOKER = /nichtraucher|non ?smok/u;
 const NOT_COUNTED_TYPES = new Set([
   "hidden",
@@ -141,15 +155,24 @@ const NOT_COUNTED_TYPES = new Set([
   "radio",
 ]);
 
-/** Name, id, label and placeholder as lower-case words. */
-function haystack(field: FormField): string {
-  return [field.name, field.id, field.label, field.placeholder]
-    .filter((part): part is string => part !== undefined)
-    .join(" ")
+/** Lower-case words of a text, camel case split. */
+function words(text: string): string {
+  return text
     .replace(/(\p{Ll})(\p{Lu})/gu, "$1 $2")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
+}
+
+function parts(field: FormField): string[] {
+  return [field.name, field.id, field.label, field.placeholder].filter(
+    (part): part is string => part !== undefined,
+  );
+}
+
+/** Name, id, label and placeholder as lower-case words. */
+function haystack(field: FormField): string {
+  return words(parts(field).join(" "));
 }
 
 function matches(kind: FieldKind, hay: string): boolean {
@@ -165,6 +188,8 @@ export function classifyField(field: FormField): FieldKind {
 }
 
 function classifyByText(field: FormField): FieldKind {
+  if (SENSITIVE.test(haystack(field))) return "unknown";
+
   const fromAutocomplete = field.autocomplete
     ? AUTOCOMPLETE[field.autocomplete.trim().toLowerCase()]
     : undefined;
@@ -173,6 +198,9 @@ function classifyByText(field: FormField): FieldKind {
   const hay = haystack(field);
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
+  if (parts(field).some((part) => BARE_NR.test(words(part)))) {
+    return "houseNumber";
+  }
 
   switch (field.type) {
     case "email":
@@ -212,13 +240,15 @@ function valueFor(
     case "firstName":
       return applicant?.firstName;
     case "lastName":
-      return applicant?.lastName;
+      return FULL_NAME_FIELD.test(hay)
+        ? `${applicant?.firstName ?? ""} ${applicant?.lastName ?? ""}`.trim()
+        : applicant?.lastName;
     case "email":
       return contact.email;
     case "phone":
       return contact.phone;
     case "street":
-      return matches("houseNumber", hay)
+      return matches("houseNumber", hay) || COMBINED_NR.test(hay)
         ? `${contact.street} ${contact.houseNumber}`.trim()
         : contact.street;
     case "houseNumber":
@@ -240,7 +270,10 @@ function valueFor(
     case "pets":
     case "smoker":
     case "wbs":
-      return yesNoFor(kind, hay, profile);
+      // A text field ("WBS-Nr.") asks for something else than yes or no.
+      return field.type === "checkbox"
+        ? yesNoFor(kind, hay, profile)
+        : undefined;
     case "income":
       return String(Math.floor(householdIncomeCents(profile) / 100));
     case "employment":
