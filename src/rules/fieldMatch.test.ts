@@ -934,4 +934,17 @@ describe("final review findings", () => {
       );
     }
   });
+
+  it("keeps a bracketed zero that follows no country code", () => {
+    const profile = {
+      ...coupleWithDog,
+      contact: { ...coupleWithDog.contact, phone: "030 1234567" },
+    };
+    const replaces = (value: string) =>
+      mapFields([field({ label: "Telefon", value })], profile, "").mappings[0]
+        ?.replaces;
+    expect(replaces("(0)30 1234567")).toBe(false);
+    expect(replaces("+49 (0)30 1234567")).toBe(false);
+    expect(replaces("0049 (0)30 1234567")).toBe(false);
+  });
 });

@@ -198,6 +198,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 1 | Field matching: a street-address autocomplete always took street and number, so a form with a separate Hausnummer field got the number twice; my street-address test used a form of one field. | The token joins the number only when no other field of the form takes it, test first.
 - Audit 1 | Field matching: the trailing no-pets wording matched "Haustiere (keine Pflicht)", so a household with a dog would have said it has none; the no-pets tests held only labels that meant no pets. | A trailing keine counts only when it ends the field's own text, test first.
 - Audit 1 | Field matching: a couple with a child got "Alleinerziehend mit Kind" from a household select because the first option naming children won whatever the number of adults; the household tests offered one option with children at a time. | Among options with children, the one that also fits the number of adults wins, test first.
+- Audit 1 | Field matching: the bracketed trunk zero was dropped anywhere, so "(0)30 1234567" read as a different number from "030 1234567" and was marked as replaced; the phone tests always wrote `(0)` after +49. | A `(0)` is dropped only right after +49 or 0049, test first.
 
 ## Per-phase narrative
 

@@ -633,10 +633,15 @@ function replacesCurrent(
   return current !== String(value);
 }
 
-/** A German phone number as digits, `+49` and `0049` read as `0`. */
+/**
+ * A German phone number as digits, `+49` and `0049` read as `0`. A `(0)`
+ * is the trunk zero only right after the country code; elsewhere it is
+ * the number's own zero.
+ */
 function phoneDigits(text: string): string {
   return text
-    .replace(/\(0\)/gu, "")
+    .trim()
+    .replace(/^((?:\+|00)\s*49)\s*\(0\)/u, "$1")
     .replace(/[^\d+]/gu, "")
     .replace(/^(?:\+|00)49/u, "0");
 }
