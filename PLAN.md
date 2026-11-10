@@ -54,7 +54,7 @@ address and district, Kaltmiete, Nebenkosten, Warmmiete, size, rooms, floor,
 available-from date, pet policy, WBS requirement, contact person, a list of
 **features** (Balkon, Altbau, Einbauküche, ...), and the page's **contact
 form**. The **fit check** compares profile and listing and returns one line
-per rule (budget, income vs 3 × Kaltmiete, pets, WBS), each `ok | warn | no
+per rule (budget, income vs 3 × Kaltmiete, pets, WBS, move-in), each `ok | warn | no
 | unknown` with a reason; it informs, it never blocks. A **letter request**
 is the profile facts, the listing facts, the chosen tone and 1 or 2 chosen
 features; the **letter validator** accepts or rejects the generated text
@@ -160,6 +160,10 @@ merges, then starts the next phase in a fresh session.
 | P7    | Tracker: save on "I sent it", statuses, stats, filters, pigeon tip                                                   | feat(tracker)   |
 | P8    | Docs, ADR audit, ai-workflow finalize, README + screenshots, data scrub, v1 tag                                      | docs            |
 | P9    | ImmoScout24 in English (`/en/expose/`), clear reasons when a page is not read; v1.1.0                                | feat(adapters)  |
+| P10   | Vonovia, the second listing adapter                                                                                  | feat(adapters)  |
+| P11   | Deutsche Wohnen, on Vonovia's platform                                                                               | feat(adapters)  |
+| P12   | Filled pigeons                                                                                                       | feat(tracker)   |
+| P13   | About this listing                                                                                                   | feat(listing)   |
 
 Each phase lands green (tests, typecheck, lint, build, manual check in
 Chrome where the phase is user-visible) before the next starts.
@@ -168,7 +172,8 @@ Chrome where the phase is user-visible) before the next starts.
 
 - **Strict (red-green-refactor, no exceptions):** the rules core: `profile`,
   `money`, `format`, `fit`, `letterPrompt`, `letterValidate`, `fieldMatch`,
-  `tracker`.
+  `tracker`, `analysis`, `rentalHints`, `unreadPage`, `typedListing`,
+  `writeLetter`, `profileForm`.
 - **Fixture-driven (test after, against saved HTML):** site adapters. Each
   adapter has at least three scrubbed fixtures (complete listing, listing
   with missing fields, a page that is not a listing) and asserts the exact
@@ -203,11 +208,11 @@ Expected during the build:
 8. Adapter interface: one adapter per site, DOM in, `Listing` and form out
    (P3)
 9. Letter validation as the guarantee; generate, validate, retry once (P4)
-10. Never submit: how filling works on framework-driven forms (P5)
-11. Fallback field classification for unknown sites (P6)
+10. Move-in as a choice and how two applicants are related, schema 2
+    (after P4)
+11. Never submit: how filling works on framework-driven forms (P5)
+12. Fallback field classification for unknown sites (P6)
 
-ADR 10 (move-in as a choice, schema 2) was added after Phase 4, which
-moved the two after it up by one, as PHASES.md already numbers them.
 ADR 13 (applications and the export file) was recorded in the Phase 8
 audit for shapes that had shipped without an entry. ADR 14 (listing
 analysis reads the page only) was added in Phase 13.
@@ -215,12 +220,12 @@ analysis reads the page only) was added in Phase 13.
 ## 7. Manifest permissions (Tier 1; each added by the phase that needs it)
 
 - `sidePanel`: the UI.
-- `storage`: profile, settings, applications (plus `unlimitedStorage` only
-  if ADR 3 needs it).
+- `storage`: profile, settings, applications.
 - `activeTab` and `scripting`: read and fill the tab the user is on, on
   user action, including unknown sites for the fallback.
-- Host permission for `https://www.immobilienscout24.de/*`: the known
-  adapter's content script.
+- Content script matches on `https://www.immobilienscout24.de/expose/*` and
+  `https://www.immobilienscout24.de/en/expose/*`: the first adapter (no host
+  permission).
 - A content script match on `https://www.vonovia.de/zuhause-finden/immobilien/*`:
   the second adapter (ADR 8 amendment, Phase 10).
 - A content script match on `https://www.deutsche-wohnen.com/mieten/mietangebote/*`:
