@@ -194,6 +194,16 @@ ask for 3 ×.` Never `no`: landlords decide, not Kiezpigeon.
 - **WBS line:** listing requires WBS: profile has WBS → `ok`, `You have a
 WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
   `No WBS needed`. Listing silent → `unknown`, `No WBS mentioned in the listing`.
+- **Move-in line** (arrived with the ADR 10 work, after Phase 4; not a Phase 1
+  deliverable): listing does not say when it is free → `unknown`. Profile has
+  no move-in → `unknown`. Free by arrangement → `ok`. Free immediately: a
+  fixed move-in date → `warn` (check the landlord can wait), else `ok`. Free
+  from a date: move-in as soon as possible or flexible → `ok`; on that date
+  or up to 31 days after → `ok`; before it, or more than 31 days after →
+  `warn`. Never `no`.
+- **Relationship** (a validator check that arrived with the ADR 10 work, after
+  Phase 4; not a Phase 1 deliverable): unless the household says married, no
+  marriage word (Ehepaar, verheiratet, Ehemann, ...) appears.
 - The fit check returns the five lines in that order (`budget`, `income`, `pets`,
   `wbs`, `moveIn`). It never blocks
   writing a letter.
