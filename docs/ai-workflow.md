@@ -186,6 +186,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 1 | Field matching: the consent pattern matched `willig` inside "freiwillig", so "Telefonnummer (freiwillig)" was left alone as a consent field; the table of labels had no optional-field wording. | The pattern now needs `einwillig` or the whole words `willige` and `willigen`, test first.
 - Audit 1 | Field matching: "Einzugsermächtigung IBAN" read as a move-in date, "Ausweis-Nr." as a house number, "WBS-Nr." got a true or false, and "Vor- und Nachname" got only the surname; the label table held none of these shapes. | Bank, identity and tax words classify unknown first, a bare Nr. counts only as a field's whole text, yes/no kinds fill only checkboxes and selects, and full-name fields get both names, test first.
 - Audit 1 | Field matching: a "Keine Haustiere" checkbox was ticked for a household with a dog, which would say the opposite of the truth; only the smoker field had an inverted wording in the tests. | A no-pets wording now inverts the value like Nichtraucher does, test first.
+- Audit 1 | Field matching: a pets select answered "Keine Angabe" for "no", a household select chose "Paar ohne Kinder" for a family, and income bands written with cents ("2.000,01 - 4.000,00 €") were not read; the select tests used clean option lists only. | Placeholder options are skipped, options are chosen by whether they name children, and the amount pattern drops cents, test first.
 
 ## Per-phase narrative
 

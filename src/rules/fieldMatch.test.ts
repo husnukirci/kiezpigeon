@@ -544,6 +544,51 @@ describe("mapFields on select fields", () => {
     const income = select("Einkommen", ["X", "3.000 € abzüglich Steuern"]);
     expect(valueOf(coupleWithDog, income)).toBeUndefined();
   });
+
+  // Options whose values equal their labels, and the value for a profile.
+  const choice = (label: string, labels: string[]) =>
+    select(label, ...labels.map((text): [string, string] => [text, text]));
+  const chosen = (f: FormField, profile: Profile) => valueOf(profile, f);
+  const family: Profile = {
+    ...coupleWithDog,
+    household: { ...coupleWithDog.household, children: 1 },
+  };
+
+  it("never picks a no-answer option", () => {
+    const pets = choice("Haustiere", [
+      "Bitte wählen",
+      "Keine Angabe",
+      "Ja",
+      "Nein",
+    ]);
+    expect(chosen(pets, soloStudent)).toBe("Nein");
+    expect(chosen(pets, coupleWithDog)).toBe("Ja");
+  });
+
+  it("tells a household with children from one without", () => {
+    const household = choice("Haushaltsgröße", [
+      "Single",
+      "Paar ohne Kinder",
+      "Paar mit Kindern",
+    ]);
+    expect(chosen(household, family)).toBe("Paar mit Kindern");
+    expect(chosen(household, coupleWithDog)).toBe("Paar ohne Kinder");
+    const reversed = choice("Haushaltsgröße", [
+      "Paar mit Kindern",
+      "Paar ohne Kinder",
+    ]);
+    expect(chosen(reversed, coupleWithDog)).toBe("Paar ohne Kinder");
+  });
+
+  it("reads income bands written with cents", () => {
+    const income = choice("Haushaltsnettoeinkommen", [
+      "bis 2.000,00 €",
+      "2.000,01 - 4.000,00 €",
+      "4.000,01 - 5.000,00 €",
+      "über 5.000,00 €",
+    ]);
+    expect(chosen(income, coupleWithDog)).toBe("4.000,01 - 5.000,00 €");
+  });
 });
 
 describe("review findings", () => {

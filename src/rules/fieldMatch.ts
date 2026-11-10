@@ -355,13 +355,18 @@ function optionText(option: FieldOption): string {
     .trim();
 }
 
+/** Placeholder options that answer nothing, whatever else they say. */
+const NO_ANSWER =
+  /keine angabe|bitte w[äa]hlen|please (?:choose|select)|not specified|ausw[äa]hlen/u;
+
 function optionWhere(
   field: FormField,
   test: (text: string) => boolean,
 ): string | undefined {
-  return field.options?.find(
-    (option) => option.value !== "" && test(optionText(option)),
-  )?.value;
+  return field.options?.find((option) => {
+    const text = optionText(option);
+    return option.value !== "" && !NO_ANSWER.test(text) && test(text);
+  })?.value;
 }
 
 const NO = new RegExp(word("nein|no|not|false|nicht|keine?|n|0"), "u");
@@ -398,17 +403,25 @@ const HOUSEHOLD_OPTIONS = {
   two: /(?:zwei|2|two) (?:erwachsene|personen|adults|persons)|paar|couple/u,
 } as const;
 
+const CHILDLESS =
+  /ohne kinder|keine kinder|kinderlos|no children|without children/u;
+
+/** An option that names children: "Familie", "Paar mit Kindern". */
+function withChildren(text: string): boolean {
+  return HOUSEHOLD_OPTIONS.family.test(text) && !CHILDLESS.test(text);
+}
+
 function householdOption(field: FormField, profile: Profile) {
   const { adults, children, relationship } = profile.household;
-  if (children > 0)
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.family.test(t));
+  if (children > 0) return optionWhere(field, withChildren);
+  // Without children, an option that names them is never the answer.
+  const childless = (test: RegExp) =>
+    optionWhere(field, (t) => test.test(t) && !withChildren(t));
   if (profile.applicants.length === 2 && relationship === "flatmates") {
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.flatshare.test(t));
+    return childless(HOUSEHOLD_OPTIONS.flatshare);
   }
-  if (adults === 1)
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.one.test(t));
-  if (adults === 2)
-    return optionWhere(field, (t) => HOUSEHOLD_OPTIONS.two.test(t));
+  if (adults === 1) return childless(HOUSEHOLD_OPTIONS.one);
+  if (adults === 2) return childless(HOUSEHOLD_OPTIONS.two);
   return undefined;
 }
 
@@ -419,9 +432,9 @@ const ABOVE = new RegExp(word("über|ueber|ab|over|more|mehr"), "u");
 function incomeRange(
   text: string,
 ): { above: number; upTo: number } | undefined {
-  const amounts = (text.match(/\d{1,3}(?:\.\d{3})+|\d+/gu) ?? []).map(
-    (amount) => Number(amount.replaceAll(".", "")),
-  );
+  const amounts = (
+    text.match(/\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?/gu) ?? []
+  ).map((amount) => Number(amount.replace(/,\d+$/u, "").replaceAll(".", "")));
   const [first, second] = amounts;
   if (first === undefined) return undefined;
   if (second !== undefined) return { above: first, upTo: second };
