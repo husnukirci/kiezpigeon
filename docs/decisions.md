@@ -23,6 +23,7 @@ entry keeps one line per rejected option so the cut stays visible.
 |  11 | Never submit: filling a framework-driven form                    | P5    | accepted |
 |  12 | Unknown sites: `activeTab`, an injected reader, confirm first    | P6    | accepted |
 |  13 | Applications and the export file                                 | P8    | accepted |
+|  14 | Listing analysis reads the page only                             | P13   | accepted |
 
 ## ADR 1: WXT for the extension build, TypeScript strict
 
@@ -30,7 +31,7 @@ entry keeps one line per rejected option so the cut stays visible.
 
 **Context.** Kiezpigeon is a Manifest V3 extension with three runtime
 contexts: a service worker, a side panel page and a content script on
-ImmoScout24, plus scripts injected on demand for the fallback. The build has
+ImmoScout24 (and, since Phases 10 and 11, on Vonovia and Deutsche Wohnen), plus scripts injected on demand for the fallback. The build has
 to produce a valid manifest, bundle each context separately, reload quickly
 during development and stay understandable to a reviewer. The rules core and
 the message contracts between contexts benefit most from types.
@@ -263,6 +264,18 @@ this size).
 to violate them. The folders map one-to-one onto packages, so if a backend
 arrives the split is mechanical, and is its own phase and ADR.
 
+**Amendment (2026-11-10): folder map as of Phase 13.** The map above is the
+Phase 0 plan and is kept as written; what the code has since added is
+listed here. `entrypoints/` also holds `vonovia.content.ts` and
+`deutsche-wohnen.content.ts` (ADR 8). `rules/` also holds `analysis`,
+`rentalHints` and `unreadPage` (ADR 14 and Phase 9). `adapters/` also holds
+`listing.ts` (puts what a reader found on a `Listing` and names the rest in `missing`), `estatePlatform.ts`
+(the reader Vonovia and Deutsche Wohnen share) and the folders `vonovia/` and
+`deutsche-wohnen/`. `messaging/` also holds `siteScript.ts` (what a known site's content
+script does when the panel asks). `fixtures/` also holds `vonovia/` and
+`deutsche-wohnen/`. `scripts/` also holds `attribution.ts`, the commit and
+PR attribution check.
+
 ## ADR 7: Generated token variables, CSS Modules, stylelint gate
 
 **Status.** Accepted.
@@ -427,6 +440,27 @@ feature tags (on the Vonovia platform: the title and the Beschreibung and
 Sonstige Angaben cards). The analysis
 rule reads only the flags, never the page's text. The running probes are the
 new fields in each adapter's fixture tests.
+
+**Amendment (2026-11-02): Deutsche Wohnen, the same platform.** A new content
+script matches `https://www.deutsche-wohnen.com/mieten/mietangebote/*`. This is
+a new match on a new host and adds no entry to `permissions` or
+`host_permissions`. The site runs Vonovia's platform, so what the two share moved
+into one builder, `estatePlatformAdapter` in `src/adapters/estatePlatform.ts`,
+which takes a site's id, name and listing address, and each site is a thin call
+to it. Nothing in the builder tests a site by name, which leaves a label or a
+class renamed on the platform breaking both at once. The sites differ in three
+ways the builder absorbs: the title is an `h1` or an `h2` in the hero, the
+availability figure has either of two labels, and the frame of a listing page
+is what tells it from a search page. `isReady` holds until the title and the
+rows are both there on a page with that frame, because the frame and rows
+arrive in the first HTML and the title follows it. The site sometimes draws the
+hero and the contact overlay twice on a first visit; only the overlay the user
+opened is active, and filling stays inside it. That first visit also sets up
+the dropdown widgets twice: the select's own widget is hidden and a second, with
+another `data-id`, is drawn right after it. So a select also counts as visible
+when a widget directly behind its own is visible. A select with no widget of its
+own stays a possible spam trap. The running probes are the Deutsche Wohnen and
+late title runs in `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
 
 ## ADR 9: The validator is the guarantee: generate, validate, retry once
 
@@ -714,27 +748,6 @@ schema bump. An imported file can never carry a key or a script link into
 the panel. The running probes are the `newApplication` and
 `parseApplication` tests in `src/rules/`, the add and change tests in
 `src/storage/storage.test.ts`, and `e2e/tracker.spec.ts`.
-
-**Amendment (2026-11-02): Deutsche Wohnen, the same platform.** A new content
-script matches `https://www.deutsche-wohnen.com/mieten/mietangebote/*`. This is
-a new match on a new host and adds no entry to `permissions` or
-`host_permissions`. The site runs Vonovia's platform, so what the two share moved
-into one builder, `estatePlatformAdapter` in `src/adapters/estatePlatform.ts`,
-which takes a site's id, name and listing address, and each site is a thin call
-to it. Nothing in the builder tests a site by name, which leaves a label or a
-class renamed on the platform breaking both at once. The sites differ in three
-ways the builder absorbs: the title is an `h1` or an `h2` in the hero, the
-availability figure has either of two labels, and the frame of a listing page
-is what tells it from a search page. `isReady` holds until the title and the
-rows are both there on a page with that frame, because the frame and rows
-arrive in the first HTML and the title follows it. The site sometimes draws the
-hero and the contact overlay twice on a first visit; only the overlay the user
-opened is active, and filling stays inside it. That first visit also sets up
-the dropdown widgets twice: the select's own widget is hidden and a second, with
-another `data-id`, is drawn right after it. So a select also counts as visible
-when a widget directly behind its own is visible. A select with no widget of its
-own stays a possible spam trap. The running probes are the Deutsche Wohnen and
-late title runs in `e2e/never-submit.spec.ts` and `src/fill/describe.test.ts`.
 
 **Amendment (2026-11-05): a filled letter is a pigeon.** `status` gains
 `filled`, the first status of every record from Phase 12 on: the panel saves
