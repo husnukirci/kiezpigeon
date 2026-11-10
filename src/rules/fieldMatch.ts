@@ -222,7 +222,10 @@ function classifyByText(field: FormField): FieldKind {
   const hay = haystack(field);
   if (SENSITIVE.test(hay)) return "unknown";
 
-  const fromAutocomplete = AUTOCOMPLETE[autocompleteToken(field)];
+  const token = autocompleteToken(field);
+  const fromAutocomplete = Object.hasOwn(AUTOCOMPLETE, token)
+    ? AUTOCOMPLETE[token]
+    : undefined;
   // A label asking for both names beats a one-name autocomplete token, and
   // comes before the keywords, whose `vorname` would read it as a first name.
   const oneName =

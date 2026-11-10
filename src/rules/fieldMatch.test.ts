@@ -653,6 +653,12 @@ describe("autocomplete tokens and phone formats", () => {
     expect(mapFields([phone], profile, "").mappings[0]?.replaces).toBe(false);
   });
 
+  it("ignores autocomplete tokens that are not field names", () => {
+    expect(
+      classifyField(field({ autocomplete: "constructor", label: "Vorname" })),
+    ).toBe("firstName");
+  });
+
   it("lets a full-name label win over a given-name autocomplete", () => {
     for (const autocomplete of ["given-name", "family-name"]) {
       const name = field({ autocomplete, label: "Vor- und Nachname" });
