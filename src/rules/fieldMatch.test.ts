@@ -845,4 +845,39 @@ describe("final review findings", () => {
       mapFields(placeholderAlone, coupleWithDog, "").mappings[0]?.value,
     ).toBe("Mara Testmann");
   });
+
+  it("judges only the shared-label name fields by their own text", () => {
+    const shared = "Vor- und Nachname";
+    const names = [
+      field({ name: "vorname", label: shared }),
+      field({ name: "nachname", label: shared }),
+    ];
+    const others = [
+      field({ label: "Haustiere (Art, Anzahl)", type: "textarea" }),
+      field({ label: "Datenschutz gelesen", name: "email" }),
+      field({ label: "Kunden-Nr.", name: "nr" }),
+      field({
+        label: "Ich akzeptiere die Datenschutzerklärung",
+        name: "pets",
+        type: "checkbox",
+      }),
+    ];
+    const kindIn = (fields: FormField[], f: FormField) => {
+      const result = mapFields(fields, coupleWithDog, "");
+      return result.leftAlone.includes(f)
+        ? "left alone"
+        : result.mappings.find((m) => m.field === f)?.kind;
+    };
+    const inForm = [...names, ...others];
+    for (const other of others) {
+      expect(kindIn(inForm, other)).toBe(kindIn([other], other));
+    }
+    const { mappings, leftAlone } = mapFields(inForm, coupleWithDog, "");
+    expect(mappings.map((m) => m.value).slice(0, 2)).toEqual([
+      "Mara",
+      "Testmann",
+    ]);
+    expect(leftAlone).toContain(others[3]);
+    expect(mappings.some((m) => m.field === others[3])).toBe(false);
+  });
 });

@@ -239,14 +239,16 @@ function classifyByText(
   if (Object.hasOwn(AUTOCOMPLETE, token))
     return AUTOCOMPLETE[token] ?? "unknown";
 
-  if (fullName) {
+  if (asksForFullName(field)) {
     // Before the keywords, whose `vorname` would read it as a first name.
-    if (asksForFullName(field)) return "lastName";
-  } else if (!ownOnly) {
-    // A label shared by several inputs says nothing about one of them, so
-    // the field's own name, id and placeholder are asked first.
-    const own = classifyByText({ ...field, label: undefined }, false, true);
-    if (own !== "unknown") return own;
+    if (fullName) return "lastName";
+    // A full-name label shared by several inputs says nothing about one of
+    // them, so the field's own name, id and placeholder are asked first.
+    // Every other field of the form is read as usual.
+    if (!ownOnly) {
+      const own = classifyByText({ ...field, label: undefined }, false, true);
+      if (own !== "unknown") return own;
+    }
   }
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
