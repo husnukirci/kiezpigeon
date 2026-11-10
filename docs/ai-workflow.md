@@ -188,6 +188,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 1 | Field matching: a "Keine Haustiere" checkbox was ticked for a household with a dog, which would say the opposite of the truth; only the smoker field had an inverted wording in the tests. | A no-pets wording now inverts the value like Nichtraucher does, test first.
 - Audit 1 | Field matching: a pets select answered "Keine Angabe" for "no", a household select chose "Paar ohne Kinder" for a family, and income bands written with cents ("2.000,01 - 4.000,00 €") were not read; the select tests used clean option lists only. | Placeholder options are skipped, options are chosen by whether they name children, and the amount pattern drops cents, test first.
 - Audit 1 | Field matching: a profile with no income written yet filled "0" into an income field and picked the lowest band of an income select; no test had a profile without an income. | An income of zero cents now leaves both alone, test first.
+- Audit 1 | Field matching: autocomplete values with a section or hint (`shipping given-name`, `home tel`) were not recognised, a `street-address` field got no house number, `+49 (0)30` counted as a different number from `030`, and a given-name autocomplete beat a "Vor- und Nachname" label; the tests only used bare single-token values. | The last autocomplete token is read, street-address and address-line1 take street and number, a bracketed trunk zero is dropped, and a full-name label wins over a one-name token, test first.
 
 ## Per-phase narrative
 

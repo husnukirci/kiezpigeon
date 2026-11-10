@@ -148,6 +148,8 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
 const CHECKBOX_FACTS = new Set<FieldKind>(["pets", "smoker", "wbs"]);
 
 const CAPTCHA = /captcha/u;
+/** Autocomplete tokens whose field takes the street and the number. */
+const COMBINED_STREET_TOKENS = new Set(["street-address", "address-line1"]);
 const COMBINED_NR = new RegExp(word("nr"), "u");
 // "Vor- und Nachname", "Vorname, Nachname", "Name, Vorname": a label that
 // asks for both names. `full name` also counts in a name or id attribute.
@@ -185,6 +187,14 @@ function words(text: string): string {
     .trim();
 }
 
+/**
+ * The field name of an autocomplete value: its last token, since the
+ * others are sections and `shipping` or `home` hints (`home tel`).
+ */
+function autocompleteToken(field: FormField): string {
+  return field.autocomplete?.trim().toLowerCase().split(/\s+/u).at(-1) ?? "";
+}
+
 function parts(field: FormField): string[] {
   return [field.name, field.id, field.label, field.placeholder].filter(
     (part): part is string => part !== undefined,
@@ -212,13 +222,15 @@ function classifyByText(field: FormField): FieldKind {
   const hay = haystack(field);
   if (SENSITIVE.test(hay)) return "unknown";
 
-  const fromAutocomplete = field.autocomplete
-    ? AUTOCOMPLETE[field.autocomplete.trim().toLowerCase()]
-    : undefined;
+  const fromAutocomplete = AUTOCOMPLETE[autocompleteToken(field)];
+  // A label asking for both names beats a one-name autocomplete token, and
+  // comes before the keywords, whose `vorname` would read it as a first name.
+  const oneName =
+    fromAutocomplete === undefined ||
+    fromAutocomplete === "firstName" ||
+    fromAutocomplete === "lastName";
+  if (oneName && asksForFullName(field)) return "lastName";
   if (fromAutocomplete) return fromAutocomplete;
-
-  // Before the keywords, whose `vorname` would read it as a first name.
-  if (asksForFullName(field)) return "lastName";
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
   if (ownText(field).some((part) => BARE_NR.test(words(part)))) {
@@ -274,7 +286,8 @@ function valueFor(
       return contact.phone;
     case "street":
       return matches("houseNumber", hay) ||
-        COMBINED_NR.test(words([field.label, field.placeholder].join(" ")))
+        COMBINED_NR.test(words([field.label, field.placeholder].join(" "))) ||
+        COMBINED_STREET_TOKENS.has(autocompleteToken(field))
         ? `${contact.street} ${contact.houseNumber}`.trim()
         : contact.street;
     case "houseNumber":
@@ -572,7 +585,10 @@ function replacesCurrent(
 
 /** A German phone number as digits, `+49` and `0049` read as `0`. */
 function phoneDigits(text: string): string {
-  return text.replace(/[^\d+]/gu, "").replace(/^(?:\+|00)49/u, "0");
+  return text
+    .replace(/\(0\)/gu, "")
+    .replace(/[^\d+]/gu, "")
+    .replace(/^(?:\+|00)49/u, "0");
 }
 
 export function mapFields(

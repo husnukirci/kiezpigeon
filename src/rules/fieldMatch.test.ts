@@ -600,6 +600,55 @@ describe("mapFields on select fields", () => {
   });
 });
 
+describe("autocomplete tokens and phone formats", () => {
+  it("reads the field name out of a multi-token autocomplete", () => {
+    expect(
+      classifyField(field({ autocomplete: "shipping given-name", name: "x" })),
+    ).toBe("firstName");
+    expect(
+      classifyField(
+        field({ autocomplete: "section-a billing postal-code", name: "x" }),
+      ),
+    ).toBe("postcode");
+    expect(classifyField(field({ autocomplete: "home tel", name: "x" }))).toBe(
+      "phone",
+    );
+    expect(
+      classifyField(field({ autocomplete: "off", label: "Vorname" })),
+    ).toBe("firstName");
+  });
+
+  it("writes street and number into a street-address field", () => {
+    for (const autocomplete of ["street-address", "address-line1"]) {
+      const { mappings } = mapFields(
+        [field({ autocomplete, name: "x" })],
+        coupleWithDog,
+        "",
+      );
+      expect(mappings[0]?.value).toBe(
+        `${coupleWithDog.contact.street} ${coupleWithDog.contact.houseNumber}`,
+      );
+    }
+  });
+
+  it("reads +49 (0)30 as the same number as 030", () => {
+    const phone = field({ label: "Telefon", value: "+49 (0)30 1234567" });
+    const profile = {
+      ...coupleWithDog,
+      contact: { ...coupleWithDog.contact, phone: "030 1234567" },
+    };
+    expect(mapFields([phone], profile, "").mappings[0]?.replaces).toBe(false);
+  });
+
+  it("lets a full-name label win over a given-name autocomplete", () => {
+    for (const autocomplete of ["given-name", "family-name"]) {
+      const name = field({ autocomplete, label: "Vor- und Nachname" });
+      const { mappings } = mapFields([name], coupleWithDog, "");
+      expect(mappings[0]?.value).toBe("Mara Testmann");
+    }
+  });
+});
+
 describe("review findings", () => {
   it.each([
     "Einzugsermächtigung IBAN",
