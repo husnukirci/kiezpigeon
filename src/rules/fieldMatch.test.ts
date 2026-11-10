@@ -530,6 +530,24 @@ describe("mapFields on select fields", () => {
 });
 
 describe("review findings", () => {
+  it("does not read the willig in freiwillig as consent", () => {
+    expect(classifyField(field({ label: "Telefonnummer (freiwillig)" }))).toBe(
+      "phone",
+    );
+    expect(classifyField(field({ label: "Freiwillige Angabe: Beruf" }))).toBe(
+      "employment",
+    );
+  });
+
+  it.each([
+    "Einwilligung",
+    "Ich willige ein",
+    "Einwilligungserklärung Datenschutz",
+  ])("still reads %s as consent", (label) => {
+    expect(classifyField(field({ label, type: "checkbox" }))).toBe("consent");
+    expect(classifyField(field({ label }))).toBe("consent");
+  });
+
   it("does not read the mobil in Immobilie as a phone field", () => {
     expect(
       classifyField(

@@ -307,3 +307,5 @@ and losing uncommitted work. Each got a fix in the process, not a promise.
 Personal data was the hardest invariant. Every leak (a signed-in header, a
 two-word street, real names in a PR description) got past the pattern
 checks and was found by reading. Reading stays part of the scrub.
+
+- Audit 1 | Field matching: the consent pattern matched `willig` inside "freiwillig", so "Telefonnummer (freiwillig)" was left alone as a consent field; the table of labels had no optional-field wording. | The pattern now needs `einwillig` or the whole words `willige` and `willigen`, test first.

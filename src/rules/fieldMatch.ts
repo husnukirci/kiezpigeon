@@ -48,8 +48,8 @@ const KEYWORDS: [Exclude<FieldKind, "unknown">, RegExp][] = [
     "consent",
     pattern({
       within:
-        "datenschutz|privacy|consent|willig|einverstanden|newsletter|akzeptier|zustimm",
-      whole: "agb|terms",
+        "datenschutz|privacy|consent|einverstanden|newsletter|akzeptier|zustimm|einwillig",
+      whole: "agb|terms|willige|willigen",
     }),
   ],
   [
