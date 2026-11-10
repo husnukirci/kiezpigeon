@@ -66,8 +66,24 @@ function labelOf(element: FieldElement): string | undefined {
 }
 
 /**
- * Hidden by type, attribute or style. A field a stylesheet hides is often
- * a spam trap that a person never fills, so Kiezpigeon must not either.
+ * True when the box lies wholly left of or above the page origin, where no
+ * scrolling reaches. A field merely scrolled down the page is not off it.
+ */
+function offPage(element: Element): boolean {
+  const rect = element.getBoundingClientRect();
+  const view = element.ownerDocument.defaultView;
+  return (
+    rect.right + (view?.scrollX ?? 0) < 0 ||
+    rect.bottom + (view?.scrollY ?? 0) < 0
+  );
+}
+
+/**
+ * Hidden by type, attribute or style: `display: none`, `visibility:
+ * hidden`, `opacity: 0` (on the field or an ancestor), or a box placed off
+ * the page to the left or above. A field a stylesheet hides is often a
+ * spam trap that a person never fills, so Kiezpigeon must not either. A
+ * zero-size or clipped field is not detected.
  */
 export function isVisible(element: Element): boolean {
   const widget = styledStandIn(element);
@@ -75,7 +91,11 @@ export function isVisible(element: Element): boolean {
   return (
     !(element instanceof HTMLInputElement && element.type === "hidden") &&
     element.closest("[hidden], [aria-hidden='true']") === null &&
-    element.checkVisibility()
+    element.checkVisibility({
+      opacityProperty: true,
+      visibilityProperty: true,
+    }) &&
+    !offPage(element)
   );
 }
 

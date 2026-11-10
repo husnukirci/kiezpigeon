@@ -425,3 +425,34 @@ for (const page of CASES) {
     await panel.close();
   });
 }
+
+test("a field hidden by opacity is not read as visible and stays empty", async () => {
+  const site = await context.newPage();
+  await site.goto(`${ORIGIN}/wohnung/17`);
+  await site.evaluate(() => {
+    const trap = document.createElement("input");
+    trap.name = "website";
+    trap.style.opacity = "0";
+    document.querySelector("#anfrage")?.append(trap);
+  });
+  await clickIcon(site);
+  const tabId = await siteTabId();
+
+  const panel = await context.newPage();
+  await panel.goto(
+    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
+  );
+  await panel.getByRole("button", { name: "Use this page" }).click();
+  await panel.getByLabel("Kaltmiete in €").fill("980");
+  await panel.getByLabel("Features, separated by commas").fill("Balkon");
+  await panel.getByRole("button", { name: "Continue" }).click();
+  await panel.getByRole("button", { name: "Write my letter" }).click();
+
+  await expect(panel.getByRole("button", { name: /→/ }).first()).toBeVisible();
+  await expect(panel.getByText(/website/i)).toHaveCount(0);
+  await panel.getByRole("button", { name: "Fill the form" }).click();
+  await expect(panel.getByText("Filled", { exact: false })).toBeVisible();
+  await expect(site.locator('[name="website"]')).toHaveValue("");
+  await site.close();
+  await panel.close();
+});
