@@ -1,5 +1,7 @@
 # Move-in choice, listing availability and household relationship: implementation plan
 
+**Status:** implemented in PR #8, merged 2026-10-29. The checkboxes below were not ticked as the work went; the PR is the record.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Show when a listing's flat is free and compare it with when the applicants can move, let the profile say "as soon as possible" or "flexible" instead of only a date, and let two applicants say how they are related, so letters can use both honestly.

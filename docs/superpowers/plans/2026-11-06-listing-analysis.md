@@ -1,5 +1,7 @@
 # Listing Analysis Implementation Plan
 
+**Status:** implemented in PR #30, merged 2026-11-06. The checkboxes below were not ticked as the work went; the PR is the record. The greeting line specified below was built and removed in PR #32.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** An "About this listing" card on the Listing detected screen that says, from the page alone, what kind of rental it is, how its Kaltmiete sits against the page's own price band, how the letter will greet the contact, and what is worth a second look.
