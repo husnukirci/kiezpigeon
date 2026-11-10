@@ -11,5 +11,8 @@ kp-fixtures/
 .env
 .env.*
 
+# Local working files of the planning tool; never committed.
+.superpowers/
+
 # Playwright output
 test-results/
