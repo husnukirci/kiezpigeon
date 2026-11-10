@@ -200,6 +200,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 1 | Field matching: a couple with a child got "Alleinerziehend mit Kind" from a household select because the first option naming children won whatever the number of adults; the household tests offered one option with children at a time. | Among options with children, the one that also fits the number of adults wins, test first.
 - Audit 1 | Field matching: the bracketed trunk zero was dropped anywhere, so "(0)30 1234567" read as a different number from "030 1234567" and was marked as replaced; the phone tests always wrote `(0)` after +49. | A `(0)` is dropped only right after +49 or 0049, test first.
 - Audit 1 | Form filling: a rejected write left the field emptied with no event, wiping what it held, and an email the browser trimmed counted as rejected; the read-back tests used empty fields and values with no spaces. | A rejected write puts the old value back through the same setter, and email and url values are compared trimmed, tested against the sanitising stub.
+- Audit 3 | Letter screen: after Back and reopen, the pigeon filled earlier showed "Yes, I sent it" but the click did nothing, because the handler only knew a letter from a fill in this visit; the sent tests always filled first. | The handler falls back to the saved pigeon's letter, test first with no fill in the visit.
 
 ## Per-phase narrative
 

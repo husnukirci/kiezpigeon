@@ -103,6 +103,9 @@ export function LetterReady({
     setPending(undefined);
     if (report.filled.length > 0) setWritten({ text: pending.text });
   }
+  // After Back and reopen the form still holds the letter of an earlier
+  // fill; the saved pigeon remembers it, so "Yes, I sent it" works too.
+  const letterInForm = written?.text ?? saved?.letter;
   // Each fill that wrote is a new `written`, kept once.
   const kept = useRef<{ text: string }>(undefined);
   useEffect(() => {
@@ -174,12 +177,12 @@ export function LetterReady({
             onCheck={onCheckForm}
             confirm={confirm}
           />
-          {(saved || written !== undefined) && (
+          {letterInForm !== undefined && (
             <SentCard
               saved={saved}
               failed={saveFailed}
               onSent={() => {
-                if (written !== undefined) onSent(written.text);
+                onSent(letterInForm);
               }}
             />
           )}
