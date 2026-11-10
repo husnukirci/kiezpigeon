@@ -210,30 +210,39 @@ function matches(kind: FieldKind, hay: string): boolean {
   return KEYWORDS.some(([k, re]) => k === kind && re.test(hay));
 }
 
-export function classifyField(field: FormField): FieldKind {
-  const kind = classifyByText(field);
+/**
+ * `fullName` is false for a form where several fields share a "Vor- und
+ * Nachname" label: then none of them is a full-name field.
+ */
+export function classifyField(field: FormField, fullName = true): FieldKind {
+  const kind = classifyByText(field, fullName);
   // Any other checkbox is an opt-in (profile sharing, newsletters, offers).
   return field.type === "checkbox" && !CHECKBOX_FACTS.has(kind)
     ? "consent"
     : kind;
 }
 
-function classifyByText(field: FormField): FieldKind {
+function classifyByText(
+  field: FormField,
+  fullName: boolean,
+  ownOnly = false,
+): FieldKind {
   const hay = haystack(field);
   if (SENSITIVE.test(hay)) return "unknown";
 
   const token = autocompleteToken(field);
-  const fromAutocomplete = Object.hasOwn(AUTOCOMPLETE, token)
-    ? AUTOCOMPLETE[token]
-    : undefined;
-  // A label asking for both names beats a one-name autocomplete token, and
-  // comes before the keywords, whose `vorname` would read it as a first name.
-  const oneName =
-    fromAutocomplete === undefined ||
-    fromAutocomplete === "firstName" ||
-    fromAutocomplete === "lastName";
-  if (oneName && asksForFullName(field)) return "lastName";
-  if (fromAutocomplete) return fromAutocomplete;
+  if (Object.hasOwn(AUTOCOMPLETE, token))
+    return AUTOCOMPLETE[token] ?? "unknown";
+
+  if (fullName) {
+    // Before the keywords, whose `vorname` would read it as a first name.
+    if (asksForFullName(field)) return "lastName";
+  } else if (!ownOnly) {
+    // A label shared by several inputs says nothing about one of them, so
+    // the field's own name, id and placeholder are asked first.
+    const own = classifyByText({ ...field, label: undefined }, false, true);
+    if (own !== "unknown") return own;
+  }
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
   if (ownText(field).some((part) => BARE_NR.test(words(part)))) {
@@ -267,6 +276,7 @@ function valueFor(
   field: FormField,
   profile: Profile,
   letter: string,
+  fullName: boolean,
 ): FieldValue | undefined {
   if (field.type === "select") {
     return optionFor(kind, field, profile);
@@ -278,7 +288,7 @@ function valueFor(
     case "firstName":
       return applicant?.firstName;
     case "lastName":
-      return asksForFullName(field)
+      return fullName && asksForFullName(field)
         ? [applicant?.firstName, applicant?.lastName]
             .filter(Boolean)
             .join(" ") || undefined
@@ -606,12 +616,17 @@ export function mapFields(
   leftAlone: FormField[];
 } {
   const fillable = fields.filter(isFillable);
-  const leftAlone = fillable.filter((f) => classifyField(f) === "consent");
+  // One "Vor- und Nachname" field takes both names; a label shared by
+  // several inputs is not a full-name question.
+  const fullName = fillable.filter(asksForFullName).length < 2;
+  const leftAlone = fillable.filter(
+    (f) => classifyField(f, fullName) === "consent",
+  );
   const mappings = fillable
     .filter((field) => !leftAlone.includes(field))
     .map((field) => {
-      const kind = classifyField(field);
-      const found = valueFor(kind, field, profile, letter);
+      const kind = classifyField(field, fullName);
+      const found = valueFor(kind, field, profile, letter, fullName);
       const value = found === "" ? undefined : found;
       return {
         field,

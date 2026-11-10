@@ -653,18 +653,34 @@ describe("autocomplete tokens and phone formats", () => {
     expect(mapFields([phone], profile, "").mappings[0]?.replaces).toBe(false);
   });
 
+  it("lets a given-name autocomplete decide whatever the label says", () => {
+    const fields = [
+      field({ autocomplete: "given-name", label: "Vor- und Nachname" }),
+      field({ autocomplete: "family-name", label: "Vor- und Nachname" }),
+    ];
+    const { mappings } = mapFields(fields, coupleWithDog, "");
+    expect(mappings.map((m) => m.value)).toEqual(["Mara", "Testmann"]);
+  });
+
+  it("fills the full name only when one field asks for it", () => {
+    const shared = "Vor- und Nachname";
+    const two = [
+      field({ name: "vorname", label: shared }),
+      field({ name: "nachname", label: shared }),
+    ];
+    expect(
+      mapFields(two, coupleWithDog, "").mappings.map((m) => m.value),
+    ).toEqual(["Mara", "Testmann"]);
+    const one = [field({ label: shared })];
+    expect(mapFields(one, coupleWithDog, "").mappings[0]?.value).toBe(
+      "Mara Testmann",
+    );
+  });
+
   it("ignores autocomplete tokens that are not field names", () => {
     expect(
       classifyField(field({ autocomplete: "constructor", label: "Vorname" })),
     ).toBe("firstName");
-  });
-
-  it("lets a full-name label win over a given-name autocomplete", () => {
-    for (const autocomplete of ["given-name", "family-name"]) {
-      const name = field({ autocomplete, label: "Vor- und Nachname" });
-      const { mappings } = mapFields([name], coupleWithDog, "");
-      expect(mappings[0]?.value).toBe("Mara Testmann");
-    }
   });
 });
 
