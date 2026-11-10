@@ -140,8 +140,18 @@ const CHECKBOX_FACTS = new Set<FieldKind>(["pets", "smoker", "wbs"]);
 
 const CAPTCHA = /captcha/u;
 const COMBINED_NR = new RegExp(word("nr"), "u");
-const FULL_NAME_FIELD =
-  /vor(?:name)? und (?:nach|zu)name|vollständiger name|full ?name/u;
+// "Vor- und Nachname", "Vorname, Nachname", "Name, Vorname": a label that
+// asks for both names. `full name` also counts in a name or id attribute.
+const FULL_NAME_LABEL =
+  /(?<![\p{L}])vor(?:name)? (?:und )?(?:nach|zu)name|(?<![\p{L}])(?:nach|zu)?name (?:und )?vorname/u;
+const FULL_NAME_ANYWHERE = /vollständiger name|full ?name/u;
+
+function asksForFullName(field: FormField): boolean {
+  const label = words([field.label, field.placeholder].join(" "));
+  return (
+    FULL_NAME_LABEL.test(label) || FULL_NAME_ANYWHERE.test(haystack(field))
+  );
+}
 const NON_SMOKER = /nichtraucher|non ?smok/u;
 const NO_PETS =
   /(?:keine?|ohne|no) (?:haus)?(?:tiere?|pets?)|(?:haustiere?|pets?) keine?/u;
@@ -190,14 +200,16 @@ export function classifyField(field: FormField): FieldKind {
 }
 
 function classifyByText(field: FormField): FieldKind {
-  if (SENSITIVE.test(haystack(field))) return "unknown";
+  const hay = haystack(field);
+  if (SENSITIVE.test(hay)) return "unknown";
 
   const fromAutocomplete = field.autocomplete
     ? AUTOCOMPLETE[field.autocomplete.trim().toLowerCase()]
     : undefined;
   if (fromAutocomplete) return fromAutocomplete;
 
-  const hay = haystack(field);
+  // Before the keywords, whose `vorname` would read it as a first name.
+  if (asksForFullName(field)) return "lastName";
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
   if (parts(field).some((part) => BARE_NR.test(words(part)))) {
@@ -242,8 +254,10 @@ function valueFor(
     case "firstName":
       return applicant?.firstName;
     case "lastName":
-      return FULL_NAME_FIELD.test(hay)
-        ? `${applicant?.firstName ?? ""} ${applicant?.lastName ?? ""}`.trim()
+      return asksForFullName(field)
+        ? [applicant?.firstName, applicant?.lastName]
+            .filter(Boolean)
+            .join(" ") || undefined
         : applicant?.lastName;
     case "email":
       return contact.email;

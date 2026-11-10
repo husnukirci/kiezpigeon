@@ -581,10 +581,20 @@ describe("review findings", () => {
       "Vor- und Zuname",
       "Vollständiger Name",
       "Full name",
+      "Vorname und Nachname",
+      "Vorname, Nachname",
+      "Vorname/Nachname",
+      "Name, Vorname",
     ]) {
       const { mappings } = mapFields([field({ label })], coupleWithDog, "");
       expect(mappings[0]?.value).toBe("Mara Testmann");
     }
+    const separate = mapFields(
+      [field({ label: "Vorname" }), field({ label: "Nachname" })],
+      coupleWithDog,
+      "",
+    );
+    expect(separate.mappings.map((m) => m.value)).toEqual(["Mara", "Testmann"]);
     const { mappings } = mapFields(
       [field({ label: "Nachname" })],
       coupleWithDog,
