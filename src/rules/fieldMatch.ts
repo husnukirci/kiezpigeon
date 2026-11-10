@@ -169,8 +169,9 @@ function asksForFullName(field: FormField): boolean {
   );
 }
 const NON_SMOKER = /nichtraucher|non ?smok/u;
-const NO_PETS =
-  /(?:keine?|ohne|no) (?:haus)?(?:tiere?|pets?)|(?:haustiere?|pets?) keine?/u;
+const NO_PETS = /(?:keine?|ohne|no) (?:haus)?(?:tiere?|pets?)/u;
+/** "Haustiere: keine", but not "Haustiere (keine Pflicht)": keine ends it. */
+const NO_PETS_AFTER = /(?:haustiere?|pets?) keine?$/u;
 const NOT_COUNTED_TYPES = new Set([
   "hidden",
   "submit",
@@ -342,7 +343,7 @@ function valueFor(
     case "wbs":
       // A text field ("WBS-Nr.") asks for something else than yes or no.
       return field.type === "checkbox"
-        ? yesNoFor(kind, hay, profile)
+        ? yesNoFor(kind, field, profile)
         : undefined;
     case "income":
       // No income given is not an income of 0.
@@ -377,14 +378,18 @@ function householdIncomeCents(profile: Profile): number {
 
 function yesNoFor(
   kind: "pets" | "smoker" | "wbs",
-  hay: string,
+  field: FormField,
   profile: Profile,
 ): boolean {
   const { household } = profile;
+  const hay = haystack(field);
   switch (kind) {
     case "pets": {
       const hasPets = household.pets.some((pet) => pet.count > 0);
-      return NO_PETS.test(hay) ? !hasPets : hasPets;
+      const noPets =
+        NO_PETS.test(hay) ||
+        ownText(field).some((part) => NO_PETS_AFTER.test(words(part)));
+      return noPets ? !hasPets : hasPets;
     }
     case "smoker":
       return NON_SMOKER.test(hay) ? !household.smoker : household.smoker;
@@ -564,7 +569,7 @@ function optionFor(
     case "pets":
     case "smoker":
     case "wbs":
-      return yesNoOption(field, yesNoFor(kind, haystack(field), profile));
+      return yesNoOption(field, yesNoFor(kind, field, profile));
     case "moveInDate": {
       const moveIn = profile.moveIn;
       return (

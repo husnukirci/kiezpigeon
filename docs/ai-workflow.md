@@ -196,6 +196,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 1 | Field matching: a "Name" label over a "Vorname" placeholder read as "Name, Vorname" and got the full name, because label and placeholder were joined into one text before the full-name pattern ran; every full-name test put the words in the label alone. | Label and placeholder are tested one at a time, test first.
 - Audit 1 | Field matching: in a form with a shared "Vor- und Nachname" label, every field was judged by its name and id instead of its label, so a pets textarea got the letter, "Datenschutz gelesen" with name=email got the email and a privacy checkbox with name=pets was planned as ticked; my shared-label test held only the two name fields. | Only fields that themselves ask for the full name are judged by their own text, test first.
 - Audit 1 | Field matching: a street-address autocomplete always took street and number, so a form with a separate Hausnummer field got the number twice; my street-address test used a form of one field. | The token joins the number only when no other field of the form takes it, test first.
+- Audit 1 | Field matching: the trailing no-pets wording matched "Haustiere (keine Pflicht)", so a household with a dog would have said it has none; the no-pets tests held only labels that meant no pets. | A trailing keine counts only when it ends the field's own text, test first.
 
 ## Per-phase narrative
 

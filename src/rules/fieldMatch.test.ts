@@ -895,4 +895,16 @@ describe("final review findings", () => {
       ]);
     }
   });
+
+  it("reads a trailing keine as no pets only when it ends the label", () => {
+    const optional = field({
+      label: "Haustiere (keine Pflicht)",
+      type: "checkbox",
+    });
+    expect(mapFields([optional], coupleWithDog, "").mappings[0]?.value).toBe(
+      true,
+    );
+    const none = field({ label: "Haustiere: keine", type: "checkbox" });
+    expect(mapFields([none], coupleWithDog, "").mappings[0]?.value).toBe(false);
+  });
 });
