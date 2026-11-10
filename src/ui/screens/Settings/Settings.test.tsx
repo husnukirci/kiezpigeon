@@ -164,6 +164,27 @@ describe("Settings", () => {
     expect(await read("profile")).toEqual({ ok: true, value: coupleWithDog });
   });
 
+  it("says so when the import file cannot be read", async () => {
+    render(<Settings profile={coupleWithDog} onClose={vi.fn()} />);
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error("no import input");
+    const file = new File(["{}"], "kiezpigeon.json", {
+      type: "application/json",
+    });
+    vi.spyOn(file, "text").mockRejectedValue(new Error("unreadable"));
+    Object.defineProperty(input, "files", {
+      value: [file],
+      configurable: true,
+    });
+    fireEvent.change(input);
+    expect(
+      await screen.findByText("That file could not be read."),
+    ).toBeDefined();
+    expect(screen.getByText(/can't be imported/)).toBeDefined();
+    expect(await read("profile")).toEqual({ ok: true, value: coupleWithDog });
+  });
+
   it("replaces the data, applications too, with an import after a confirm", async () => {
     const onClose = vi.fn();
     render(<Settings profile={undefined} onClose={onClose} />);

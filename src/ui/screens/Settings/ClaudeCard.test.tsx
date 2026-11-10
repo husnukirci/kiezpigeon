@@ -5,8 +5,9 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
+import * as storage from "../../../storage/storage";
 import { read, resetForTests } from "../../../storage/storage";
 import { ClaudeCard } from "./ClaudeCard";
 
@@ -16,7 +17,10 @@ beforeEach(() => {
   fakeBrowser.reset();
   resetForTests();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("ClaudeCard", () => {
   it("saves a pasted key, never shows it, and removes it", async () => {
@@ -70,5 +74,40 @@ describe("ClaudeCard", () => {
       });
     });
     expect(await screen.findByText(/30-day data retention/)).toBeDefined();
+  });
+
+  it("says so when the key could not be removed, and clears it on the next action", async () => {
+    await storage.write("apiKey", KEY);
+    render(<ClaudeCard />);
+    const remove = vi
+      .spyOn(storage, "remove")
+      .mockRejectedValueOnce(new Error("storage unavailable"));
+    fireEvent.click(await screen.findByRole("button", { name: "Remove key" }));
+    expect(
+      await screen.findByText("Your key could not be removed. Try again."),
+    ).toBeDefined();
+    expect(screen.getByText(/Connected/)).toBeDefined();
+
+    remove.mockRestore();
+    fireEvent.click(screen.getByRole("button", { name: "Remove key" }));
+    expect(await screen.findByLabelText("API key")).toBeDefined();
+    expect(screen.queryByText(/could not be removed/)).toBeNull();
+  });
+
+  it("says so when the model could not be changed and keeps the old one", async () => {
+    render(<ClaudeCard />);
+    const select = await screen.findByLabelText("Model");
+    vi.spyOn(storage, "write").mockRejectedValueOnce(new Error("quota"));
+    fireEvent.change(select, { target: { value: "claude-opus-5-5" } });
+    expect(
+      await screen.findByText("The model could not be changed. Try again."),
+    ).toBeDefined();
+    expect((select as HTMLSelectElement).value).toBe("claude-sonnet-5-5");
+
+    fireEvent.change(select, { target: { value: "claude-opus-5-5" } });
+    await waitFor(() => {
+      expect(screen.queryByText(/could not be changed/)).toBeNull();
+    });
+    expect((select as HTMLSelectElement).value).toBe("claude-opus-5-5");
   });
 });

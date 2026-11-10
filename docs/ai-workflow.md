@@ -204,6 +204,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 3 | Segmented control: a click on the already selected option still fired onChange, which the letter screen would treat as a tone change and rewrite the letter; no test existed for the control at all. | Click on the selected value is ignored, arrow keys unchanged, test first.
 - Audit 3 | Unknown site facts: an error stayed under a field after the user fixed it, until the next Continue; the test only covered the error appearing. | Editing a fact drops that fact's problems, test first with a second invalid field left alone.
 - Audit 3 | Settings: the save message showed the result of whichever write finished last, so a slow earlier save flipped "Not saved yet" to "saved" after an invalid edit, and a late failure overwrote a newer success; the tests only ever saved once at a time. | Only the latest edit sets the message, tested with deferred writes resolved out of order, test first.
+- Audit 3 | Settings: a refused key removal or model change was dropped by `void`, and an import file the browser could not read raised an unhandled rejection, so the panel showed nothing in all three cases; the tests only stubbed storage that worked. | Each failure says so in its card ("could not be removed", "could not be changed", "could not be read"), tested with rejecting stubs, test first.
 
 ## Per-phase narrative
 
