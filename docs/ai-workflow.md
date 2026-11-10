@@ -183,6 +183,9 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P13 | Chromium check: the kind line opened with a lowercase "offered privately." on the sparse page, which no unit test had asked for. | Test first, then the rule capitalises the line.
 - P13 | Branch review (a fresh reviewer, read-only, with a shell) probed the scanner with everyday Berlin phrasings and found it turning "unbefristet", "Kein WBS erforderlich" and "Untervermietung nicht gestattet" into befristet, WBS and Untermiete, and three notes firing on documents before a viewing, applicants from abroad and viewing requests. My own tests had only positive phrasings and the fixtures' one negation. | One fix pass, each finding reproduced by a failing test first; the negation list is now kept with a test per phrasing, and ADR 14 no longer claims the scanner can only under-flag.
 - Post-P13 | The greeting line on the card went on the author's first use: it repeats what the letter screen shows. The one open design question of Phase 13 answered itself in use. | Removed, test first; the design records the outcome.
+- Audit 1 | Field matching: the consent pattern matched `willig` inside "freiwillig", so "Telefonnummer (freiwillig)" was left alone as a consent field; the table of labels had no optional-field wording. | The pattern now needs `einwillig` or the whole words `willige` and `willigen`, test first.
+- Audit 1 | Field matching: "Einzugsermächtigung IBAN" read as a move-in date, "Ausweis-Nr." as a house number, "WBS-Nr." got a true or false, and "Vor- und Nachname" got only the surname; the label table held none of these shapes. | Bank, identity and tax words classify unknown first, a bare Nr. counts only as a field's whole text, yes/no kinds fill only checkboxes and selects, and full-name fields get both names, test first.
+- Audit 1 | Field matching: a "Keine Haustiere" checkbox was ticked for a household with a dog, which would say the opposite of the truth; only the smoker field had an inverted wording in the tests. | A no-pets wording now inverts the value like Nichtraucher does, test first.
 
 ## Per-phase narrative
 
@@ -307,7 +310,3 @@ and losing uncommitted work. Each got a fix in the process, not a promise.
 Personal data was the hardest invariant. Every leak (a signed-in header, a
 two-word street, real names in a PR description) got past the pattern
 checks and was found by reading. Reading stays part of the scrub.
-
-- Audit 1 | Field matching: the consent pattern matched `willig` inside "freiwillig", so "Telefonnummer (freiwillig)" was left alone as a consent field; the table of labels had no optional-field wording. | The pattern now needs `einwillig` or the whole words `willige` and `willigen`, test first.
-- Audit 1 | Field matching: "Einzugsermächtigung IBAN" read as a move-in date, "Ausweis-Nr." as a house number, "WBS-Nr." got a true or false, and "Vor- und Nachname" got only the surname; the label table held none of these shapes. | Bank, identity and tax words classify unknown first, a bare Nr. counts only as a field's whole text, yes/no kinds fill only checkboxes and selects, and full-name fields get both names, test first.
-- Audit 1 | Field matching: a "Keine Haustiere" checkbox was ticked for a household with a dog, which would say the opposite of the truth; only the smoker field had an inverted wording in the tests. | A no-pets wording now inverts the value like Nichtraucher does, test first.
