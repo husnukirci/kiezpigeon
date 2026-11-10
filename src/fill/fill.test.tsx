@@ -290,8 +290,9 @@ describe("fillForm read-back", () => {
   }
 
   // happy-dom keeps whatever it is given, where Chromium drops a value that is
-  // not a number or a date (e2e/read-back.spec.ts shows the real browser). The
-  // stub makes the prototype setter sanitise the way Chromium's does.
+  // not a number or a date and trims an email or url (e2e/read-back.spec.ts
+  // shows the real browser). The stub makes the prototype setter sanitise the
+  // way Chromium's does.
   const restores: (() => void)[] = [];
   function sanitiseLikeChromium(): void {
     const proto = HTMLInputElement.prototype;
@@ -304,11 +305,13 @@ describe("fillForm read-back", () => {
       number: /^-?\d+(\.\d+)?$/,
       date: /^\d{4}-\d{2}-\d{2}$/,
     };
+    const trimmed = new Set(["email", "url"]);
     Object.defineProperty(proto, "value", {
       ...real,
       set(this: HTMLInputElement, value: string) {
         const rule = valid[this.type];
-        original.call(this, !rule || rule.test(value) ? value : "");
+        const kept = !rule || rule.test(value) ? value : "";
+        original.call(this, trimmed.has(this.type) ? kept.trim() : kept);
       },
     });
     restores.push(() => Object.defineProperty(proto, "value", real));
@@ -355,5 +358,27 @@ describe("fillForm read-back", () => {
     ]);
     expect(report.filled).toEqual(["name:message"]);
     expect(report.skipped).toEqual([]);
+  });
+
+  it("puts back what a field held when it rejects the new value", () => {
+    sanitiseLikeChromium();
+    const form = formWith('<input name="income" type="number" value="1200">');
+    const report = fillForm(form, [
+      { key: "name:income", kind: "income", value: "viertausend" },
+    ]);
+    expect(report.skipped).toEqual([
+      { key: "name:income", reason: "rejected" },
+    ]);
+    expect(form.querySelector("input")?.value).toBe("1200");
+  });
+
+  it("does not call the trimming of an email address a rejection", () => {
+    sanitiseLikeChromium();
+    const form = formWith('<input name="email" type="email">');
+    const report = fillForm(form, [
+      { key: "name:email", kind: "email", value: " mara@example.test " },
+    ]);
+    expect(report.filled).toEqual(["name:email"]);
+    expect(form.querySelector("input")?.value).toBe("mara@example.test");
   });
 });
