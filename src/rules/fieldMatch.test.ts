@@ -559,6 +559,43 @@ describe("review findings", () => {
     expect(classifyField(field({ label }))).toBe("unknown");
   });
 
+  it("keeps income after tax and leaves identity documents alone", () => {
+    expect(
+      classifyField(field({ label: "Nettoeinkommen (nach Steuern)" })),
+    ).toBe("income");
+    expect(
+      classifyField(field({ label: "Monatliches Einkommen nach Steuern" })),
+    ).toBe("income");
+    expect(classifyField(field({ label: "Personalausweis-Nr." }))).toBe(
+      "unknown",
+    );
+    expect(classifyField(field({ label: "Steuernummer" }))).toBe("unknown");
+  });
+
+  it("takes a bare Nr. from the label when there is one", () => {
+    expect(classifyField(field({ label: "Kunden-Nr.", name: "nr" }))).toBe(
+      "unknown",
+    );
+    expect(classifyField(field({ label: "Nr.", name: "kunde" }))).toBe(
+      "houseNumber",
+    );
+  });
+
+  it("joins the number into a street field only when its text says so", () => {
+    const { mappings } = mapFields(
+      [field({ label: "Straße", id: "field-nr-3" })],
+      soloStudent,
+      "",
+    );
+    expect(mappings[0]?.value).toBe("Ausgedachter Weg");
+    const combined = mapFields(
+      [field({ label: "Straße/Nr." })],
+      soloStudent,
+      "",
+    );
+    expect(combined.mappings[0]?.value).toBe("Ausgedachter Weg 12a");
+  });
+
   it("reads a bare Nr. as the house number, not a number of something else", () => {
     expect(classifyField(field({ label: "Nr." }))).toBe("houseNumber");
     expect(classifyField(field({ name: "nr" }))).toBe("houseNumber");

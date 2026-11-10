@@ -43,12 +43,21 @@ function pattern(parts: { within?: string; whole?: string }): RegExp {
 /** Bank, identity and tax data: never filled, whatever else the text says. */
 const SENSITIVE = pattern({
   within:
-    "iban|kontoinhaber|kontonummer|lastschrift|kreditkarte|ausweis|steuer",
+    "iban|kontoinhaber|kontonummer|lastschrift|kreditkarte|steuer ?id|steuer ?identifikation|steuernummer|steuer ?nr|steuerklasse|tax ?id|personalausweis|reisepass|ausweis ?nr|ausweisnummer|passport|id ?number",
   whole: "bic|sepa|konto",
 });
 
 /** A bare `Nr.`: the house number, but only as a field's own whole text. */
 const BARE_NR = /^nr$/u;
+
+/** The text that names a field: its label, or without one its attributes. */
+function ownText(field: FormField): string[] {
+  return field.label?.trim()
+    ? [field.label]
+    : [field.name, field.id, field.placeholder].filter(
+        (part): part is string => part !== undefined,
+      );
+}
 
 // Checked in order; the first match wins. `within` matches inside longer
 // German compounds (`Haushaltsnettoeinkommen`), `whole` only as a word
@@ -212,7 +221,7 @@ function classifyByText(field: FormField): FieldKind {
   if (asksForFullName(field)) return "lastName";
   const fromKeywords = KEYWORDS.find(([, re]) => re.test(hay));
   if (fromKeywords) return fromKeywords[0];
-  if (parts(field).some((part) => BARE_NR.test(words(part)))) {
+  if (ownText(field).some((part) => BARE_NR.test(words(part)))) {
     return "houseNumber";
   }
 
@@ -264,7 +273,8 @@ function valueFor(
     case "phone":
       return contact.phone;
     case "street":
-      return matches("houseNumber", hay) || COMBINED_NR.test(hay)
+      return matches("houseNumber", hay) ||
+        COMBINED_NR.test(words([field.label, field.placeholder].join(" ")))
         ? `${contact.street} ${contact.houseNumber}`.trim()
         : contact.street;
     case "houseNumber":
