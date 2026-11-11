@@ -46,3 +46,31 @@
   height: var(--button-height);
   border-radius: var(--radius-lg);
 }
+
+/* A list of check lines: an icon and its text, the same on every screen. */
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  /* Card preview: 10px between icon and text. */
+  --icon-gap: 10px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--icon-gap);
+  margin: 0;
+  color: var(--ink);
+}
+
+/* The quiet line under the bottom button. */
+.next {
+  margin: 0;
+  color: var(--ink-subtle);
+  text-align: center;
+}
