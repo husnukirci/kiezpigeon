@@ -35,7 +35,6 @@ export function answerAs(adapter: SiteAdapter): void {
   // So an injected fallback reader never answers beside this script.
   Object.assign(window, { [PAGE_ANSWERED]: true });
   handle({
-    ping: () => ({ type: "pong" }),
     getListing: async () => {
       await untilReady(adapter);
       // Without the query string: it carries the site's tracking.

@@ -26,7 +26,6 @@ export type LetterResult =
   | { kind: "error"; code: ClaudeErrorCode; message: string };
 
 interface Messages {
-  ping: { request: { type: "ping" }; response: { type: "pong" } };
   getListing: { request: { type: "getListing" }; response: ListingResult };
   getContactForm: {
     request: { type: "getContactForm" };
@@ -61,7 +60,6 @@ export type Handlers = {
 type Envelope = { ok: true; value: unknown } | { ok: false; error: string };
 
 const TYPES: readonly string[] = [
-  "ping",
   "getListing",
   "getContactForm",
   "fillForm",
