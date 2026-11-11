@@ -95,7 +95,7 @@ describe("analyseListing: kind", () => {
       analyseListing({ ...kreuzbergListing, offeredBy: "private", hints: some })
         .kind.text,
     ).toBe(
-      "Etagenwohnung, Möbliert, Zwischenmiete, befristet, offered privately.",
+      "Etagenwohnung, möbliert, Zwischenmiete, befristet, offered privately.",
     );
     const all = Object.fromEntries(
       Object.keys(NO_HINTS).map((flag) => [flag, true]),
@@ -110,7 +110,7 @@ describe("analyseListing: kind", () => {
         hints: all,
       }).kind.text,
     ).toBe(
-      "Erstbezug, Möbliert, WG-Zimmer, Untermiete, Zwischenmiete, befristet, Genossenschaft, WBS required, Staffelmiete, Indexmiete.",
+      "Erstbezug, möbliert, WG-Zimmer, Untermiete, Zwischenmiete, befristet, Genossenschaft, WBS required, Staffelmiete, Indexmiete.",
     );
     expect(
       analyseListing({
@@ -196,6 +196,40 @@ describe("analyseListing: price", () => {
     expect(verdict(1300).text).toContain(": below the usual range.");
     expect(verdict(1050)).toMatchObject({ status: "note" });
     expect(verdict(1050).text).toContain(": well below the usual range.");
+  });
+});
+
+describe("analyseListing: card copy", () => {
+  const band = {
+    lowCentsPerM2: 1400,
+    highCentsPerM2: 2100,
+    radiusM: 1000,
+    sampleSize: 500,
+  };
+
+  it("counts one flat as one flat", () => {
+    const { price } = analyseListing({
+      ...kreuzbergListing,
+      priceComparison: { ...band, sampleSize: 1 },
+    });
+    expect(price.text).toContain("(1 flat within");
+  });
+
+  it("writes the kind parts as one sentence", () => {
+    const { kind } = analyseListing({
+      ...kreuzbergListing,
+      flatType: "Etagenwohnung",
+      offeredBy: undefined,
+      hints: { ...NO_HINTS, furnished: true, fixedTerm: true },
+    });
+    expect(kind.text).toBe("Etagenwohnung, möbliert, befristet.");
+    const alone = analyseListing({
+      ...kreuzbergListing,
+      flatType: undefined,
+      offeredBy: undefined,
+      hints: { ...NO_HINTS, furnished: true },
+    });
+    expect(alone.kind.text).toBe("Möbliert.");
   });
 });
 
