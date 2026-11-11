@@ -125,11 +125,6 @@ function isIsoDateTime(value: unknown): value is string {
   );
 }
 
-/**
- * Reads fields off an unknown object, recording a problem per bad field.
- * Each reader returns a placeholder on failure; the caller only uses the
- * built value when there were no problems.
- */
 /** Parses as a URL (the tracker reads its host) and is http or https. */
 function isWebUrl(value: string): boolean {
   if (!/^https?:\/\/[^/?#\s]+/i.test(value)) return false;
@@ -140,6 +135,11 @@ function isWebUrl(value: string): boolean {
   }
 }
 
+/**
+ * Reads fields off an unknown object, recording a problem per bad field.
+ * Each reader returns a placeholder on failure; the caller only uses the
+ * built value when there were no problems.
+ */
 class Reader {
   constructor(
     private readonly problems: string[],
