@@ -18,27 +18,6 @@ const ENGLISH_URL = `https://www.immobilienscout24.de/en/expose/${PAIR_ID}`;
 const englishPage = () =>
   loadFixture("immoscout24", "en-listing-complete.html");
 
-describe("immoscout24.matches", () => {
-  it("matches exposé pages only", () => {
-    expect(immoscout24.matches(URL)).toBe(true);
-    expect(immoscout24.matches(`${URL}?referrer=RESULT_LIST`)).toBe(true);
-    expect(immoscout24.matches(ENGLISH_URL)).toBe(true);
-    expect(
-      immoscout24.matches(
-        "https://www.immobilienscout24.de/fr/expose/100000003",
-      ),
-    ).toBe(false);
-    expect(
-      immoscout24.matches(
-        "https://www.immobilienscout24.de/Suche/de/berlin/berlin/wohnung-mieten",
-      ),
-    ).toBe(false);
-    expect(
-      immoscout24.matches("https://www.example.org/expose/100000003"),
-    ).toBe(false);
-  });
-});
-
 describe("immoscout24.readListing", () => {
   it("reads a listing with missing fields and names what it lacks", () => {
     const listing = immoscout24.readListing(

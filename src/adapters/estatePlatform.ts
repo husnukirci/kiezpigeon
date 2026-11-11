@@ -20,7 +20,6 @@ import type { SiteAdapter } from "./types";
 export interface EstatePlatformSite {
   id: string;
   siteName: string;
-  listingUrl: RegExp;
 }
 
 /** The listing's name: an `h1` on one site, an `h2` in the hero on another. */
@@ -187,7 +186,6 @@ export function estatePlatformAdapter(site: EstatePlatformSite): SiteAdapter {
   return {
     id: site.id,
     siteName: site.siteName,
-    matches: (url) => site.listingUrl.test(url),
     isReady,
     readListing,
     contactForm,

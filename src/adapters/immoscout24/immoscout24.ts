@@ -25,8 +25,6 @@ import {
 } from "../parse";
 import type { SiteAdapter } from "../types";
 
-const EXPOSE_URL =
-  /^https:\/\/www\.immobilienscout24\.de\/(?:en\/)?expose\/\d+/;
 const ENGLISH_URL = /^https:\/\/www\.immobilienscout24\.de\/en\//;
 
 /** The feature tags' site codes, which are the same in both languages. */
@@ -325,7 +323,6 @@ function contactForm(document: Document): HTMLFormElement | undefined {
 export const immoscout24: SiteAdapter = {
   id: "immoscout24",
   siteName: "ImmoScout24",
-  matches: (url) => EXPOSE_URL.test(url),
   readListing,
   contactForm,
   readContactForm: (document) => {
