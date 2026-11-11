@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes } from "react";
 import { cx } from "../../cx";
 import styles from "./Button.module.css";
 
-export type ButtonKind = "primary" | "secondary" | "add";
+type ButtonKind = "primary" | "secondary" | "add";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   kind?: ButtonKind;

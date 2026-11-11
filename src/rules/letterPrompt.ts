@@ -135,7 +135,7 @@ export function availableDateOf(
 }
 
 /** The contact person, or undefined when the listing gives no surname. */
-export function namedContact(
+function namedContact(
   person: ContactPerson | undefined,
 ): ContactPerson | undefined {
   return person && person.lastName.trim() !== "" ? person : undefined;

@@ -26,7 +26,7 @@ export interface StoredData {
 export type StoredKey = keyof StoredData;
 
 /** `value` is undefined when nothing is stored under the key yet. */
-export type ReadResult<T> =
+type ReadResult<T> =
   { ok: true; value: T | undefined } | { ok: false; problems: string[] };
 
 type Raw = Record<string, unknown>;

@@ -8,7 +8,7 @@ import { browser } from "wxt/browser";
 import { send, type ListingResult } from "../../messaging/messaging";
 import { unreadPage, type UnreadPage } from "../../rules/unreadPage";
 
-export type ActiveListing =
+type ActiveListing =
   | { kind: "loading" }
   | Extract<ListingResult, { kind: "listing" }>
   | { kind: "not_read"; page: UnreadPage };

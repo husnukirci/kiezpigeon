@@ -56,7 +56,7 @@ export interface ContactDetails {
 export type Tone = "warm" | "formal" | "short";
 export type Language = "de" | "en";
 
-export interface LetterDefaults {
+interface LetterDefaults {
   tone: Tone;
   language: Language;
 }
@@ -163,7 +163,7 @@ export interface PriceComparison {
   sampleSize: number;
 }
 
-export type AnalysisStatus = "info" | "note" | "unknown";
+type AnalysisStatus = "info" | "note" | "unknown";
 
 export interface AnalysisLine {
   id: string;
@@ -191,7 +191,7 @@ export interface Settings {
 }
 
 export type FitRule = "budget" | "income" | "pets" | "wbs" | "moveIn";
-export type FitStatus = "ok" | "warn" | "no" | "unknown";
+type FitStatus = "ok" | "warn" | "no" | "unknown";
 
 export interface FitLine {
   rule: FitRule;
@@ -215,7 +215,7 @@ export interface LetterRequest {
   features: Feature[];
 }
 
-export type LetterProblemCode =
+type LetterProblemCode =
   | "too_long"
   | "em_dash"
   | "unknown_number"

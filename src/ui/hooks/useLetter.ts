@@ -13,7 +13,7 @@ export type LetterState =
   | { status: "failed"; request: LetterRequest; message: string };
 
 /** When the worker itself cannot be reached, not Claude. */
-export const WORKER_UNREACHABLE =
+const WORKER_UNREACHABLE =
   "Kiezpigeon could not start writing. Close the panel, open it again and retry.";
 
 export function useLetter(): {

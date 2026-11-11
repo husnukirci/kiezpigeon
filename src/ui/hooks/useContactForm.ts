@@ -23,7 +23,7 @@ export type ContactFormState =
     };
 
 /** Runs in the tab before each read and fill; rejects if it cannot. */
-export type Prepare = (tabId: number) => Promise<unknown>;
+type Prepare = (tabId: number) => Promise<unknown>;
 
 async function read(
   ownTab: number | undefined,

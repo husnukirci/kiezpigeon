@@ -12,11 +12,11 @@ export type ListingResult =
   | { kind: "not_listing"; siteName: string };
 
 /** `no_form` until the user opens the site's contact form. */
-export type ContactFormResult =
+type ContactFormResult =
   { kind: "form"; fields: FormField[] } | { kind: "no_form" };
 
 /** `changed` when the form is no longer the one the user saw; nothing filled. */
-export type FillResult =
+type FillResult =
   | { kind: "filled"; report: FillReport }
   | { kind: "changed" }
   | { kind: "no_form" };
@@ -46,7 +46,7 @@ interface Messages {
   };
 }
 
-export type MessageType = keyof Messages;
+type MessageType = keyof Messages;
 export type Message = Messages[MessageType]["request"];
 export type ResponseTo<T extends MessageType> = Messages[T]["response"];
 

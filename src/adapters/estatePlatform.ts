@@ -17,7 +17,7 @@ import {
 import type { SiteAdapter } from "./types";
 
 /** What tells one site on the platform from another. */
-export interface EstatePlatformSite {
+interface EstatePlatformSite {
   id: string;
   siteName: string;
 }

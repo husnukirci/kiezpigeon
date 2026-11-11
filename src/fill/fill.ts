@@ -12,7 +12,7 @@ export interface FillStep {
   value: FieldValue;
 }
 
-export type SkipReason = "missing" | "refused" | "no_option" | "rejected";
+type SkipReason = "missing" | "refused" | "no_option" | "rejected";
 
 export interface FillReport {
   filled: string[];
