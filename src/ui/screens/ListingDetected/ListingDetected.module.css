@@ -1,20 +1,9 @@
 .lines {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  composes: lines from "../Screen.module.css";
 }
 
 .line {
-  /* Card preview: 10px between icon and reason. */
-  --icon-gap: 10px;
-
-  display: flex;
-  align-items: flex-start;
-  gap: var(--icon-gap);
-  color: var(--ink);
+  composes: line from "../Screen.module.css";
 }
 
 .marker {
@@ -52,7 +41,5 @@
 }
 
 .next {
-  margin: 0;
-  color: var(--ink-subtle);
-  text-align: center;
+  composes: next from "../Screen.module.css";
 }

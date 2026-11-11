@@ -8,7 +8,6 @@ export interface SiteAdapter {
   id: string;
   /** Shown in the detected badge, e.g. `ImmoScout24`. */
   siteName: string;
-  matches(url: string): boolean;
   /**
    * False while the site is still drawing what `readListing` needs, for a
    * site that draws part of a listing after the load event. Omitted when the

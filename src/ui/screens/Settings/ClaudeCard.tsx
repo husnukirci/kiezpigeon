@@ -2,7 +2,11 @@
 // model, each named with its trade-off. The key is saved straight to storage and never shown again; the
 // panel only ever says whether one is saved.
 import { useState } from "react";
-import { defaultSettings, parseApiKey } from "../../../rules/profile";
+import {
+  CLAUDE_MODELS,
+  defaultSettings,
+  parseApiKey,
+} from "../../../rules/profile";
 import type { ClaudeModel } from "../../../rules/types";
 import { remove, write } from "../../../storage/storage";
 import { cx } from "../../cx";
@@ -15,12 +19,17 @@ import styles from "./ClaudeCard.module.css";
 
 const KEYS_URL = "https://platform.claude.com/settings/keys";
 
-const MODELS: readonly { value: ClaudeModel; label: string }[] = [
-  { value: "claude-sonnet-5-5", label: "Sonnet 5.5 (default)" },
-  { value: "claude-opus-5-5", label: "Opus 5.5 (best letters)" },
-  { value: "claude-fable-5-1", label: "Fable 5.1 (most capable)" },
-  { value: "claude-haiku-5-5", label: "Haiku 5.5 (cheapest)" },
-];
+const MODEL_LABELS: Record<ClaudeModel, string> = {
+  "claude-sonnet-5-5": "Sonnet 5.5 (default)",
+  "claude-opus-5-5": "Opus 5.5 (best letters)",
+  "claude-fable-5-1": "Fable 5.1 (most capable)",
+  "claude-haiku-5-5": "Haiku 5.5 (cheapest)",
+};
+
+const MODELS = CLAUDE_MODELS.map((value) => ({
+  value,
+  label: MODEL_LABELS[value],
+}));
 
 // Costs and speed from the six-letter comparison in the ADR 4 amendment.
 const MODEL_HINTS: Record<ClaudeModel, string> = {

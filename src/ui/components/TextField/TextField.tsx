@@ -9,13 +9,13 @@ import styles from "./TextField.module.css";
 
 interface FieldProps {
   label: string;
-  error?: string | undefined;
 }
 
 interface TextFieldProps
   extends
     FieldProps,
     Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
+  error?: string | undefined;
   value: string;
   onChange: (value: string) => void;
 }
@@ -25,12 +25,11 @@ export function TextField({
   error,
   value,
   onChange,
-  className,
   ...input
 }: TextFieldProps) {
   const errorId = useId();
   return (
-    <div className={cx(styles.field, className)}>
+    <div className={styles.field}>
       <label className={cx(styles.label, "type-caption")}>
         {label}
         <input
@@ -57,25 +56,21 @@ interface SelectFieldProps<T extends string> extends FieldProps {
 
 export function SelectField<T extends string>({
   label,
-  error,
   value,
   options,
   onChange,
 }: SelectFieldProps<T>) {
-  const errorId = useId();
   return (
     <div className={styles.field}>
       <label className={cx(styles.label, "type-caption")}>
         {label}
         <select
-          className={cx(styles.control, error && styles.invalid, "type-body")}
+          className={cx(styles.control, "type-body")}
           value={value}
           onChange={(e) => {
             // The options are exactly the T values passed in.
             onChange(e.target.value as T);
           }}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -84,7 +79,6 @@ export function SelectField<T extends string>({
           ))}
         </select>
       </label>
-      <FieldError id={errorId} error={error} />
     </div>
   );
 }

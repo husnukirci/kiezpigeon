@@ -18,7 +18,7 @@ import { cx } from "../../cx";
 import type { ContactFormState } from "../../hooks/useContactForm";
 import styles from "./LetterReady.module.css";
 
-export interface FormMatch {
+interface FormMatch {
   mappings: FieldMapping[];
   matched: number;
   total: number;
@@ -35,7 +35,7 @@ const names = (fields: FormField[]): string =>
   `${fields.map(fieldName).join(", ")}.`;
 
 /** The per-field confirm on an unknown site: keys the user switched off. */
-export interface FillConfirm {
+interface FillConfirm {
   optedOut: ReadonlySet<string>;
   onToggle: (key: string) => void;
 }

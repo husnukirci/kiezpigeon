@@ -1,8 +1,8 @@
 // "About this listing" (design system screen 2, Phase 13): what the page
 // says about the kind of rental, where its price sits against the band the
-// page prints, and what is worth a second look. It informs; the user decides. Status is never colour alone:
-// a note carries the exclamation, nothing found the tick, and the plain
-// lines their label word.
+// page prints, and what is worth a second look. It informs; the user
+// decides. Status is never colour alone: a note carries the exclamation,
+// nothing found the tick, and the plain lines their label word.
 import { analyseListing } from "../../../rules/analysis";
 import type { AnalysisLine, Listing } from "../../../rules/types";
 import { Card } from "../../components/Card/Card";

@@ -8,28 +8,6 @@ import { vonovia } from "./vonovia";
 const URL =
   "https://www.vonovia.de/zuhause-finden/immobilien/helle-3-zimmer-wohnung-82-1000000001";
 
-describe("vonovia.matches", () => {
-  it("matches listing pages only", () => {
-    expect(vonovia.matches(URL)).toBe(true);
-    expect(vonovia.matches(`${URL}?em_src=x`)).toBe(true);
-    expect(vonovia.matches(`${URL}#map-id-1000000001`)).toBe(true);
-    expect(
-      vonovia.matches("https://www.vonovia.de/zuhause-finden/immobilien"),
-    ).toBe(false);
-    expect(
-      vonovia.matches("https://www.vonovia.de/zuhause-finden/immobilien/"),
-    ).toBe(false);
-    expect(vonovia.matches("https://www.vonovia.de/zuhause-finden")).toBe(
-      false,
-    );
-    expect(
-      vonovia.matches(
-        "https://www.vonovia.de.flats.example/zuhause-finden/immobilien/x-82-1",
-      ),
-    ).toBe(false);
-  });
-});
-
 describe("vonovia.readListing", () => {
   it("reads every field the page shows and names what it does not", () => {
     expect(

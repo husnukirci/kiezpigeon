@@ -22,28 +22,6 @@ function rowValue(page: Document, label: string): Element {
   return value;
 }
 
-describe("deutscheWohnen.matches", () => {
-  it("matches listing pages only", () => {
-    expect(deutscheWohnen.matches(URL)).toBe(true);
-    expect(deutscheWohnen.matches(`${URL}?em_src=x`)).toBe(true);
-    expect(deutscheWohnen.matches(`${URL}#map-id-2000000001`)).toBe(true);
-  });
-
-  it("refuses the search pages and look-alike hosts", () => {
-    for (const url of [
-      SEARCH,
-      "https://www.deutsche-wohnen.com/mieten/mietangebote",
-      "https://www.deutsche-wohnen.com/mieten/mietangebote/",
-      "https://www.deutsche-wohnen.com/mieten/mietangebote?city=Berlin",
-      "https://www.deutsche-wohnen.com.flats.example/mieten/mietangebote/x-89-1",
-      "https://flats.example/www.deutsche-wohnen.com/mieten/mietangebote/x-89-1",
-      "http://www.deutsche-wohnen.com/mieten/mietangebote/x-89-1",
-    ]) {
-      expect(deutscheWohnen.matches(url)).toBe(false);
-    }
-  });
-});
-
 describe("deutscheWohnen.readListing", () => {
   it("reads every field the page shows and names what it does not", () => {
     expect(deutscheWohnen.readListing(complete(), URL)).toEqual({

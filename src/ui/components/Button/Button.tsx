@@ -1,10 +1,10 @@
 // Button (design system components/Button/README.md): one teal primary per
-// screen, night secondary buttons, a dashed "add" button and icon buttons.
+// screen, night secondary buttons and a dashed "add" button.
 import type { ButtonHTMLAttributes } from "react";
 import { cx } from "../../cx";
 import styles from "./Button.module.css";
 
-export type ButtonKind = "primary" | "secondary" | "add" | "icon";
+type ButtonKind = "primary" | "secondary" | "add";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   kind?: ButtonKind;
@@ -14,7 +14,6 @@ const TYPE_STYLE: Record<ButtonKind, string | undefined> = {
   primary: "type-button",
   secondary: "type-label",
   add: "type-body",
-  icon: undefined,
 };
 
 /** The classes of a button kind, for a control that must be another

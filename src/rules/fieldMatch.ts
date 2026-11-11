@@ -4,8 +4,8 @@
 // alone and not counted (ADR 11).
 import { formatDate } from "./format";
 import { sumCents } from "./money";
+import { allDocumentsReady } from "./profile";
 import type {
-  DocumentType,
   EmploymentType,
   FieldKind,
   FieldMapping,
@@ -556,21 +556,6 @@ function incomeTypeOption(
   return allOwn
     ? optionWhere(field, (t) => t.includes("eigenes einkommen"))
     : undefined;
-}
-
-const DOCUMENTS: DocumentType[] = [
-  "schufa",
-  "mietschuldenfreiheit",
-  "incomeProof",
-  "id",
-  "wbs",
-];
-
-/** Every document ready; the WBS only for someone who has one. */
-function allDocumentsReady(profile: Profile): boolean {
-  return DOCUMENTS.filter((type) => type !== "wbs" || profile.hasWbs).every(
-    (type) => profile.documents[type] === "ready",
-  );
 }
 
 function optionFor(

@@ -7,7 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { LetterPrompt } from "../rules/letterPrompt";
 import type { ClaudeModel } from "../rules/types";
 
-export const API_ORIGIN = "https://api.anthropic.com";
+const API_ORIGIN = "https://api.anthropic.com";
 
 /** Room for the model's reasoning at low effort plus a 180-word letter. */
 const MAX_TOKENS = 8000;
@@ -53,7 +53,7 @@ export class ClaudeError extends Error {
   }
 }
 
-export interface GenerateOptions {
+interface GenerateOptions {
   model: ClaudeModel;
 }
 

@@ -3,7 +3,7 @@
 import type { Feature, Listing } from "../rules/types";
 
 /** The fields an adapter tries to fill, in the order it reports them. */
-export const LISTING_FIELDS = [
+const LISTING_FIELDS = [
   "title",
   "address",
   "district",

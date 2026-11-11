@@ -26,7 +26,7 @@ export interface StoredData {
 export type StoredKey = keyof StoredData;
 
 /** `value` is undefined when nothing is stored under the key yet. */
-export type ReadResult<T> =
+type ReadResult<T> =
   { ok: true; value: T | undefined } | { ok: false; problems: string[] };
 
 type Raw = Record<string, unknown>;
@@ -68,9 +68,11 @@ function parseApplications(input: unknown): Parsed<Application[]> {
 }
 
 /**
- * Brings stored data up to `SCHEMA_VERSION`. Data with no version is
- * either an empty store or was written at version 1, the first one. Data
- * from a newer version is left alone: a downgrade must not rewrite it.
+ * Brings stored data up to `SCHEMA_VERSION`. Data with no version is left
+ * as it is and gets its version stamped by the next write. That is safe
+ * because every write has stamped `schemaVersion` since the first storage
+ * commit, so a store without one holds nothing this code wrote. Data from
+ * a newer version is left alone: a downgrade must not rewrite it.
  */
 export async function migrate(
   migrations: Readonly<Record<number, Migration>> = MIGRATIONS,

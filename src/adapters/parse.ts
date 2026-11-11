@@ -103,7 +103,7 @@ export function parseNumberText(text: string): number | undefined {
  * so `1.105` (a sum written the German way) is refused rather than read as
  * 1.105.
  */
-function englishNumber(text: string): number | undefined {
+export function parseEnglishNumber(text: string): number | undefined {
   const token = /\d[\d.,]*\d|\d/.exec(text)?.[0];
   if (token === undefined) return undefined;
   const match = /^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/.exec(token);
@@ -116,13 +116,8 @@ function englishNumber(text: string): number | undefined {
 
 /** `€865`, `+ €240`, `€1,180.50` → cents. */
 export function parseEnglishEuro(text: string): Cents | undefined {
-  const euros = englishNumber(text);
+  const euros = parseEnglishNumber(text);
   return euros === undefined ? undefined : Math.round(euros * 100);
-}
-
-/** `60.13 m²`, `2.5` → a number. */
-export function parseEnglishNumber(text: string): number | undefined {
-  return englishNumber(text);
 }
 
 /** `01.11.2025`, `immediately`, `by arrangement` → when the flat is free. */

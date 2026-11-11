@@ -4,23 +4,17 @@
 // which grants `activeTab` like a real click. Claude is answered locally.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  chromium,
-  expect,
-  test,
-  type BrowserContext,
-  type Page,
-} from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import type { browser } from "wxt/browser";
 import { passingLetter } from "../test-support/sample-letters";
 import { coupleWithDog } from "../test-support/sample-profiles";
+import { launchExtension, openPanel, recordSendAttempts } from "./support";
 
 // Inside extension pages, where `evaluate` runs, `chrome` is the API that
 // WXT wraps as `browser`.
 declare const chrome: typeof browser;
 
 const ROOT = join(import.meta.dirname, "..");
-const EXTENSION = join(ROOT, ".output", "chrome-mv3");
 const ORIGIN = "https://flats.example";
 const SITE = `${ORIGIN}/wohnung/17`;
 const EXPOSE = "https://www.immobilienscout24.de/expose/100000009";
@@ -29,35 +23,13 @@ const PAGES: Record<string, string> = {
   "/wohnung/18": "contact-form-placeholders.html",
 };
 
-/** Runs in the page before its own markup: records any attempt to send. */
-function recordSendAttempts(): void {
-  const record: string[] = [];
-  Object.assign(window, { sendAttempts: record });
-  for (const type of [
-    "submit",
-    "reset",
-    "click",
-    "keydown",
-    "keyup",
-    "keypress",
-    "focusin",
-  ]) {
-    document.addEventListener(type, () => record.push(type), true);
-  }
-}
-
 let context: BrowserContext;
 let extensionId: string;
 let pageLoads: string[];
 
 test.beforeAll(async () => {
-  context = await chromium.launchPersistentContext("", {
-    channel: "chromium",
-    args: [
-      `--disable-extensions-except=${EXTENSION}`,
-      `--load-extension=${EXTENSION}`,
-    ],
-  });
+  const launched = await launchExtension();
+  ({ context, extensionId } = launched);
   pageLoads = [];
   // Any address on the site loads a fixture, so a sent form shows up as a
   // second load (GET or POST) instead of a network error.
@@ -96,11 +68,7 @@ test.beforeAll(async () => {
       }),
     }),
   );
-  const worker =
-    context.serviceWorkers()[0] ??
-    (await context.waitForEvent("serviceworker"));
-  extensionId = new URL(worker.url()).host;
-  await worker.evaluate(
+  await launched.worker.evaluate(
     (profile) =>
       chrome.storage.local.set({
         schemaVersion: 2,
@@ -146,8 +114,7 @@ test("the reader goes into an unknown site only after the icon click", async () 
   const tabId = await siteTabId();
   expect(tabId).toBeDefined();
 
-  const panel = await context.newPage();
-  await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  const panel = await openPanel(context, extensionId);
   const inject = (id: number | undefined) =>
     panel.evaluate(async (tab) => {
       try {
@@ -196,8 +163,7 @@ test("the reader never answers beside a site's own content script", async () => 
   await site.goto(EXPOSE);
   await clickIcon(site);
   const tabId = await siteTabId();
-  const panel = await context.newPage();
-  await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  const panel = await openPanel(context, extensionId);
   const answer: unknown = await panel.evaluate(async (tab) => {
     await chrome.scripting.executeScript({
       target: { tabId: tab ?? -1 },
@@ -233,10 +199,7 @@ test("a Vonovia page that is not a listing says so, with no fallback", async () 
   await site.goto(search);
   await clickIcon(site);
   const tabId = await siteTabId();
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await expect(
     panel.getByText(
       "This Vonovia page is not a listing. Open a listing to start.",
@@ -262,10 +225,7 @@ test("a Deutsche Wohnen page that is not a listing says so, with no fallback", a
   await site.goto(search);
   await clickIcon(site);
   const tabId = await siteTabId();
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await expect(
     panel.getByText(
       "This Deutsche Wohnen page is not a listing. Open a listing to start.",
@@ -288,8 +248,7 @@ test("the panel knows a tab's address only under the icon's grant, and says why 
   await site.goto(search);
   await site.bringToFront();
   const tabId = await siteTabId();
-  const panel = await context.newPage();
-  await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  const panel = await openPanel(context, extensionId);
   const address = () =>
     panel.evaluate(
       async (tab) => (await chrome.tabs.get(tab ?? -1)).url,
@@ -375,10 +334,7 @@ for (const page of CASES) {
     await clickIcon(site);
     const tabId = await siteTabId();
 
-    const panel = await context.newPage();
-    await panel.goto(
-      `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-    );
+    const panel = await openPanel(context, extensionId, { tabId });
     await panel.getByRole("button", { name: "Use this page" }).click();
     await panel.getByLabel("Kaltmiete in €").fill("980");
     await panel.getByLabel("Features, separated by commas").fill("Balkon");
@@ -440,10 +396,7 @@ test("a field hidden by opacity is not read as visible and stays empty", async (
   await clickIcon(site);
   const tabId = await siteTabId();
 
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await panel.getByRole("button", { name: "Use this page" }).click();
   await panel.getByLabel("Kaltmiete in €").fill("980");
   await panel.getByLabel("Features, separated by commas").fill("Balkon");

@@ -16,11 +16,6 @@ beforeEach(() => {
 });
 
 describe("send and handle", () => {
-  it("answers a message with its handler's result", async () => {
-    handle({ ping: () => ({ type: "pong" }) });
-    expect(await send({ type: "ping" })).toEqual({ type: "pong" });
-  });
-
   it("waits for an asynchronous handler", async () => {
     handle({
       getListing: () =>
@@ -47,7 +42,7 @@ describe("send and handle", () => {
   });
 
   it("stays silent on a type it has no handler for", async () => {
-    handle({ ping: () => ({ type: "pong" }) });
+    handle({ getContactForm: () => ({ kind: "no_form" as const }) });
     handle({
       getListing: () => ({
         kind: "not_listing" as const,
@@ -61,9 +56,11 @@ describe("send and handle", () => {
   });
 
   it("stops answering once unsubscribed", async () => {
-    const stop = handle({ ping: () => ({ type: "pong" }) });
+    const stop = handle({
+      getContactForm: () => ({ kind: "no_form" as const }),
+    });
     stop();
-    await expect(send({ type: "ping" })).rejects.toThrow();
+    await expect(send({ type: "getContactForm" })).rejects.toThrow();
   });
 
   it("sends to a tab's content script when given a tab id", async () => {
@@ -75,9 +72,11 @@ describe("send and handle", () => {
     ) as unknown as MockInstance<
       (tabId: number, message: unknown) => Promise<unknown>
     >;
-    toTab.mockResolvedValue({ ok: true, value: { type: "pong" } });
-    expect(await send({ type: "ping" }, 7)).toEqual({ type: "pong" });
-    expect(toTab).toHaveBeenCalledWith(7, { type: "ping" });
+    toTab.mockResolvedValue({ ok: true, value: { kind: "no_form" } });
+    expect(await send({ type: "getContactForm" }, 7)).toEqual({
+      kind: "no_form",
+    });
+    expect(toTab).toHaveBeenCalledWith(7, { type: "getContactForm" });
   });
 });
 
@@ -87,7 +86,7 @@ describe("isMessage", () => {
     expect(isMessage({ type: "getContactForm" })).toBe(true);
     expect(isMessage({ type: "fillForm", steps: [] })).toBe(true);
     expect(isMessage({ type: "submit" })).toBe(false);
-    expect(isMessage("ping")).toBe(false);
+    expect(isMessage("getListing")).toBe(false);
     expect(isMessage(null)).toBe(false);
   });
 });

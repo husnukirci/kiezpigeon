@@ -5,17 +5,17 @@
 // answered locally; no request leaves the machine.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { chromium, expect, test, type BrowserContext } from "@playwright/test";
+import { expect, test, type BrowserContext } from "@playwright/test";
 import type { browser } from "wxt/browser";
 import { passingLetter } from "../test-support/sample-letters";
 import { coupleWithDog } from "../test-support/sample-profiles";
+import { launchExtension, openPanel, recordSendAttempts } from "./support";
 
 // Inside the extension's service worker, where `worker.evaluate` runs,
 // `chrome` is the API that WXT wraps as `browser`.
 declare const chrome: typeof browser;
 
 const ROOT = join(import.meta.dirname, "..");
-const EXTENSION = join(ROOT, ".output", "chrome-mv3");
 const EXPOSE = "https://www.immobilienscout24.de/expose/100000003";
 const FIXTURE = readFileSync(
   join(ROOT, "fixtures", "immoscout24", "contact-form.html"),
@@ -76,36 +76,14 @@ const DW_LATE_FIXTURE = readFileSync(
     </script></body>`,
   );
 
-/** Runs in the page before its own markup: records any attempt to send. */
-function recordSendAttempts(): void {
-  const record: string[] = [];
-  Object.assign(window, { sendAttempts: record });
-  for (const type of [
-    "submit",
-    "reset",
-    "click",
-    "keydown",
-    "keyup",
-    "keypress",
-    "focusin",
-  ]) {
-    document.addEventListener(type, () => record.push(type), true);
-  }
-}
-
 let context: BrowserContext;
 let extensionId: string;
 let pageLoads: string[];
 let claudeCalls: number;
 
 test.beforeAll(async () => {
-  context = await chromium.launchPersistentContext("", {
-    channel: "chromium",
-    args: [
-      `--disable-extensions-except=${EXTENSION}`,
-      `--load-extension=${EXTENSION}`,
-    ],
-  });
+  const launched = await launchExtension();
+  ({ context, extensionId } = launched);
   pageLoads = [];
   claudeCalls = 0;
   // A form that is sent loads the exposé address again (GET or POST).
@@ -147,11 +125,7 @@ test.beforeAll(async () => {
       }),
     });
   });
-  const worker =
-    context.serviceWorkers()[0] ??
-    (await context.waitForEvent("serviceworker"));
-  extensionId = new URL(worker.url()).host;
-  await worker.evaluate(
+  await launched.worker.evaluate(
     (profile) =>
       chrome.storage.local.set({
         schemaVersion: 2,
@@ -181,10 +155,7 @@ test("Fill the form fills the contact form and never sends it", async () => {
   );
   expect(tabId).toBeDefined();
 
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await expect(panel.getByText(/Listing detected/)).toBeVisible();
   // The fixture names features, so one must be picked to write.
   await panel
@@ -269,10 +240,7 @@ test("the English contact form is filled the same way and never sent", async () 
   );
   expect(tabId).toBeDefined();
 
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await expect(panel.getByText(/Listing detected/)).toBeVisible();
   const highlights = panel.getByRole("group", {
     name: "Highlights to mention",
@@ -325,10 +293,7 @@ test("the Vonovia form is filled, its hidden selects too, and never sent", async
   );
   expect(tabId).toBeDefined();
 
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await expect(panel.getByText(/Listing detected · Vonovia/)).toBeVisible();
   await panel
     .getByRole("group", { name: "Highlights to mention" })
@@ -371,10 +336,7 @@ test("a reload with the panel open waits for a title the site draws late", async
   const tabId = await worker?.evaluate(
     async () => (await chrome.tabs.query({ active: true }))[0]?.id,
   );
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   const title = panel.getByRole("heading", {
     name: "Helle 3-Zimmer-Wohnung mit Balkon",
   });
@@ -401,10 +363,7 @@ test("the Deutsche Wohnen form is filled, its hidden selects too, and never sent
   );
   expect(tabId).toBeDefined();
 
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   await expect(
     panel.getByText(/Listing detected · Deutsche Wohnen/),
   ).toBeVisible();
@@ -449,10 +408,7 @@ test("a reload with the panel open waits for a late title on a page with no h1",
   const tabId = await worker?.evaluate(
     async () => (await chrome.tabs.query({ active: true }))[0]?.id,
   );
-  const panel = await context.newPage();
-  await panel.goto(
-    `chrome-extension://${extensionId}/sidepanel.html?tabId=${tabId}`,
-  );
+  const panel = await openPanel(context, extensionId, { tabId });
   const title = panel.getByRole("heading", {
     name: "Ruhige 3-Zimmer-Wohnung mit Aufzug",
   });

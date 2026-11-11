@@ -5,16 +5,15 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { chromium, expect, test, type BrowserContext } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import type { browser } from "wxt/browser";
 import type { Application } from "../src/rules/types";
 import { coupleWithDog } from "../test-support/sample-profiles";
+import { launchExtension } from "./support";
 
 // Inside the extension's service worker, where `worker.evaluate` runs,
 // `chrome` is the API that WXT wraps as `browser`.
 declare const chrome: typeof browser;
-
-const EXTENSION = join(import.meta.dirname, "..", ".output", "chrome-mv3");
 
 function app(
   id: string,
@@ -33,24 +32,6 @@ function app(
   };
 }
 
-async function launch(profileDir: string): Promise<{
-  context: BrowserContext;
-  extensionId: string;
-}> {
-  const context = await chromium.launchPersistentContext(profileDir, {
-    channel: "chromium",
-    args: [
-      `--disable-extensions-except=${EXTENSION}`,
-      `--load-extension=${EXTENSION}`,
-    ],
-  });
-  const worker =
-    context.serviceWorkers()[0] ??
-    (await context.waitForEvent("serviceworker"));
-  await worker.evaluate(() => chrome.storage.local.get(null));
-  return { context, extensionId: new URL(worker.url()).host };
-}
-
 let profileDir: string;
 
 test.beforeAll(() => {
@@ -62,7 +43,7 @@ test.afterAll(() => {
 });
 
 test("four applications keep their counts and filters after Chrome restarts", async () => {
-  const first = await launch(profileDir);
+  const first = await launchExtension(profileDir);
   const worker = first.context.serviceWorkers()[0];
   await worker?.evaluate(
     (data) => chrome.storage.local.set({ schemaVersion: 2, ...data }),
@@ -82,7 +63,7 @@ test("four applications keep their counts and filters after Chrome restarts", as
   );
   await first.context.close();
 
-  const { context, extensionId } = await launch(profileDir);
+  const { context, extensionId } = await launchExtension(profileDir);
   try {
     const panel = await context.newPage();
     const errors: string[] = [];

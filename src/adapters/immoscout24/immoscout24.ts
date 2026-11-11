@@ -2,7 +2,6 @@
 // `data-qa` attributes the site uses for its own tests, then parses the
 // text inside them, German or, on the site's `/en/` address, English. The
 // page's tracking data and inline scripts are never read.
-import { describeFields } from "../../fill/describe";
 import { rentalHints } from "../../rules/rentalHints";
 import type {
   Feature,
@@ -11,6 +10,7 @@ import type {
   PriceComparison,
   RentalHints,
 } from "../../rules/types";
+import { map, readFormFields, textOf } from "../dom";
 import { assembleListing, type ListingFields } from "../listing";
 import {
   parseContactName,
@@ -25,8 +25,6 @@ import {
 } from "../parse";
 import type { SiteAdapter } from "../types";
 
-const EXPOSE_URL =
-  /^https:\/\/www\.immobilienscout24\.de\/(?:en\/)?expose\/\d+/;
 const ENGLISH_URL = /^https:\/\/www\.immobilienscout24\.de\/en\//;
 
 /** The feature tags' site codes, which are the same in both languages. */
@@ -38,14 +36,6 @@ const GERMAN_FEATURES: Readonly<Record<string, Feature>> = {
   lift: "Personenaufzug",
 };
 
-function textOf(document: Document, selector: string): string | undefined {
-  const text = document
-    .querySelector(selector)
-    ?.textContent.replace(/\s+/g, " ")
-    .trim();
-  return text === "" ? undefined : text;
-}
-
 /** The first selector that has text, so a moved block still reads. */
 function firstText(
   document: Document,
@@ -56,10 +46,6 @@ function firstText(
     if (text !== undefined) return text;
   }
   return undefined;
-}
-
-function map<T, U>(value: T | undefined, f: (value: T) => U): U | undefined {
-  return value === undefined ? undefined : f(value);
 }
 
 /**
@@ -325,11 +311,7 @@ function contactForm(document: Document): HTMLFormElement | undefined {
 export const immoscout24: SiteAdapter = {
   id: "immoscout24",
   siteName: "ImmoScout24",
-  matches: (url) => EXPOSE_URL.test(url),
   readListing,
   contactForm,
-  readContactForm: (document) => {
-    const form = contactForm(document);
-    return form ? describeFields(form) : [];
-  },
+  readContactForm: (document) => readFormFields(contactForm(document)),
 };

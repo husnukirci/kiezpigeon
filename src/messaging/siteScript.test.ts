@@ -8,7 +8,6 @@ import { answerAs, READY_TIMEOUT_MS } from "./siteScript";
 const adapter = (overrides: Partial<SiteAdapter>): SiteAdapter => ({
   id: "site",
   siteName: "Site",
-  matches: () => true,
   readListing: () => undefined,
   contactForm: () => undefined,
   readContactForm: () => [],

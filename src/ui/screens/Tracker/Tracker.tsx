@@ -3,7 +3,7 @@
 // link, then the pigeon's tip. Counts and order come from the rules core's
 // tracker; this screen only shows them.
 import { useState } from "react";
-import { formatDate, formatEuro } from "../../../rules/format";
+import { formatDate, formatEuro, localIsoDay } from "../../../rules/format";
 import {
   filterApplications,
   setStatus,
@@ -196,12 +196,7 @@ function meta({
   sentAt,
   statusChangedAt,
 }: Application): string {
-  const at = new Date(sentAt ?? statusChangedAt);
-  const day = [
-    at.getFullYear(),
-    String(at.getMonth() + 1).padStart(2, "0"),
-    String(at.getDate()).padStart(2, "0"),
-  ].join("-");
+  const day = localIsoDay(new Date(sentAt ?? statusChangedAt));
   return [
     district,
     warmmieteCents !== undefined && `${formatEuro(warmmieteCents)} Warmmiete`,

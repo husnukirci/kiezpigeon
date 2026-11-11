@@ -9,7 +9,7 @@
 // holds real data, so it lives next to the saved page, outside the repo.
 import { readFileSync, writeFileSync } from "node:fs";
 
-export const SCRUB_MARK =
+const SCRUB_MARK =
   "<!-- scrubbed: names, phones, emails, addresses, ids replaced -->";
 
 /** Attributes worth keeping: what adapters and form filling read. */

@@ -5,6 +5,7 @@
 import { isCloseMoveIn } from "./dates";
 import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
 import { sumCents } from "./money";
+import { allDocumentsReady } from "./profile";
 import type {
   Availability,
   ContactPerson,
@@ -135,7 +136,7 @@ export function availableDateOf(
 }
 
 /** The contact person, or undefined when the listing gives no surname. */
-export function namedContact(
+function namedContact(
   person: ContactPerson | undefined,
 ): ContactPerson | undefined {
   return person && person.lastName.trim() !== "" ? person : undefined;
@@ -224,13 +225,6 @@ export function createLetterRequest(
   listing: Listing,
   choice: { tone: Tone; features: Feature[] },
 ): LetterRequest {
-  const { documents } = profile;
-  const allDocumentsReady =
-    documents.schufa === "ready" &&
-    documents.mietschuldenfreiheit === "ready" &&
-    documents.incomeProof === "ready" &&
-    documents.id === "ready" &&
-    (!profile.hasWbs || documents.wbs === "ready");
   const household = { ...profile.household };
   // A relationship needs two people; a leftover one is never mentioned.
   if (profile.applicants.length < 2) delete household.relationship;
@@ -238,7 +232,7 @@ export function createLetterRequest(
     applicants: profile.applicants,
     household,
     moveIn: profile.moveIn,
-    allDocumentsReady,
+    allDocumentsReady: allDocumentsReady(profile),
     contact: profile.contact,
     listing,
     tone: choice.tone,
