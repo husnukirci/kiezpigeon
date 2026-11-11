@@ -59,12 +59,15 @@ export type Handlers = {
 /** What actually crosses the channel, so a failed handler rejects send(). */
 type Envelope = { ok: true; value: unknown } | { ok: false; error: string };
 
-const TYPES: readonly string[] = [
-  "getListing",
-  "getContactForm",
-  "fillForm",
-  "generateLetter",
-] satisfies MessageType[];
+// A record, so a message type added to Messages without an entry here does
+// not compile.
+const HANDLED: Record<MessageType, true> = {
+  getListing: true,
+  getContactForm: true,
+  fillForm: true,
+  generateLetter: true,
+};
+const TYPES: readonly string[] = Object.keys(HANDLED);
 
 export function isMessage(value: unknown): value is Message {
   return (
