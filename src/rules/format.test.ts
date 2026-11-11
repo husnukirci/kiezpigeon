@@ -7,6 +7,7 @@ import {
   formatEuroPerM2,
   formatFloor,
   formatNumber,
+  localIsoDay,
 } from "./format";
 
 // German grouping is written out by hand so the output does not depend on
@@ -87,5 +88,12 @@ describe("formatEuroPerM2", () => {
     expect(formatEuroPerM2(1999)).toBe("19,99 €/m²");
     expect(formatEuroPerM2(970)).toBe("9,70 €/m²");
     expect(formatEuroPerM2(1200)).toBe("12,00 €/m²");
+  });
+});
+
+describe("localIsoDay", () => {
+  it("gives a date's local calendar day", () => {
+    expect(localIsoDay(new Date(2027, 2, 1, 23, 30))).toBe("2027-03-01");
+    expect(localIsoDay(new Date(2027, 11, 31, 0, 5))).toBe("2027-12-31");
   });
 });

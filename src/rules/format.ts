@@ -49,6 +49,15 @@ export function formatDate(iso: IsoDate): string {
   return `${day ?? ""}.${month ?? ""}.${year ?? ""}`;
 }
 
+/** The date's own calendar day as `2027-03-01`, in the runtime's time zone. */
+export function localIsoDay(at: Date): IsoDate {
+  return [
+    at.getFullYear(),
+    String(at.getMonth() + 1).padStart(2, "0"),
+    String(at.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 /** `0` → `EG`, `2` → `2. OG`, below ground → `UG`. */
 export function formatFloor(floor: number): string {
   if (floor < 0) return "UG";
