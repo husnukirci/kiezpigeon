@@ -1,8 +1,10 @@
 // "About this listing" (Phase 13, ADR 14): what the page says about the
 // kind of rental, where its Kaltmiete sits against the band the page itself
-// prints, and what is worth a second look. It informs; it never blocks writing a letter and never claims more
-// than the page shows. Every line is UI copy.
+// prints, and what is worth a second look. It informs; it never blocks
+// writing a letter and never claims more than the page shows. Every line is
+// UI copy.
 import { formatEuro, formatEuroPerM2 } from "./format";
+import { wbsRequiredOf } from "./rentalHints";
 import type {
   Analysis,
   AnalysisLine,
@@ -23,10 +25,13 @@ const UTILITIES_SHARE = 0.5;
 const NO_KIND =
   "The page names no special form of rental: no Untermiete, Zwischenmiete, WG, möbliert, Genossenschaft or WBS.";
 
+/** How the price sits against the page's own band of nearby offers. */
+type PriceVerdict = "well above" | "above" | "within" | "below" | "well below";
+
 /** The kind line's parts, in the order they are listed. */
 const KIND_PARTS: readonly [keyof RentalHints, string][] = [
   ["firstOccupancy", "Erstbezug"],
-  ["furnished", "Möbliert"],
+  ["furnished", "möbliert"],
   ["sharedFlat", "WG-Zimmer"],
   ["sublet", "Untermiete"],
   ["interim", "Zwischenmiete"],
@@ -48,16 +53,9 @@ export function centsPerM2(
 
 function kindLine(listing: Listing): AnalysisLine {
   const { hints, flatType, offeredBy } = listing;
-  if (hints === undefined) {
-    return {
-      id: "kind",
-      status: "unknown",
-      text: "I could not read this page's description.",
-    };
-  }
   // The page's own WBS row outranks a mention of WBS in its text.
   const parts = KIND_PARTS.filter(([flag]) =>
-    flag === "wbs" ? (listing.wbsRequired ?? hints.wbs) : hints[flag],
+    flag === "wbs" ? wbsRequiredOf(listing) === true : hints?.[flag] === true,
   ).map(([, word]) => word);
   const offered =
     offeredBy === "private"
@@ -69,6 +67,14 @@ function kindLine(listing: Listing): AnalysisLine {
     (part): part is string => part !== undefined,
   );
   const sentence = facts.join(", ").replace(/^./, (c) => c.toUpperCase());
+  if (hints === undefined) {
+    const unread = "I could not read this page's description.";
+    return {
+      id: "kind",
+      status: "unknown",
+      text: facts.length > 0 ? `${sentence}. ${unread}` : unread,
+    };
+  }
   const text =
     parts.length > 0
       ? `${sentence}.`
@@ -84,7 +90,10 @@ function kindLine(listing: Listing): AnalysisLine {
   return { id: "kind", status: "info", text: text + check };
 }
 
-function priceLine(listing: Listing): AnalysisLine {
+function priceLine(listing: Listing): {
+  line: AnalysisLine;
+  verdict?: PriceVerdict;
+} {
   const { kaltmieteCents, areaM2, priceComparison: band } = listing;
   const own =
     kaltmieteCents === undefined || areaM2 === undefined
@@ -92,31 +101,39 @@ function priceLine(listing: Listing): AnalysisLine {
       : centsPerM2(kaltmieteCents, areaM2);
   if (own === undefined) {
     return {
-      id: "price",
-      status: "unknown",
-      text: "Kaltmiete or size not shown, so no price per m².",
+      line: {
+        id: "price",
+        status: "unknown",
+        text: "Kaltmiete or size not shown, so no price per m².",
+      },
     };
   }
   const figure = `Kaltmiete ${formatEuroPerM2(own)}.`;
   if (band === undefined) {
     return {
-      id: "price",
-      status: "info",
-      text: `${figure} This page shows no comparison.`,
+      line: {
+        id: "price",
+        status: "info",
+        text: `${figure} This page shows no comparison.`,
+      },
     };
   }
   const verdict = priceVerdict(own, band.lowCentsPerM2, band.highCentsPerM2);
   // The unit once, at the end of the band: "14,00 to 21,00 €/m²".
   const low = formatEuroPerM2(band.lowCentsPerM2).replace(/ €\/m²$/, "");
-  const where = `Nearby offers mostly run ${low} to ${formatEuroPerM2(band.highCentsPerM2)} (${band.sampleSize} flats within ${band.radiusM} m on this site)`;
+  const flats = band.sampleSize === 1 ? "flat" : "flats";
+  const where = `Nearby offers mostly run ${low} to ${formatEuroPerM2(band.highCentsPerM2)} (${band.sampleSize} ${flats} within ${band.radiusM} m on this site)`;
   return {
-    id: "price",
-    status: verdict.startsWith("well") ? "note" : "info",
-    text: `${figure} ${where}: ${verdict} the usual range.`,
+    line: {
+      id: "price",
+      status: verdict.startsWith("well") ? "note" : "info",
+      text: `${figure} ${where}: ${verdict} the usual range.`,
+    },
+    verdict,
   };
 }
 
-function priceVerdict(own: Cents, low: Cents, high: Cents): string {
+function priceVerdict(own: Cents, low: Cents, high: Cents): PriceVerdict {
   if (own >= high * WELL_ABOVE) return "well above";
   if (own > high) return "above";
   if (own <= low * WELL_BELOW) return "well below";
@@ -124,7 +141,10 @@ function priceVerdict(own: Cents, low: Cents, high: Cents): string {
   return "within";
 }
 
-function notes(listing: Listing, price: AnalysisLine): AnalysisLine[] {
+function notes(
+  listing: Listing,
+  verdict: PriceVerdict | undefined,
+): AnalysisLine[] {
   const {
     kaltmieteCents: kalt,
     kautionCents,
@@ -177,17 +197,17 @@ function notes(listing: Listing, price: AnalysisLine): AnalysisLine[] {
     );
   }
   if (hints?.abroad) note("abroad", "The text says the landlord is abroad.");
-  if (price.text.includes("well below")) {
+  if (verdict === "well below") {
     note("cheap", "Much cheaper than nearby offers. Worth asking why.");
   }
   return lines;
 }
 
 export function analyseListing(listing: Listing): Analysis {
-  const price = priceLine(listing);
+  const { line: price, verdict } = priceLine(listing);
   return {
     kind: kindLine(listing),
     price,
-    notes: notes(listing, price),
+    notes: notes(listing, verdict),
   };
 }

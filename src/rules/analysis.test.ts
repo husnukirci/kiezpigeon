@@ -21,14 +21,40 @@ describe("centsPerM2", () => {
 });
 
 describe("analyseListing: kind", () => {
-  it("says so when the description could not be read", () => {
+  it("says so when the description could not be read, after the facts the page gave", () => {
     expect(
       analyseListing({ ...kreuzbergListing, hints: undefined }).kind,
     ).toEqual({
       id: "kind",
       status: "unknown",
-      text: "I could not read this page's description.",
+      text: "Etagenwohnung, offered by a company. I could not read this page's description.",
     });
+  });
+
+  it("keeps the facts the page gave when its description could not be read", () => {
+    const { kind } = analyseListing({
+      ...kreuzbergListing,
+      hints: undefined,
+      wbsRequired: true,
+      flatType: "Etagenwohnung",
+      offeredBy: undefined,
+    });
+    expect(kind).toEqual({
+      id: "kind",
+      status: "unknown",
+      text: "Etagenwohnung, WBS required. I could not read this page's description.",
+    });
+  });
+
+  it("says nothing but that when the page gave no fact either", () => {
+    const { kind } = analyseListing({
+      ...kreuzbergListing,
+      hints: undefined,
+      wbsRequired: undefined,
+      flatType: undefined,
+      offeredBy: undefined,
+    });
+    expect(kind.text).toBe("I could not read this page's description.");
   });
 
   it("names no special form of rental on plain text", () => {
@@ -69,7 +95,7 @@ describe("analyseListing: kind", () => {
       analyseListing({ ...kreuzbergListing, offeredBy: "private", hints: some })
         .kind.text,
     ).toBe(
-      "Etagenwohnung, Möbliert, Zwischenmiete, befristet, offered privately.",
+      "Etagenwohnung, möbliert, Zwischenmiete, befristet, offered privately.",
     );
     const all = Object.fromEntries(
       Object.keys(NO_HINTS).map((flag) => [flag, true]),
@@ -84,7 +110,7 @@ describe("analyseListing: kind", () => {
         hints: all,
       }).kind.text,
     ).toBe(
-      "Erstbezug, Möbliert, WG-Zimmer, Untermiete, Zwischenmiete, befristet, Genossenschaft, WBS required, Staffelmiete, Indexmiete.",
+      "Erstbezug, möbliert, WG-Zimmer, Untermiete, Zwischenmiete, befristet, Genossenschaft, WBS required, Staffelmiete, Indexmiete.",
     );
     expect(
       analyseListing({
@@ -170,6 +196,40 @@ describe("analyseListing: price", () => {
     expect(verdict(1300).text).toContain(": below the usual range.");
     expect(verdict(1050)).toMatchObject({ status: "note" });
     expect(verdict(1050).text).toContain(": well below the usual range.");
+  });
+});
+
+describe("analyseListing: card copy", () => {
+  const band = {
+    lowCentsPerM2: 1400,
+    highCentsPerM2: 2100,
+    radiusM: 1000,
+    sampleSize: 500,
+  };
+
+  it("counts one flat as one flat", () => {
+    const { price } = analyseListing({
+      ...kreuzbergListing,
+      priceComparison: { ...band, sampleSize: 1 },
+    });
+    expect(price.text).toContain("(1 flat within");
+  });
+
+  it("writes the kind parts as one sentence", () => {
+    const { kind } = analyseListing({
+      ...kreuzbergListing,
+      flatType: "Etagenwohnung",
+      offeredBy: undefined,
+      hints: { ...NO_HINTS, furnished: true, fixedTerm: true },
+    });
+    expect(kind.text).toBe("Etagenwohnung, möbliert, befristet.");
+    const alone = analyseListing({
+      ...kreuzbergListing,
+      flatType: undefined,
+      offeredBy: undefined,
+      hints: { ...NO_HINTS, furnished: true },
+    });
+    expect(alone.kind.text).toBe("Möbliert.");
   });
 });
 

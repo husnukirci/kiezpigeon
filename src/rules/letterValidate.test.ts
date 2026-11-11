@@ -116,6 +116,43 @@ describe("validateLetter", () => {
     expect(validateLetter(letter, request)).toEqual([]);
   });
 
+  const unknownNumbers = (text: string) =>
+    validateLetter(text, request)
+      .filter((p) => p.code === "unknown_number")
+      .map((p) => p.text);
+
+  it("flags a date that is not the move-in or the free-from date", () => {
+    expect(unknownNumbers(replaced("01.03.2027", "03.01.2027"))).toEqual([
+      "03.01.2027",
+    ]);
+    expect(unknownNumbers(replaced("01.03.2027", "02.03.2027"))).toEqual([
+      "02.03.2027",
+    ]);
+    expect(unknownNumbers(replaced("zum 01.03.2027", "zum 2.2."))).toEqual([
+      "2.2",
+    ]);
+  });
+
+  it("accepts the move-in date in its usual spellings", () => {
+    for (const date of [
+      "01.03.2027",
+      "1.3.2027",
+      "01.03.27",
+      "01.03.",
+      "1.3.",
+    ]) {
+      expect(unknownNumbers(replaced("01.03.2027", date))).toEqual([]);
+    }
+  });
+
+  it("reads a point decimal that is a fact as that fact, not as a date", () => {
+    const rooms = { ...request, listing: { ...request.listing, rooms: 2.5 } };
+    const text = replaced("2-Zimmer-Wohnung", "2.5-Zimmer-Wohnung");
+    expect(
+      validateLetter(text, rooms).filter((p) => p.code === "unknown_number"),
+    ).toEqual([]);
+  });
+
   it("accepts the rounded income and the rent it is compared with", () => {
     const letter = replaced(
       "Kaltmiete von 1.180 €.",
@@ -148,6 +185,21 @@ describe("validateLetter", () => {
     expect(validateLetter(letter, request)).toEqual([
       { code: "wrong_salutation", text: "Sehr geehrte Damen und Herren," },
     ]);
+  });
+
+  it("needs the exact salutation for a named contact", () => {
+    for (const line of [
+      "Hey Weber!",
+      "Sehr geehrter Herr Weber,",
+      "Sehr geehrte Frau Weber",
+    ]) {
+      expect(
+        validateLetter(replaced("Sehr geehrte Frau Weber,", line), request),
+      ).toContainEqual({
+        code: "wrong_salutation",
+        text: line,
+      });
+    }
   });
 
   it("needs the general salutation when no contact person is known", () => {
@@ -208,6 +260,118 @@ describe("validateLetter", () => {
       "dass unser Hund keine Probleme mit Treppen hat.",
     );
     expect(validateLetter(withDog, request)).toEqual([]);
+  });
+
+  const petCodes = (text: string, req: LetterRequest) =>
+    validateLetter(text, req).filter((p) => p.code.startsWith("pets"));
+  const withSentence = (sentence: string) =>
+    replaced(
+      "Offen möchten wir Ihnen sagen, dass unser ruhiger Hund mit einziehen würde.",
+      sentence,
+    );
+
+  it.each([
+    "Wir haben weder Hund noch Katze.",
+    "Wir haben keine Kinder oder Haustiere.",
+    "Haustiere haben wir nicht.",
+    "Wir sind ein Nichtraucherhaushalt ohne Kinder und Haustiere.",
+    "Wir haben keinerlei Haustiere.",
+  ])("lets a pet-free household say: %s", (sentence) => {
+    expect(petCodes(withSentence(sentence), noPetsRequest)).toEqual([]);
+  });
+
+  it("flags a kind of pet the household does not have", () => {
+    const text = replaced(
+      "unser ruhiger Hund",
+      "unser ruhiger Hund und unsere Katze",
+    );
+    expect(
+      validateLetter(text, request).filter((p) => p.code.startsWith("pets")),
+    ).toEqual([{ code: "pets_invented", text: "Katze" }]);
+  });
+
+  it("still counts a pet mentioned after an unrelated ohne", () => {
+    const text = replaced(
+      "dass unser ruhiger Hund mit einziehen würde",
+      "dass wir ohne Probleme mit unserem Hund einziehen würden",
+    );
+    expect(petCodes(text, request)).toEqual([]);
+  });
+
+  it.each([
+    "Unser Hund verträgt sich gut mit Katzen.",
+    "Unser Hund hat kein Problem mit Katzen.",
+  ])(
+    "lets a dog household mention another animal in passing: %s",
+    (sentence) => {
+      expect(petCodes(withSentence(sentence), request)).toEqual([]);
+    },
+  );
+
+  it("flags another animal the household claims with a count", () => {
+    expect(
+      petCodes(withSentence("Wir haben einen Hund und zwei Katzen."), request),
+    ).toEqual([{ code: "pets_invented", text: "Katzen" }]);
+  });
+
+  it("reads a clause-final nicht after a have-verb as a denial", () => {
+    for (const sentence of [
+      "Haustiere gibt es bei uns nicht.",
+      "Haustiere gibt es nicht.",
+    ]) {
+      expect(petCodes(withSentence(sentence), noPetsRequest)).toEqual([]);
+    }
+    expect(
+      petCodes(
+        withSentence("Wir haben einen Hund, rauchen aber nicht."),
+        noPetsRequest,
+      ),
+    ).toEqual([{ code: "pets_invented", text: "Hund" }]);
+  });
+
+  it.each([
+    "Unseren Hund haben wir seit acht Jahren und Probleme gab es nicht.",
+    "Unseren Hund haben wir gut erzogen und allein lassen wir ihn nicht.",
+  ])("does not let a nicht in a later clause deny the dog: %s", (sentence) => {
+    expect(petCodes(withSentence(sentence), request)).toEqual([]);
+  });
+
+  it("does not let a nicht in a later clause deny an invented dog", () => {
+    expect(
+      petCodes(
+        withSentence("Einen Hund haben wir seit Mai und bereuen es nicht."),
+        noPetsRequest,
+      ),
+    ).toEqual([{ code: "pets_invented", text: "Hund" }]);
+  });
+
+  it("still reads a list of pets before a clause-final nicht as denied", () => {
+    expect(
+      petCodes(
+        withSentence("Hunde und Katzen haben wir nicht."),
+        noPetsRequest,
+      ),
+    ).toEqual([]);
+  });
+
+  it.each([
+    "Einen Hund und eine Katze haben wir nicht.",
+    "Hund, Katze und Vogel haben wir nicht.",
+  ])("reads a denied list of pets as denied: %s", (sentence) => {
+    expect(petCodes(withSentence(sentence), noPetsRequest)).toEqual([]);
+  });
+
+  it("marks no specific kind invented for a household with another pet", () => {
+    const otherPetRequest: LetterRequest = {
+      ...request,
+      household: {
+        ...request.household,
+        pets: [{ kind: "other", count: 1 }],
+      },
+    };
+    expect(
+      petCodes(withSentence("Zu uns gehört unser Kaninchen."), otherPetRequest),
+    ).toEqual([{ code: "pets_missing", text: "Haustier" }]);
   });
 
   it("accepts the general word Haustier for any pet", () => {
@@ -298,6 +462,56 @@ describe("validateLetter", () => {
       validateLetter(`${passingLetter}\n${text}`, req).filter(
         (p) => p.code === "relationship_invented",
       );
+
+    const marriageCodes = (text: string) =>
+      validateLetter(text, request)
+        .filter((p) => p.code === "relationship_invented")
+        .map((p) => p.code);
+
+    it.each([
+      "Ehe wir umziehen, renovieren wir die alte Wohnung.",
+      "Wir sind nicht verheiratet.",
+    ])("does not read a marriage into: %s", (sentence) => {
+      expect(marriageCodes(withSentence(sentence))).toEqual([]);
+    });
+
+    it.each([
+      "Wir rauchen nicht. Verheiratet sind wir seit Mai.",
+      "Wir rauchen nicht, verheiratet sind wir seit Mai.",
+      "Wir rauchen nicht, Ehepaar sind wir schon lange.",
+    ])("a nicht in another clause denies nothing: %s", (sentence) => {
+      expect(marriageCodes(withSentence(sentence))).toHaveLength(1);
+    });
+
+    it.each([
+      "Wir leben in glücklicher Ehe.",
+      "Wir sind nicht nur verheiratet, sondern auch Kollegen.",
+    ])("flags an unmarried couple's claim: %s", (sentence) => {
+      expect(marriageCodes(withSentence(sentence))).toEqual([
+        "relationship_invented",
+      ]);
+    });
+
+    it("does not read the conjunction Ehe after another sentence", () => {
+      expect(
+        marriageCodes(
+          withSentence("Wir sind ruhig. Ehe wir umziehen, streichen wir."),
+        ),
+      ).toEqual([]);
+    });
+
+    it("reads a nicht with one word between as a denial", () => {
+      expect(
+        marriageCodes(withSentence("Wir sind nicht miteinander verheiratet.")),
+      ).toEqual([]);
+    });
+
+    it.each(["Unsere Ehe ist stabil.", "Wir sind verheiratet."])(
+      "still flags: %s",
+      (sentence) => {
+        expect(marriageCodes(withSentence(sentence))).toHaveLength(1);
+      },
+    );
 
     it.each([
       ["Wir sind ein Ehepaar.", "partners", ["Ehepaar"]],

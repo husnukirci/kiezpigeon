@@ -188,12 +188,17 @@ your budget`. Otherwise `no`, `260 € over your budget`.
 Kaltmiete`. Otherwise `warn`, `Income is 2.6 × Kaltmiete. Many landlords
 ask for 3 ×.` Never `no`: landlords decide, not Kiezpigeon.
 - **Pets line:** household has no pets → `ok`, `No pets`. Listing
-  `allowed` → `ok`, `Pets allowed`. Listing `by_arrangement` or unknown →
-  `warn`, `Pets by arrangement. I'll mention them honestly.` Listing
-  `not_allowed` → `no`, `No pets allowed here`.
-- **WBS line:** listing requires WBS: profile has WBS → `ok`, `You have a
-WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
-  `No WBS needed`. Listing silent → `unknown`, `No WBS mentioned in the listing`.
+  `allowed` → `ok`, `Pets allowed`. Listing `by_arrangement` → `warn`,
+  `Pets by arrangement. I'll mention them honestly.` Listing unknown →
+  `warn`, `The listing does not say if pets are allowed. I'll mention them
+honestly.` Listing `not_allowed` → `no`, `No pets allowed here`.
+- **WBS line:** the page's own WBS row decides; without one, a requirement
+  found in the description text counts like that row. Listing requires WBS:
+  profile has WBS → `ok`, `You have a WBS`; else `no`, `This flat needs a
+WBS`. Page row says not required → `ok`, `No WBS needed`. Text that only
+  mentions WBS → `unknown`, `The text mentions WBS. Check what it asks for.`
+  Description could not be read → `unknown`, `I could not read this page's
+description.` Listing silent → `unknown`, `No WBS mentioned in the listing`.
 - **Move-in line** (arrived with the ADR 10 work, after Phase 4; not a Phase 1
   deliverable): listing does not say when it is free → `unknown`. Profile has
   no move-in → `unknown`. Free by arrangement → `ok`. Free immediately: a
@@ -203,7 +208,12 @@ WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
   `warn`. Never `no`.
 - **Relationship** (a validator check that arrived with the ADR 10 work, after
   Phase 4; not a Phase 1 deliverable): unless the household says married, no
-  marriage word (Ehepaar, verheiratet, Ehemann, ...) appears.
+  marriage word (Ehepaar, verheiratet, Ehemann, ...) appears. A marriage word
+  counts unless a `nicht` stands directly before it, with at most one word
+  between and no clause punctuation in the way (`nicht nur` denies
+  nothing). A bare `Ehe` counts as the noun (after an article or possessive,
+  or capitalised inside a sentence), not as the conjunction (`Ehe wir
+umziehen`).
 - The fit check returns the five lines in that order (`budget`, `income`, `pets`,
   `wbs`, `moveIn`). It never blocks
   writing a letter.
@@ -215,18 +225,21 @@ WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
   with whitespace on both sides is a problem (it is being used as an em
   dash). An en dash between two digits (`18–20`) is allowed.
 - **Numbers:** every number in the letter (digit runs, German formatted:
-  `1.180`, `3.450,00`, `62`, `01.03.2027` split into its parts) must be in
-  the allowed set built from the letter request: incomes, rents, size,
-  rooms, floor, household counts, move-in and available-from dates and their
-  parts, listing year values, and the contact form values. Number words
+  `1.180`, `3.450,00`, `62`) must be in the allowed set built from the
+  letter request: incomes, rents, size, rooms, floor, household counts,
+  listing year values, and the contact form values. A date (`01.03.2027`)
+  is checked whole: it must be the move-in or the free-from date. A day,
+  month or year of those dates written alone remains allowed. Number words
   (`zwei`) are not checked.
-- **Salutation:** contact person known → the first line contains their
-  surname (`Sehr geehrte Frau Weber,` / `Sehr geehrter Herr Weber,` /
-  `Guten Tag Frau Weber,`). Unknown → the first line is `Sehr geehrte Damen
-und Herren,`.
+- **Salutation:** the first line must equal the salutation the prompt
+  gives. Contact person known → `Sehr geehrte Frau Weber,` / `Sehr geehrter
+Herr Weber,`, or `Guten Tag Anna Weber,` when the page gives no Frau or
+  Herr. Unknown → `Sehr geehrte Damen und Herren,`.
 - **Pets honesty:** household has pets → for every pet kind the letter
   contains its keyword (`Hund`, `Katze`, plus a small table for others) or
-  a general `Haustier`. No pets → no pet keyword appears.
+  a general `Haustier`. A claimed pet of a kind the household lacks is
+  `pets_invented`, unless the household has a pet of kind `other`. No
+  pets → no pet keyword appears.
 - **Features:** 1 or 2 chosen features; each chosen feature's keyword
   appears in the letter. A request with 0 or more than 2 is invalid input.
 - **Signal order** (prompt builder only): facts are listed strongest first:
@@ -949,7 +962,8 @@ and what is worth a second look.
    `missing`. `rentalHints` scans page text into flags; phrases that rule
    a thing out are removed first. `analyseListing` builds the lines with
    exact copy: the kind from positive signals only, `unknown` when the
-   description could not be read; the price against the band, "well
+   description could not be read, giving the facts the page did give and
+   then saying so; the price against the band, "well
    above" and "well below" as notes; the notes in a fixed order (Kaution over three Kaltmieten
    unless a Genossenschaft, Nebenkosten over half the Kaltmiete, a
    Provision asked, no viewing, payment first, a landlord abroad, much

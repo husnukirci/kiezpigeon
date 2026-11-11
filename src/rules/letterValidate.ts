@@ -9,7 +9,6 @@ import {
   incomePhrase,
   incomeRatioTenths,
   moveInDateOf,
-  namedContact,
   salutationFor,
 } from "./letterPrompt";
 import { sumCents } from "./money";
@@ -45,9 +44,6 @@ function key(value: number): number {
 
 /** The numeric values one written number stands for. */
 function valuesOf(token: string): number[] {
-  if (/^\d{1,2}\.\d{1,2}(\.\d{2,4})?$/.test(token)) {
-    return token.split(".").map(Number);
-  }
   if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(token)) {
     return [Number(token.replaceAll(".", "").replace(",", "."))];
   }
@@ -57,8 +53,24 @@ function valuesOf(token: string): number[] {
   return token.split(/[.,]/).map(Number);
 }
 
+// `d.m`, `d.m.yy` and `d.m.yyyy` (a trailing point is not part of a token).
+const DATE_TOKEN = /^(\d{1,2})\.(\d{1,2})(?:\.(\d{2}|\d{4}))?$/;
+
+/** The year, month and day of an ISO date as plain numbers. */
 function dateParts(iso: string | undefined): number[] {
   return iso === undefined ? [] : iso.split("-").map(Number);
+}
+
+/** Whether a written date names the ISO date: day and month equal, and the
+ * year too when it is written (two digits compare with its last two). */
+function sameDate(token: string, iso: string | undefined): boolean {
+  const match = DATE_TOKEN.exec(token);
+  if (match === null || iso === undefined) return false;
+  const [year, month, day] = dateParts(iso);
+  const [, d, m, y] = match;
+  if (Number(d) !== day || Number(m) !== month) return false;
+  if (y === undefined) return true;
+  return y.length === 2 ? Number(y) === (year ?? 0) % 100 : Number(y) === year;
 }
 
 function digitRuns(text: string): number[] {
@@ -106,11 +118,28 @@ function allowedNumbers(request: LetterRequest): Set<number> {
   return new Set(values.flatMap((v) => (v === undefined ? [] : [key(v)])));
 }
 
+/** A date-shaped token is a date: it must be the move-in or the free-from
+ * date, unless it reads as an allowed point decimal ("2.5 Zimmer"). */
+function numberIsKnown(
+  token: string,
+  allowed: Set<number>,
+  request: LetterRequest,
+): boolean {
+  if (!DATE_TOKEN.test(token)) {
+    return valuesOf(token).every((v) => allowed.has(key(v)));
+  }
+  return (
+    sameDate(token, moveInDateOf(request.moveIn)) ||
+    sameDate(token, availableDateOf(request.listing.availability)) ||
+    allowed.has(key(Number(token)))
+  );
+}
+
 function numberProblems(text: string, request: LetterRequest): LetterProblem[] {
   const allowed = allowedNumbers(request);
   const unknown = new Set<string>();
   for (const [token] of text.matchAll(/\d+(?:[.,]\d+)*/g)) {
-    if (valuesOf(token).some((v) => !allowed.has(key(v)))) unknown.add(token);
+    if (!numberIsKnown(token, allowed, request)) unknown.add(token);
   }
   return [...unknown].map((token) => ({ code: "unknown_number", text: token }));
 }
@@ -120,10 +149,7 @@ function salutationProblems(
   request: LetterRequest,
 ): LetterProblem[] {
   const firstLine = (text.trim().split(/\r?\n/)[0] ?? "").trim();
-  const person = namedContact(request.listing.contactPerson);
-  const ok = person
-    ? firstLine.includes(person.lastName)
-    : firstLine === salutationFor(undefined);
+  const ok = firstLine === salutationFor(request.listing.contactPerson);
   return ok ? [] : [{ code: "wrong_salutation", text: firstLine }];
 }
 
@@ -146,75 +172,210 @@ const NEGATIONS = new Set([
   "keinem",
   "keiner",
   "keines",
+  "keinerlei",
   "ohne",
+  "weder",
+]);
+/** Words that join pets or other nouns into one denied list. */
+const JOINERS = new Set(["und", "oder", "noch", "sowie"]);
+/** Verbs that make a clause-final `nicht` a denial of the pet before it. */
+const HAVE_VERBS = new Set([
+  "haben",
+  "habe",
+  "besitzen",
+  "besitze",
+  "halten",
+  "halte",
+  "gibt",
 ]);
 
 /**
- * Pet words the letter uses positively. A word with `kein…` or `ohne`
- * among the two words before it is a denial, not a mention; so is a
- * `kein…` up to three words after it that ends the clause ("Haustiere
- * haben wir keine."), but not one that goes on ("Hund hat keine Probleme").
+ * Words that start a new clause inside a sentence, so a `nicht` after them
+ * says nothing about a pet before them ("Unseren Hund haben wir seit Jahren
+ * und Probleme gab es nicht."). An `und` that joins two pets ("Hunde und
+ * Katzen haben wir nicht.", "Einen Hund und eine Katze haben wir nicht.")
+ * does not count.
  */
-function petMentions(text: string): string[] {
-  const raw = text.split(/\s+/).filter((w) => /\p{L}/u.test(w));
+const CLAUSE_JOINERS = new Set(["und", "aber", "sondern"]);
+/** An article or possessive that may stand between a joiner and a pet word. */
+const PET_ARTICLE = /^(ein\w*|unser\w*|mein\w*|den|die|der|das)$/;
+
+/** Words that, right before a pet word, say the household has that pet. */
+const CLAIMING_WORDS =
+  /^(unser\w*|mein\w*|ein|eine|einen|einer|einem|zwei|drei|vier|\d+)$/;
+
+/** A positively used pet word, and whether it is claimed as the household's. */
+interface PetMention {
+  word: string;
+  claimed: boolean;
+}
+
+/**
+ * Pet words the letter uses positively. A word with `kein…`, `ohne` or
+ * `weder` among the two words before it is a denial, not a mention, once
+ * a list of `und`/`oder`/`noch`/`sowie` words is stepped over ("keine
+ * Kinder oder Haustiere", "weder Hund noch Katze"). So is a `kein…` up to
+ * three words after it that ends the clause ("Haustiere haben wir
+ * keine."), and a clause-final `nicht` after a have-verb anywhere in the
+ * clause ("Haustiere gibt es bei uns nicht."), but not a `kein…` that
+ * goes on ("Hund hat keine Probleme") and not a `nicht` after an `und`,
+ * `aber` or `sondern` that starts another clause. `claimed` is true when a
+ * possessive, an indefinite article or a count stands before the word,
+ * with at most one adjective between.
+ */
+function petMentions(text: string): PetMention[] {
+  const raw = text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w));
   const words = raw.map((w) => w.replace(/[^\p{L}]/gu, ""));
   const lower = words.map((w) => w.toLowerCase());
+  const tokens = raw.map((w) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""));
   const endsClause = (i: number): boolean =>
     i === raw.length - 1 || /[.,;:!?]$/u.test(raw[i] ?? "");
+  const isPetWord = (w: string): boolean =>
+    Object.values(PET_WORDS).some((re) => re.test(w));
+  // A pet word comes next, at most one article or possessive away.
+  const petFollows = (j: number): boolean =>
+    isPetWord(lower[j + 1] ?? "") ||
+    (PET_ARTICLE.test(lower[j + 1] ?? "") && isPetWord(lower[j + 2] ?? ""));
+  // A comma inside a list of pets ("Hund, Katze und Vogel") ends no clause.
+  const listComma = (j: number): boolean =>
+    (raw[j] ?? "").endsWith(",") && petFollows(j);
   const deniedAfter = (i: number): boolean => {
-    for (let j = i + 1; j <= i + 3 && j < raw.length; j += 1) {
-      if (NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
-      if (endsClause(j)) return false;
+    for (let j = i + 1; j < raw.length; j += 1) {
+      const joinsPets = lower[j] === "und" && petFollows(j);
+      if (CLAUSE_JOINERS.has(lower[j] ?? "") && !joinsPets) return false;
+      if (j <= i + 3 && NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
+      if (lower[j] === "nicht") {
+        return (
+          endsClause(j) &&
+          lower.slice(i + 1, j).some((between) => HAVE_VERBS.has(between))
+        );
+      }
+      if (endsClause(j) && !listComma(j)) return false;
     }
     return false;
   };
-  return words.filter((_, i) => {
+  const mentions: PetMention[] = [];
+  words.forEach((word, i) => {
     const w = lower[i] ?? "";
-    const isPet = Object.values(PET_WORDS).some((re) => re.test(w));
+    if (!isPetWord(w)) return;
+    let start = i;
+    while (start >= 2 && JOINERS.has(lower[start - 1] ?? "")) start -= 2;
     const deniedBefore = lower
-      .slice(Math.max(0, i - 2), i)
+      .slice(Math.max(0, start - 2), start)
       .some((before) => NEGATIONS.has(before));
-    return isPet && !deniedBefore && !(!endsClause(i) && deniedAfter(i));
+    if (deniedBefore || ((!endsClause(i) || listComma(i)) && deniedAfter(i))) {
+      return;
+    }
+    const claimed = [tokens[i - 1], tokens[i - 2]].some((t) =>
+      CLAIMING_WORDS.test(t ?? ""),
+    );
+    mentions.push({ word, claimed });
   });
+  return mentions;
 }
 
 function petProblems(text: string, request: LetterRequest): LetterProblem[] {
   const mentioned = petMentions(text);
-  const mentions = mentioned.map((w) => w.toLowerCase());
+  const mentions = mentioned.map((m) => m.word.toLowerCase());
   const kinds = [
     ...new Set(
       request.household.pets.filter((p) => p.count > 0).map((p) => p.kind),
     ),
   ];
   if (kinds.length === 0) {
-    return [...new Set(mentioned)].map((word) => ({
+    return [...new Set(mentioned.map((m) => m.word))].map((word) => ({
       code: "pets_invented",
       text: word,
     }));
   }
-  if (mentions.some((w) => ANY_PET.test(w))) return [];
-  return kinds
+  // With pets, another kind is invented only when the letter claims it as
+  // the household's; "Unser Hund mag Katzen" is about the dog. A household
+  // with a pet of kind `other` may have any animal, so none is invented.
+  const anyKind = kinds.includes("other");
+  const invented: LetterProblem[] = [
+    ...new Set(
+      mentioned
+        .filter(
+          (m) =>
+            !anyKind &&
+            m.claimed &&
+            !ANY_PET.test(m.word.toLowerCase()) &&
+            !kinds.some((kind) => PET_WORDS[kind].test(m.word.toLowerCase())),
+        )
+        .map((m) => m.word),
+    ),
+  ].map((word) => ({ code: "pets_invented", text: word }));
+  if (mentions.some((w) => ANY_PET.test(w))) return invented;
+  const missing: LetterProblem[] = kinds
     .filter((kind) => !mentions.some((w) => PET_WORDS[kind].test(w)))
     .map((kind) => ({ code: "pets_missing", text: PET_NOUNS[kind][0] }));
+  return [...invented, ...missing];
 }
 
 // Words that say the applicants are married. Compounds match anywhere in
 // the word (Akademikerehepaar, Lehrer-Ehepaar once hyphens are stripped);
 // the rest only as a whole word or its start, so mehr, eher, ehemalig,
-// ehrlich, eheähnlich and unverheiratet stay clean.
+// ehrlich, eheähnlich and unverheiratet stay clean. The bare noun `Ehe`
+// counts only after an article or possessive: "Ehe wir umziehen" is the
+// conjunction; a capitalised `Ehe` inside a sentence ("in glücklicher Ehe")
+// is the noun too. A `nicht` in the same clause, at most one word before,
+// denies it; "nicht nur verheiratet" does not.
 const MARRIED =
-  /ehe(paar|leute|mann|männer|frau|partner|gatt)|^ehe$|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
+  /ehe(paar|leute|mann|männer|frau|partner|gatt)|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
+
+const EHE_DETERMINERS = new Set([
+  "die",
+  "der",
+  "unsere",
+  "unserer",
+  "meine",
+  "meiner",
+  "eine",
+  "einer",
+]);
 
 function relationshipProblems(
   text: string,
   request: LetterRequest,
 ): LetterProblem[] {
   if (request.household.relationship === "married") return [];
-  const words = text
-    .split(/\s+/)
-    .map((w) => w.replace(/[^\p{L}]/gu, ""))
-    .filter((w) => MARRIED.test(w.toLowerCase()));
-  return [...new Set(words)].map((word) => ({
+  const matches = [...text.matchAll(/\S+/g)];
+  const raw = matches.map((m) => m[0]);
+  const words = raw.map((w) => w.replace(/[^\p{L}]/gu, ""));
+  // A word starts a sentence when it is the first, follows a sentence end
+  // or starts a line.
+  const startsSentence = (i: number): boolean => {
+    const previous = matches[i - 1];
+    const current = matches[i];
+    if (previous === undefined || current === undefined) return true;
+    const gap = text.slice(previous.index + previous[0].length, current.index);
+    return /[.!?]$/u.test(previous[0]) || gap.includes("\n");
+  };
+  // `nicht` denies when it is one of the two tokens before the word and no
+  // clause punctuation stands on it or on a token between; `nicht nur` is
+  // not a denial.
+  const deniedBefore = (i: number): boolean => {
+    const lowerRaw = (j: number): string => (raw[j] ?? "").toLowerCase();
+    const open = (j: number): boolean => !/[.,;:!?]$/u.test(raw[j] ?? "");
+    return (
+      (lowerRaw(i - 1) === "nicht" && open(i - 1)) ||
+      (lowerRaw(i - 2) === "nicht" &&
+        lowerRaw(i - 1) !== "nur" &&
+        open(i - 2) &&
+        open(i - 1))
+    );
+  };
+  const claimed = words.filter((word, i) => {
+    const lower = word.toLowerCase();
+    const before = (words[i - 1] ?? "").toLowerCase();
+    const isClaim =
+      MARRIED.test(lower) ||
+      (lower === "ehe" &&
+        (EHE_DETERMINERS.has(before) ||
+          (word === "Ehe" && !startsSentence(i))));
+    return isClaim && !deniedBefore(i);
+  });
+  return [...new Set(claimed)].map((word) => ({
     code: "relationship_invented",
     text: word,
   }));

@@ -164,3 +164,149 @@ describe("rentalHints", () => {
     ).toEqual(NO_HINTS);
   });
 });
+
+describe("rentalHints: what the text rules out or says in passing", () => {
+  it.each<[string, keyof RentalHints]>([
+    ["Der Mietvertrag ist nicht befristet.", "fixedTerm"],
+    ["Keine Zwischenmiete, keine Maklergebühr.", "interim"],
+    ["Keine Zwischenmiete, keine Maklergebühr.", "commission"],
+    ["Provision fällt nicht an.", "commission"],
+    ["Es wird keine Courtage erhoben.", "commission"],
+    ["Für Wohngemeinschaften geeignet.", "sharedFlat"],
+    ["Auch für eine WG geeignet.", "sharedFlat"],
+    [
+      "Kaltmiete 900 €. Bitte senden Sie vorab Ihre Unterlagen.",
+      "paymentFirst",
+    ],
+    ["Die Miete ist monatlich im Voraus zu zahlen.", "paymentFirst"],
+    ["Die Miete ist monatlich vorab zu zahlen.", "paymentFirst"],
+    ["Keine Besichtigung ohne vollständige Unterlagen.", "noViewing"],
+    ["Gerne auch Bewerber, die sich derzeit im Ausland befinden.", "abroad"],
+  ])("does not flag %s as %s", (text, flag) => {
+    expect(rentalHints(text)[flag]).toBe(false);
+  });
+
+  it("still sees the thing named beside something else ruled out", () => {
+    expect(rentalHints("Zwischenmiete, keine Haustiere.").interim).toBe(true);
+    expect(
+      rentalHints("Befristet auf zwei Jahre, nicht möbliert.").fixedTerm,
+    ).toBe(true);
+    expect(
+      rentalHints("Bitte überweisen Sie die Kaution vorab.").paymentFirst,
+    ).toBe(true);
+    expect(rentalHints("Ich bin zurzeit im Ausland.").abroad).toBe(true);
+    expect(
+      rentalHints("Eine Besichtigung ist leider nicht möglich.").noViewing,
+    ).toBe(true);
+  });
+});
+
+describe("rentalHints: negations stay inside their own clause", () => {
+  it("does not let a not-charged clause swallow an earlier term", () => {
+    expect(
+      rentalHints("Befristet auf 2 Jahre, Kaution wird nicht erhoben.")
+        .fixedTerm,
+    ).toBe(true);
+    const interim = rentalHints(
+      "Zwischenmiete bis Mai, Provision fällt nicht an.",
+    );
+    expect(interim.interim).toBe(true);
+    expect(interim.commission).toBe(false);
+    const sublet = rentalHints("Untermiete, Maklergebühr wird nicht erhoben.");
+    expect(sublet.sublet).toBe(true);
+    expect(sublet.commission).toBe(false);
+    expect(rentalHints("Provision fällt nicht an.").commission).toBe(false);
+    expect(rentalHints("Es wird keine Courtage erhoben.").commission).toBe(
+      false,
+    );
+  });
+
+  it("scopes the monthly-rent guard to the payment word's own clause", () => {
+    expect(
+      rentalHints("Miete 900 € monatlich, bitte Kaution vorab überweisen.")
+        .paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Kaution vorab überweisen, Miete monatlich.").paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Die Miete ist monatlich im Voraus zu zahlen.").paymentFirst,
+    ).toBe(false);
+    expect(
+      rentalHints("Die Miete ist monatlich vorab zu zahlen.").paymentFirst,
+    ).toBe(false);
+    expect(
+      rentalHints("Kaltmiete 900 €. Bitte senden Sie vorab Ihre Unterlagen.")
+        .paymentFirst,
+    ).toBe(false);
+  });
+
+  it("sees a compound rent word, not a Kaltmiete label", () => {
+    expect(
+      rentalHints("Bitte überweisen Sie die erste Monatsmiete vorab.")
+        .paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Zahlen Sie die Monatsmiete vor der Besichtigung.")
+        .paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Nettokaltmiete 900 €, vorab Unterlagen senden.")
+        .paymentFirst,
+    ).toBe(false);
+  });
+
+  it("lets keine Besichtigung ohne Terminvereinbarung stand", () => {
+    expect(
+      rentalHints("Keine Besichtigung ohne Terminvereinbarung.").noViewing,
+    ).toBe(false);
+    expect(
+      rentalHints("Keine Besichtigung ohne vollständige Unterlagen.").noViewing,
+    ).toBe(false);
+  });
+});
+
+describe("rentalHints: the advance-payment hint reads amounts, line breaks and deposits", () => {
+  it.each([
+    "Die Kaution von 1.500 € muss vorab auf mein Konto überwiesen werden.",
+    "Kaution 1.500 € vorab, dann schicke ich den Schlüssel per Post.",
+    "Die Kaution, also 1000 €, ist vorab fällig.",
+    "Die Kaution ist z.B. per Bank vorab zu leisten.",
+    "Die Miete beträgt monatlich 500 € und die Kaution ist vorab zu überweisen.",
+    "Miete monatlich: 500 €\nKaution bitte vorab überweisen",
+    "Miete: 600 € monatlich – Kaution vorab per Überweisung",
+  ])("flags %j as payment first", (text) => {
+    expect(rentalHints(text).paymentFirst).toBe(true);
+  });
+
+  it.each([
+    "Kaltmiete 900 €. Bitte senden Sie vorab Ihre Unterlagen.",
+    "Die Miete ist monatlich im Voraus zu zahlen.",
+    "Die Miete ist monatlich vorab zu zahlen.",
+    "Nettokaltmiete 900 €, vorab Unterlagen senden.",
+  ])("still does not flag %j", (text) => {
+    expect(rentalHints(text).paymentFirst).toBe(false);
+  });
+
+  it("does not let a negation cross a line break", () => {
+    expect(rentalHints("Haustiere nicht\nBefristet bis 2028").fixedTerm).toBe(
+      true,
+    );
+  });
+});
+
+describe("rentalHints: a deposit named beside vorab is not a deposit asked for vorab", () => {
+  it.each([
+    "Kaution 2.000 €, Besichtigung vorab nach Terminvereinbarung möglich.",
+    "Kaution 3 KM, vorab bitte Selbstauskunft und SCHUFA.",
+    "Kaution: 2.400 €, vorab Besichtigung vereinbaren.",
+    "Kaution 3 Nettokaltmieten, Unterlagen bitte vorab per Mail.",
+    "Die Kaution beträgt ca. 3.000 €, vorab bitte Gehaltsnachweise senden.",
+    "Kaution: 3 Monatsmieten, Mietschuldenfreiheit vorab einreichen.",
+    "Kaution 3 MM inkl. Garage, vorab Termin.",
+    "Kaution 2.000 € – Besichtigung vorab nach Absprache",
+    "Zahlung der Kaution in drei Raten, Besichtigung vorab möglich.",
+  ])("does not flag %j", (text) => {
+    expect(rentalHints(text).paymentFirst).toBe(false);
+  });
+});

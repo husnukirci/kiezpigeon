@@ -9,7 +9,9 @@ import { assembleListing } from "./listing";
 import {
   parseAvailability,
   parseContactName,
+  parseDepositText,
   parseEuroText,
+  parseFloor,
   parseNumberText,
 } from "./parse";
 import type { SiteAdapter } from "./types";
@@ -98,14 +100,6 @@ function districtOf(address: string): string | undefined {
   return /\bOT\s+(.+)$/.exec(address)?.[1];
 }
 
-/** `2. Obergeschoß` → 2, `Erdgeschoss` → 0, `Souterrain` → -1. */
-function floorOf(text: string): number | undefined {
-  if (/^(EG|Erdgescho(ss|ß))\b/i.test(text)) return 0;
-  if (/^(UG|Untergescho(ss|ß)|Souterrain)\b/i.test(text)) return -1;
-  const match = /^(\d+)\.?\s*(OG|Obergescho(ss|ß))?/i.exec(text);
-  return match ? Number(match[1]) : undefined;
-}
-
 function featuresOf(document: Document): Feature[] {
   const features: Feature[] = [];
   for (const badge of document.querySelectorAll(".equipment-list .badge")) {
@@ -141,11 +135,12 @@ function readListing(document: Document, url: string): Listing | undefined {
   if (type !== undefined && !HOME_TYPES.has(type)) return undefined;
 
   const address = addressOf(document);
+  const kaltmiete = parseEuroText(kalt);
   return assembleListing(url, featuresOf(document), {
     title: titleOf(document),
     address,
     district: map(address, districtOf),
-    kaltmieteCents: parseEuroText(kalt),
+    kaltmieteCents: kaltmiete,
     nebenkostenCents: map(row(document, "Nebenkosten"), parseEuroText),
     warmmieteCents: map(
       row(document, "Warmmiete") ?? figure(document, "Warmmiete"),
@@ -153,7 +148,7 @@ function readListing(document: Document, url: string): Listing | undefined {
     ),
     areaM2: map(figure(document, "Größe"), parseNumberText),
     rooms: map(figure(document, "Zimmer"), parseNumberText),
-    floor: map(row(document, "Geschoss"), floorOf),
+    floor: map(row(document, "Geschoss"), parseFloor),
     availability: map(
       row(document, "Verfügbar ab") ??
         figure(document, "Bezugsfrei ab") ??
@@ -167,7 +162,9 @@ function readListing(document: Document, url: string): Listing | undefined {
       parseContactName,
     ),
     flatType: row(document, "Art"),
-    kautionCents: map(row(document, "Kaution"), parseEuroText),
+    kautionCents: map(row(document, "Kaution"), (text) =>
+      parseDepositText(text, kaltmiete),
+    ),
     // The platform prints no offerer marker and no price comparison.
     hints: hintsOf(document),
   });

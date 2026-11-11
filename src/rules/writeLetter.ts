@@ -39,7 +39,7 @@ export function describeProblem({ code, text }: LetterProblem): string {
     case "pets_missing":
       return `The ${text} is not mentioned.`;
     case "pets_invented":
-      return `${text} is mentioned, but the household has no pets.`;
+      return `${text} is mentioned, but the household has no such pet.`;
     case "feature_missing":
       return `The highlight ${text} is not mentioned.`;
     case "relationship_invented":

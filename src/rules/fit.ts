@@ -3,6 +3,7 @@
 import { CLOSE_DAYS, daysBetween } from "./dates";
 import { formatAvailability, formatDate, formatEuro } from "./format";
 import { sumCents } from "./money";
+import { wbsRequiredOf } from "./rentalHints";
 import type { Cents, FitLine, Listing, Profile } from "./types";
 
 function rentOf(listing: Listing): Cents | undefined {
@@ -70,26 +71,37 @@ function petsLine(profile: Profile, listing: Listing): FitLine {
     case "not_allowed":
       return { rule: "pets", status: "no", reason: "No pets allowed here" };
     case "by_arrangement":
-    case undefined:
       return {
         rule: "pets",
         status: "warn",
         reason: "Pets by arrangement. I'll mention them honestly.",
       };
+    case undefined:
+      return {
+        rule: "pets",
+        status: "warn",
+        reason:
+          "The listing does not say if pets are allowed. I'll mention them honestly.",
+      };
   }
 }
 
 function wbsLine(profile: Profile, listing: Listing): FitLine {
-  if (listing.wbsRequired === undefined) {
+  const required = wbsRequiredOf(listing);
+  if (required === undefined) {
     return {
       rule: "wbs",
       status: "unknown",
-      reason: listing.hints?.wbsMentioned
-        ? "The text mentions WBS. Check what it asks for."
-        : "No WBS mentioned in the listing",
+      // A description that could not be read is not one silent on WBS.
+      reason:
+        listing.hints === undefined
+          ? "I could not read this page's description."
+          : listing.hints.wbsMentioned
+            ? "The text mentions WBS. Check what it asks for."
+            : "No WBS mentioned in the listing",
     };
   }
-  if (!listing.wbsRequired) {
+  if (!required) {
     return { rule: "wbs", status: "ok", reason: "No WBS needed" };
   }
   return profile.hasWbs

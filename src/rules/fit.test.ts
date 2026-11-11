@@ -55,7 +55,7 @@ describe("checkFit", () => {
       {
         rule: "wbs",
         status: "unknown",
-        reason: "No WBS mentioned in the listing",
+        reason: "I could not read this page's description.",
       },
       {
         rule: "moveIn",
@@ -221,18 +221,19 @@ describe("pets line", () => {
     ).toEqual({ rule: "pets", status: "ok", reason: "Pets allowed" });
   });
 
-  it("warns when pets are by arrangement or the listing is silent", () => {
-    const expected = {
-      rule: "pets",
-      status: "warn",
-      reason: "Pets by arrangement. I'll mention them honestly.",
-    };
-    expect(
-      line(coupleWithDog, listingWith({ petPolicy: "by_arrangement" }), "pets"),
-    ).toEqual(expected);
+  it("warns when pets are by arrangement, and says when the listing is silent", () => {
     expect(
       line(coupleWithDog, listingWith({ petPolicy: undefined }), "pets"),
-    ).toEqual(expected);
+    ).toEqual({
+      rule: "pets",
+      status: "warn",
+      reason:
+        "The listing does not say if pets are allowed. I'll mention them honestly.",
+    });
+    expect(
+      line(coupleWithDog, listingWith({ petPolicy: "by_arrangement" }), "pets")
+        .reason,
+    ).toBe("Pets by arrangement. I'll mention them honestly.");
   });
 
   it("says no when pets are not allowed", () => {
@@ -278,6 +279,19 @@ describe("WBS line", () => {
     });
   });
 
+  it("takes a requirement from the text when the page has no WBS row", () => {
+    const listing = listingWith({
+      wbsRequired: undefined,
+      hints: { ...NO_HINTS, wbs: true, wbsMentioned: true },
+    });
+    expect(line(coupleWithDog, listing, "wbs")).toEqual({
+      rule: "wbs",
+      status: "no",
+      reason: "This flat needs a WBS",
+    });
+    expect(line(soloStudent, listing, "wbs").status).toBe("ok"); // soloStudent has a WBS
+  });
+
   it("is unknown when the listing is silent", () => {
     expect(
       line(coupleWithDog, listingWith({ wbsRequired: undefined }), "wbs"),
@@ -285,6 +299,20 @@ describe("WBS line", () => {
       rule: "wbs",
       status: "unknown",
       reason: "No WBS mentioned in the listing",
+    });
+  });
+
+  it("does not call an unread description silent on WBS", () => {
+    expect(
+      line(
+        coupleWithDog,
+        listingWith({ wbsRequired: undefined, hints: undefined }),
+        "wbs",
+      ),
+    ).toEqual({
+      rule: "wbs",
+      status: "unknown",
+      reason: "I could not read this page's description.",
     });
   });
 });

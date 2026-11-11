@@ -1,7 +1,7 @@
 // What a listing's free text says about the kind of rental (Phase 13):
 // German or English page text in, flags out. The analysis rule reads only
 // these flags, never the text. Each pattern notes where it was seen.
-import type { RentalHints } from "./types";
+import type { Listing, RentalHints } from "./types";
 
 /** Every flag off: plain text that names no special form of rental. */
 export const NO_HINTS: RentalHints = {
@@ -31,8 +31,61 @@ export const NO_HINTS: RentalHints = {
  * over-flag would be a wrong claim on the card, so this list grows with
  * every phrasing a page shows.
  */
-const NEGATIONS =
+const RULED_OUT_TERMS =
+  "zwischenmiete|untermiete|untervermietung|befristet|maklergebühr|provision|courtage|commission|staffelmiete|indexmiete|möbliert";
+
+const LISTED_NEGATIONS =
   /provisionsfrei|keine provision|ohne provision|courtagefrei|keine courtage|commission[- ]free|no commission|nicht möbliert|unmöbliert|unfurnished|not furnished|wg-geeignet|suitable for (?:a )?shared flats?|flat[- ]share suitable|unbefristet\w*|kein(?:en|e)? wbs\b|wbs (?:ist )?nicht erforderlich|kein wohnberechtigungsschein|wohnberechtigungsschein (?:ist )?nicht erforderlich|keine untervermietung|untervermietung (?:ist )?nicht (?:gestattet|erlaubt|möglich)|nicht für wohngemeinschaften|keine wohngemeinschaft\w*|keine wg\b|keine? (?:staffel|index)miete|kein erstbezug|cooperative shares/gi;
+
+const NEGATIONS = new RegExp(
+  [
+    // One general negation: a negator directly before a rental term, or a
+    // term whose clause says it is not charged. From the 2026-11-10 audit.
+    // Spaces or tabs only: a negator at the end of one line never rules out
+    // the next line's term. From the 2026-11-10 final review.
+    `\\b(?:keine?[mnrs]?|nicht|ohne|no|not|without)[ \\t]+(?:${RULED_OUT_TERMS})\\w*`,
+    // Only a fee noun directly before the phrase; a term earlier in the sentence stays.
+    // From the 2026-11-10 audit review.
+    "\\b(?:provision|courtage|maklergebühr|commission)\\w*\\s+(?:fällt nicht an|wird nicht (?:erhoben|verlangt|berechnet))",
+    // "Für Wohngemeinschaften geeignet" is the feature tag, not a WG room.
+    // From the 2026-11-10 audit.
+    "für (?:eine |)(?:wg|wohngemeinschaft\\w*) geeignet",
+    LISTED_NEGATIONS.source,
+  ].join("|"),
+  "gi",
+);
+
+const TIMING = "(?:vor der besichtigung|vorab|before (?:the |a )?viewing)";
+const DEPOSIT_WORD =
+  "\\b(?:kaution|geld|betrag|zahlung|deposit|payment|money)\\b";
+/** Words that make a "vorab" about a viewing or documents, not a payment. */
+const NOT_PAYMENT =
+  "(?:besichtigung|unterlagen|selbstauskunft|termin|nachweis|schufa|mietschuldenfreiheit|viewing|documents?)";
+/** A word between the deposit and the timing that names no viewing or document. */
+const GAP_WORD = `(?![a-zäöüß]*${NOT_PAYMENT})\\w+`;
+/** A payment verb or noun after the timing, in its clause. */
+const PAYS_AFTER =
+  "(?=[^.!?,;\\n]*?(?:überweis|überwies|zahl|leisten|fällig|hinterleg))";
+const NO_DOCUMENT_AFTER = `(?![^.!?,;\\n]*${NOT_PAYMENT})`;
+
+/**
+ * A deposit or other payment word asked for before the viewing. Inside one
+ * comma- and dash-free stretch any words may sit between ("Die Kaution von
+ * 1.500 € muss vorab"). Across a comma or dash only when a payment verb
+ * follows the timing ("Die Kaution, also 1000 €, ist vorab fällig") or when
+ * only an amount sits between and the timing ends the clause ("Kaution,
+ * 1.500 €, vorab."). A viewing or document word between or after means the
+ * vorab is about those ("Kaution 2.000 €, Besichtigung vorab möglich").
+ * From the 2026-11-10 final review and its re-review.
+ */
+const DEPOSIT_FIRST = new RegExp(
+  [
+    `${DEPOSIT_WORD}[^\\w.!?,;\\n\\-–—]+(?:${GAP_WORD}[^\\w.!?,;\\n\\-–—]+){0,6}?${TIMING}${NO_DOCUMENT_AFTER}`,
+    `${DEPOSIT_WORD}[^\\w.!?;\\n]+(?:${GAP_WORD}[^\\w.!?;\\n]+){0,6}?${TIMING}${PAYS_AFTER}${NO_DOCUMENT_AFTER}`,
+    `${DEPOSIT_WORD}(?:[^\\w.!?;\\n]+(?:\\d+|also|von|ca|eur|euro))*[^\\w.!?;\\n]+${TIMING}\\s*(?:[.!?;,\\n]|$)`,
+  ].join("|"),
+  "i",
+);
 
 const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   sublet: /untermiete|untervermiet|\bsublet/i,
@@ -59,22 +112,60 @@ const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   commission: /\bprovision\b|courtage|maklergebühr|\bcommission\b/i,
   // "Besichtigungsanfragen" is a plea, not a refusal: no "s" may follow.
   noViewing:
-    /keine besichtigung(?!s)|ohne besichtigung(?!s)|besichtigung(?:en)? (?:ist |sind |derzeit |leider )*nicht möglich|no viewing(?!s)|without (?:a )?viewing|viewing (?:is )?not possible/i,
+    /keine besichtigung(?!s)(?! ohne\b[^.!?,;]*\b(?:unterlagen|termin|anmeldung|voranmeldung))|ohne besichtigung(?!s)|besichtigung(?:en)? (?:ist |sind |derzeit |leider )*nicht möglich|no viewing(?!s)|without (?:a )?viewing|viewing (?:is )?not possible/i,
   // A payment word and the timing together, in either order; "before the
   // viewing" alone is how a landlord asks for documents.
-  paymentFirst:
-    /(?:kaution|miete|geld|betrag|zahlung|deposit|payment|rent|money)\W+(?:\w+\W+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?:vor der besichtigung|vorab|before (?:the |a )?viewing)\W+(?:\w+\W+){0,4}?(?:überweis\w*|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
+  // The gap stays inside one clause (a line break ends one; the points in
+  // "1.500" and "z.B." do not, see withoutInnerPoints). A deposit or other
+  // payment word follows DEPOSIT_FIRST. A rent word is not
+  // a Kaltmiete or Warmmiete label (compounds such as "Monatsmiete" count),
+  // stops at a comma, and a clause about monthly rent ("monatlich vorab") is
+  // the usual rent clause. From the 2026-11-10 audit, its review and the
+  // final review.
+  paymentFirst: new RegExp(
+    `${DEPOSIT_FIRST.source}|` +
+      String.raw`(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:\brent\b|(?<!kalt|warm)miete\b)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?,;\n]+(?:\w+[^\w.!?,;\n]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?;\n]+(?:\w+[^\w.!?;\n]+){0,4}?(?:überweis\w*|überwiesen|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram`,
+    "i",
+  ),
   // The landlord abroad, not applicants from abroad.
   abroad:
-    /(?:ich|wir|vermieter\w*|eigentümer\w*|besitzer\w*)\W+(?:\w+\W+){0,5}?(?:im ausland|nicht in deutschland)|(?:i am|i'm|we are|we're|owner is|landlord is)\W+(?:\w+\W+){0,4}?(?:abroad|out of the country|not in germany)/i,
+    /(?:\bich\b|\bwir\b|vermieter\w*|eigentümer\w*|besitzer\w*)\W+(?:\w+\W+){0,5}?(?:im ausland|nicht in deutschland)|\b(?:i am|i'm|we are|we're|owner is|landlord is)\W+(?:\w+\W+){0,4}?(?:abroad|out of the country|not in germany)/i,
 };
+
+/**
+ * Points and commas that do not end a clause: inside a number ("1.500 €",
+ * "2,5") and in common abbreviations ("z.B.", "ca.", "inkl.", "bzw.").
+ */
+const INNER_POINTS =
+  /(?<=\d)[.,](?=\d)|\b(?:z\.\s?b|d\.\s?h|u\.\s?a|ca|inkl|bzw|ggf|evtl|zzgl|usw|etc)\./gi;
+
+function withoutInnerPoints(text: string): string {
+  return text.replace(INNER_POINTS, (match) => match.replace(/[.,]/g, ""));
+}
 
 export function rentalHints(text: string): RentalHints {
   const cleaned = text.replace(NEGATIONS, " ");
   const hints = { ...NO_HINTS };
   for (const flag of Object.keys(PATTERNS) as (keyof RentalHints)[]) {
-    const source = flag === "wbsMentioned" ? text : cleaned;
+    const source =
+      flag === "wbsMentioned"
+        ? text
+        : flag === "paymentFirst"
+          ? withoutInnerPoints(cleaned)
+          : cleaned;
     hints[flag] = PATTERNS[flag].test(source);
   }
   return hints;
+}
+
+/**
+ * Whether the flat needs a WBS: the page's own row when it has one, else
+ * what its text asks for, else unknown. The card and the fit check both
+ * read WBS only through this.
+ */
+export function wbsRequiredOf(
+  listing: Pick<Listing, "wbsRequired" | "hints">,
+): boolean | undefined {
+  if (listing.wbsRequired !== undefined) return listing.wbsRequired;
+  return listing.hints?.wbs ? true : undefined;
 }
