@@ -11,6 +11,7 @@ import { createLetterRequest } from "../../../rules/letterPrompt";
 import { newApplication, refill, setStatus } from "../../../rules/tracker";
 import type { Listing, Profile } from "../../../rules/types";
 import { addApplication, changeApplication } from "../../../storage/storage";
+import { useAnalysis } from "../../hooks/useAnalysis";
 import { useContactForm } from "../../hooks/useContactForm";
 import { useLetter } from "../../hooks/useLetter";
 import { useStored } from "../../hooks/useStored";
@@ -41,6 +42,7 @@ export function ListingFlow({
   unknownSite,
 }: ListingFlowProps) {
   const letter = useLetter();
+  const analysis = useAnalysis(ownTab, profile);
   const [letterOpen, setLetterOpen] = useState(false);
   const { state } = letter;
   // The letter belongs to the listing it was written for; another tab's
@@ -84,6 +86,12 @@ export function ListingFlow({
       listing={listing}
       initialChoice={lastChoice}
       onEditFacts={unknownSite?.onEditFacts}
+      analysis={{
+        state: analysis.stateFor(listing.url),
+        onAnalyse: () => {
+          analysis.analyse(listing);
+        },
+      }}
       onWrite={(choice) => {
         letter.write(createLetterRequest(profile, listing, choice));
         setLetterOpen(true);

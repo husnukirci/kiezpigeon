@@ -27,10 +27,12 @@ import { ChipRow, ToggleChip } from "../../components/Chip/Chip";
 import { ExclamationIcon, TickIcon } from "../../components/Icons/Icons";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
 import { DetectedBadge } from "../../components/StatusPill/StatusPill";
+import type { AnalysisState } from "../../hooks/useAnalysis";
 import { cx } from "../../cx";
 import { TONES } from "../profileForm/ProfileSections";
 import screen from "../Screen.module.css";
 import { AnalysisCard } from "./AnalysisCard";
+import { ListingAnalysis } from "./ListingAnalysis";
 import styles from "./ListingDetected.module.css";
 
 const MAX_HIGHLIGHTS = 2;
@@ -48,6 +50,8 @@ interface ListingDetectedProps {
   initialChoice?: LetterChoice | undefined;
   /** Set when the user typed the facts (ADR 12): a Back to change them. */
   onEditFacts?: (() => void) | undefined;
+  /** The deeper read, on the user's click; not shown for typed facts. */
+  analysis?: { state: AnalysisState; onAnalyse: () => void } | undefined;
   onWrite: (choice: LetterChoice) => void;
 }
 
@@ -57,6 +61,7 @@ export function ListingDetected({
   listing,
   initialChoice,
   onEditFacts,
+  analysis,
   onWrite,
 }: ListingDetectedProps) {
   const [tone, setTone] = useState<Tone>(
@@ -95,6 +100,12 @@ export function ListingDetected({
       </StatRow>
 
       {!onEditFacts && <AnalysisCard listing={listing} />}
+      {!onEditFacts && analysis && (
+        <ListingAnalysis
+          state={analysis.state}
+          onAnalyse={analysis.onAnalyse}
+        />
+      )}
 
       <FitCard lines={checkFit(profile, listing)} />
 

@@ -1,0 +1,20 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heading {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.text {
+  margin: 0;
+  color: var(--ink);
+}
+
+.caption {
+  margin: 0;
+  color: var(--ink-subtle);
+}
