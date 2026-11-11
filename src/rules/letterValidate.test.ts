@@ -354,6 +354,13 @@ describe("validateLetter", () => {
     ).toEqual([]);
   });
 
+  it.each([
+    "Einen Hund und eine Katze haben wir nicht.",
+    "Hund, Katze und Vogel haben wir nicht.",
+  ])("reads a denied list of pets as denied: %s", (sentence) => {
+    expect(petCodes(withSentence(sentence), noPetsRequest)).toEqual([]);
+  });
+
   it("marks no specific kind invented for a household with another pet", () => {
     const otherPetRequest: LetterRequest = {
       ...request,

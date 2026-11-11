@@ -193,9 +193,12 @@ const HAVE_VERBS = new Set([
  * Words that start a new clause inside a sentence, so a `nicht` after them
  * says nothing about a pet before them ("Unseren Hund haben wir seit Jahren
  * und Probleme gab es nicht."). An `und` that joins two pets ("Hunde und
- * Katzen haben wir nicht.") does not count.
+ * Katzen haben wir nicht.", "Einen Hund und eine Katze haben wir nicht.")
+ * does not count.
  */
 const CLAUSE_JOINERS = new Set(["und", "aber", "sondern"]);
+/** An article or possessive that may stand between a joiner and a pet word. */
+const PET_ARTICLE = /^(ein\w*|unser\w*|mein\w*|den|die|der|das)$/;
 
 /** Words that, right before a pet word, say the household has that pet. */
 const CLAIMING_WORDS =
@@ -229,9 +232,16 @@ function petMentions(text: string): PetMention[] {
     i === raw.length - 1 || /[.,;:!?]$/u.test(raw[i] ?? "");
   const isPetWord = (w: string): boolean =>
     Object.values(PET_WORDS).some((re) => re.test(w));
+  // A pet word comes next, at most one article or possessive away.
+  const petFollows = (j: number): boolean =>
+    isPetWord(lower[j + 1] ?? "") ||
+    (PET_ARTICLE.test(lower[j + 1] ?? "") && isPetWord(lower[j + 2] ?? ""));
+  // A comma inside a list of pets ("Hund, Katze und Vogel") ends no clause.
+  const listComma = (j: number): boolean =>
+    (raw[j] ?? "").endsWith(",") && petFollows(j);
   const deniedAfter = (i: number): boolean => {
     for (let j = i + 1; j < raw.length; j += 1) {
-      const joinsPets = lower[j] === "und" && isPetWord(lower[j + 1] ?? "");
+      const joinsPets = lower[j] === "und" && petFollows(j);
       if (CLAUSE_JOINERS.has(lower[j] ?? "") && !joinsPets) return false;
       if (j <= i + 3 && NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
       if (lower[j] === "nicht") {
@@ -240,7 +250,7 @@ function petMentions(text: string): PetMention[] {
           lower.slice(i + 1, j).some((between) => HAVE_VERBS.has(between))
         );
       }
-      if (endsClause(j)) return false;
+      if (endsClause(j) && !listComma(j)) return false;
     }
     return false;
   };
@@ -253,7 +263,9 @@ function petMentions(text: string): PetMention[] {
     const deniedBefore = lower
       .slice(Math.max(0, start - 2), start)
       .some((before) => NEGATIONS.has(before));
-    if (deniedBefore || (!endsClause(i) && deniedAfter(i))) return;
+    if (deniedBefore || ((!endsClause(i) || listComma(i)) && deniedAfter(i))) {
+      return;
+    }
     const claimed = [tokens[i - 1], tokens[i - 2]].some((t) =>
       CLAIMING_WORDS.test(t ?? ""),
     );
