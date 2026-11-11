@@ -164,3 +164,39 @@ describe("rentalHints", () => {
     ).toEqual(NO_HINTS);
   });
 });
+
+describe("rentalHints: what the text rules out or says in passing", () => {
+  it.each<[string, keyof RentalHints]>([
+    ["Der Mietvertrag ist nicht befristet.", "fixedTerm"],
+    ["Keine Zwischenmiete, keine Maklergebühr.", "interim"],
+    ["Keine Zwischenmiete, keine Maklergebühr.", "commission"],
+    ["Provision fällt nicht an.", "commission"],
+    ["Es wird keine Courtage erhoben.", "commission"],
+    ["Für Wohngemeinschaften geeignet.", "sharedFlat"],
+    ["Auch für eine WG geeignet.", "sharedFlat"],
+    [
+      "Kaltmiete 900 €. Bitte senden Sie vorab Ihre Unterlagen.",
+      "paymentFirst",
+    ],
+    ["Die Miete ist monatlich im Voraus zu zahlen.", "paymentFirst"],
+    ["Die Miete ist monatlich vorab zu zahlen.", "paymentFirst"],
+    ["Keine Besichtigung ohne vollständige Unterlagen.", "noViewing"],
+    ["Gerne auch Bewerber, die sich derzeit im Ausland befinden.", "abroad"],
+  ])("does not flag %s as %s", (text, flag) => {
+    expect(rentalHints(text)[flag]).toBe(false);
+  });
+
+  it("still sees the thing named beside something else ruled out", () => {
+    expect(rentalHints("Zwischenmiete, keine Haustiere.").interim).toBe(true);
+    expect(
+      rentalHints("Befristet auf zwei Jahre, nicht möbliert.").fixedTerm,
+    ).toBe(true);
+    expect(
+      rentalHints("Bitte überweisen Sie die Kaution vorab.").paymentFirst,
+    ).toBe(true);
+    expect(rentalHints("Ich bin zurzeit im Ausland.").abroad).toBe(true);
+    expect(
+      rentalHints("Eine Besichtigung ist leider nicht möglich.").noViewing,
+    ).toBe(true);
+  });
+});
