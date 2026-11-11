@@ -6,8 +6,9 @@ a short German application letter and fills the listing's contact form.
 
 **It never submits.** You review everything and press Send yourself.
 
-**Your data stays on your device.** The only network request is the letter
-call to Claude, made with your own API key when you ask for a letter.
+**Your data stays on your device.** The only network requests are the letter
+call and the listing analysis, both to Claude, made with your own API key
+and only when you ask for one.
 
 ## What it does
 
@@ -25,7 +26,11 @@ call to Claude, made with your own API key when you ask for a letter.
    informs; it never blocks. An "About this listing" card says what kind
    of rental the page describes, how the Kaltmiete sits against the offers
    the page compares it with, and
-   what is worth a second look. It informs; you decide. You pick a tone
+   what is worth a second look. It informs; you decide. "Analyse this
+   listing" is a separate button that sends the page text and a few
+   facts about your household and budget (never your names or contact
+   details) for a short read of the area, the price and the heating, set
+   against what you need; about 5 cents on your key. You pick a tone
    and one or two highlights.
 3. **Letter ready.** A German letter of at most 180 words, checked by a
    validator before you see it (no em dashes, no number that is not in your
