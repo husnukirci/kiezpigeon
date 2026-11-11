@@ -58,7 +58,7 @@ const PET_KINDS: readonly PetKind[] = [
 ];
 const TONES: readonly Tone[] = ["warm", "formal", "short"];
 const LANGUAGES: readonly Language[] = ["de", "en"];
-const DOCUMENT_TYPES: readonly DocumentType[] = [
+export const DOCUMENT_TYPES: readonly DocumentType[] = [
   "schufa",
   "mietschuldenfreiheit",
   "incomeProof",
@@ -568,4 +568,13 @@ export function importData(
   return problems.length === 0 && profile
     ? { ok: true, value: { profile, applications } }
     : { ok: false, problems };
+}
+
+/** Every document ready; the WBS only for someone who has one. */
+export function allDocumentsReady(
+  profile: Pick<Profile, "documents" | "hasWbs">,
+): boolean {
+  return DOCUMENT_TYPES.filter(
+    (type) => type !== "wbs" || profile.hasWbs,
+  ).every((type) => profile.documents[type] === "ready");
 }
