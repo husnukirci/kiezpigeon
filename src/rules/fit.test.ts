@@ -221,18 +221,19 @@ describe("pets line", () => {
     ).toEqual({ rule: "pets", status: "ok", reason: "Pets allowed" });
   });
 
-  it("warns when pets are by arrangement or the listing is silent", () => {
-    const expected = {
-      rule: "pets",
-      status: "warn",
-      reason: "Pets by arrangement. I'll mention them honestly.",
-    };
-    expect(
-      line(coupleWithDog, listingWith({ petPolicy: "by_arrangement" }), "pets"),
-    ).toEqual(expected);
+  it("warns when pets are by arrangement, and says when the listing is silent", () => {
     expect(
       line(coupleWithDog, listingWith({ petPolicy: undefined }), "pets"),
-    ).toEqual(expected);
+    ).toEqual({
+      rule: "pets",
+      status: "warn",
+      reason:
+        "The listing does not say if pets are allowed. I'll mention them honestly.",
+    });
+    expect(
+      line(coupleWithDog, listingWith({ petPolicy: "by_arrangement" }), "pets")
+        .reason,
+    ).toBe("Pets by arrangement. I'll mention them honestly.");
   });
 
   it("says no when pets are not allowed", () => {

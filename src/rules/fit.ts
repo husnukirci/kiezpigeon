@@ -71,11 +71,17 @@ function petsLine(profile: Profile, listing: Listing): FitLine {
     case "not_allowed":
       return { rule: "pets", status: "no", reason: "No pets allowed here" };
     case "by_arrangement":
-    case undefined:
       return {
         rule: "pets",
         status: "warn",
         reason: "Pets by arrangement. I'll mention them honestly.",
+      };
+    case undefined:
+      return {
+        rule: "pets",
+        status: "warn",
+        reason:
+          "The listing does not say if pets are allowed. I'll mention them honestly.",
       };
   }
 }
