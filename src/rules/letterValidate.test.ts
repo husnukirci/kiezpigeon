@@ -430,6 +430,20 @@ describe("validateLetter", () => {
       expect(marriageCodes(withSentence(sentence))).toEqual([]);
     });
 
+    it.each([
+      "Wir rauchen nicht. Verheiratet sind wir seit Mai.",
+      "Wir rauchen nicht, verheiratet sind wir seit Mai.",
+      "Wir rauchen nicht, Ehepaar sind wir schon lange.",
+    ])("a nicht in another clause denies nothing: %s", (sentence) => {
+      expect(marriageCodes(withSentence(sentence))).toHaveLength(1);
+    });
+
+    it("reads a nicht with one word between as a denial", () => {
+      expect(
+        marriageCodes(withSentence("Wir sind nicht miteinander verheiratet.")),
+      ).toEqual([]);
+    });
+
     it.each(["Unsere Ehe ist stabil.", "Wir sind verheiratet."])(
       "still flags: %s",
       (sentence) => {

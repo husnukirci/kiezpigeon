@@ -289,7 +289,7 @@ function petProblems(text: string, request: LetterRequest): LetterProblem[] {
 // the rest only as a whole word or its start, so mehr, eher, ehemalig,
 // ehrlich, eheähnlich and unverheiratet stay clean. The bare noun `Ehe`
 // counts only after an article or possessive: "Ehe wir umziehen" is the
-// conjunction. Directly after `nicht` nothing is a claim.
+// conjunction. A `nicht` in the same clause, at most one word before, denies it.
 const MARRIED =
   /ehe(paar|leute|mann|männer|frau|partner|gatt)|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
 
@@ -309,13 +309,25 @@ function relationshipProblems(
   request: LetterRequest,
 ): LetterProblem[] {
   if (request.household.relationship === "married") return [];
-  const words = text.split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, ""));
+  const raw = text.split(/\s+/);
+  const words = raw.map((w) => w.replace(/[^\p{L}]/gu, ""));
+  // `nicht` denies when it is one of the two tokens before the word and no
+  // clause punctuation stands on it or on a token between.
+  const deniedBefore = (i: number): boolean => {
+    const isNicht = (j: number): boolean =>
+      (raw[j] ?? "").toLowerCase() === "nicht";
+    const open = (j: number): boolean => !/[.,;:!?]$/u.test(raw[j] ?? "");
+    return (
+      (isNicht(i - 1) && open(i - 1)) ||
+      (isNicht(i - 2) && open(i - 2) && open(i - 1))
+    );
+  };
   const claimed = words.filter((word, i) => {
     const lower = word.toLowerCase();
     const before = (words[i - 1] ?? "").toLowerCase();
     const isClaim =
       MARRIED.test(lower) || (lower === "ehe" && EHE_DETERMINERS.has(before));
-    return isClaim && before !== "nicht";
+    return isClaim && !deniedBefore(i);
   });
   return [...new Set(claimed)].map((word) => ({
     code: "relationship_invented",
