@@ -50,15 +50,22 @@ describe("parseAnalysis", () => {
       "## Price\nFair.\n## Bonus\nExtra.\n## For you\nGood.",
     );
     expect(sections).toEqual([
-      { heading: "Price", text: "Fair.\n## Bonus\nExtra." },
+      { heading: "Price", text: "Fair.\nBonus\nExtra." },
       { heading: "For you", text: "Good." },
+    ]);
+  });
+
+  it("folds a bold unknown heading without its markers", () => {
+    const sections = parseAnalysis("## Price\nFair.\n**Bonus:**\nExtra.");
+    expect(sections).toEqual([
+      { heading: "Price", text: "Fair.\nBonus:\nExtra." },
     ]);
   });
 
   it("keeps an unknown heading before any known one in an Analysis section", () => {
     const sections = parseAnalysis("## Intro\nHello.\n## Price\nFair.");
     expect(sections).toEqual([
-      { heading: "Analysis", text: "## Intro\nHello." },
+      { heading: "Analysis", text: "Intro\nHello." },
       { heading: "Price", text: "Fair." },
     ]);
   });

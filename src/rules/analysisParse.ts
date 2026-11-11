@@ -29,6 +29,14 @@ function classifyLine(line: string): LineKind {
   return heading ? { kind: "known", heading } : { kind: "unknown" };
 }
 
+/** An unknown heading is shown as plain text, without its markdown marker. */
+function stripHeadingMarkers(line: string): string {
+  return line
+    .trim()
+    .replace(/^#+\s*/, "")
+    .replace(/^\*\*(.+)\*\*(:?)$/, "$1$2");
+}
+
 function replaceEmDashes(text: string): string {
   return text
     .replace(/[ \t]*—[ \t]*/g, ", ")
@@ -70,7 +78,9 @@ export function parseAnalysis(text: string): AnalysisSection[] {
       current = { heading: "Analysis", lines: [] };
       raw.push(current);
     }
-    current.lines.push(line);
+    current.lines.push(
+      kind.kind === "unknown" ? stripHeadingMarkers(line) : line,
+    );
   }
   const sections = raw
     .map((s) => ({
