@@ -35,17 +35,23 @@ export function parseFloor(text: string): number | undefined {
 }
 
 const RENT_COUNT =
-  /(\d+(?:,\d+)?)\s*(?:Nettokaltmieten?|Kaltmieten?|Monatsmieten?|MM|NKM|monthly rents?)(?![\p{L}])/iu;
+  /(\d+(?:,\d+)?)\s*(?:[x×]\s*)?(?:Nettokaltmieten?|Monatskaltmieten?|Kaltmieten?|Monatsmieten?|MM|NKM|monthly rents?)(?![\p{L}])/iu;
+// A number written directly against a currency sign or code.
+const STATED_AMOUNT =
+  /(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{1,2})?\s*(?:€|EUR(?![\p{L}]))/u;
 
 /**
  * `3.540 €`, `1000` → cents; `3 Kaltmieten`, `2,5 NKM` → that many of the
- * listing's Kaltmiete, or undefined when the Kaltmiete is not known.
+ * listing's Kaltmiete, or undefined when the Kaltmiete is not known. A stated
+ * amount wins over a count: `3 Kaltmieten (3.540 €)` is 3.540 €.
  */
 export function parseDepositText(
   text: string,
   kaltmieteCents: Cents | undefined,
 ): Cents | undefined {
-  const count = !text.includes("€") ? RENT_COUNT.exec(text)?.[1] : undefined;
+  const stated = STATED_AMOUNT.exec(text)?.[0];
+  if (stated !== undefined) return parseEuroText(stated);
+  const count = RENT_COUNT.exec(text)?.[1];
   if (count === undefined) return parseEuroText(text);
   if (kaltmieteCents === undefined) return undefined;
   return Math.round(Number(count.replace(",", ".")) * kaltmieteCents);

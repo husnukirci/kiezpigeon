@@ -159,6 +159,28 @@ describe("parseDepositText", () => {
     expect(parseDepositText(text, 118000)).toBe(354000);
     expect(parseDepositText(text, undefined)).toBeUndefined();
   });
+  it.each([
+    "3 Nettokaltmieten (3.540 €)",
+    "3 MM (3.540 €)",
+    "3 Kaltmieten (3.540 €)",
+    "3 Nettokaltmieten, max. 3.540 EUR",
+    "3.540,00 EUR",
+  ])("takes the stated amount over the count: %s", (text) => {
+    expect(parseDepositText(text, 118000)).toBe(354000);
+  });
+  it("reads an amount followed by a count", () => {
+    expect(parseDepositText("1.180 € x 3", 118000)).toBe(118000);
+  });
+  it.each(["3 x Kaltmiete", "3 × Kaltmiete"])("reads %s", (text) => {
+    expect(parseDepositText(text, 118000)).toBe(354000);
+    expect(parseDepositText(text, undefined)).toBeUndefined();
+  });
+  it("reads Monatskaltmieten", () => {
+    expect(parseDepositText("2 Monatskaltmieten", 118000)).toBe(236000);
+  });
+  it("never reads a number word as euros", () => {
+    expect(parseDepositText("drei Monatsmieten", 118000)).toBeUndefined();
+  });
   it("reads a half rent", () => {
     expect(parseDepositText("2,5 Kaltmieten", 100000)).toBe(250000);
   });
