@@ -199,6 +199,19 @@ export interface FitLine {
   reason: string;
 }
 
+export interface AnalysisRequest {
+  listing: Listing;
+  /** The listing region's text with the user's own values removed. */
+  pageText: string;
+  budgetWarmCents?: Cents;
+  household: Household;
+  hasWbs: boolean;
+  moveIn?: MoveIn;
+  employment: EmploymentType[];
+  /** Combined net income / Kaltmiete in tenths, floored; absent without rent. */
+  incomeRatioTenths?: number;
+}
+
 /**
  * The facts a letter may use. Built from the profile and the listing; the
  * budget and the WBS flag are deliberately not part of it.

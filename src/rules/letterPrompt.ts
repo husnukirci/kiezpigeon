@@ -7,6 +7,7 @@ import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
 import { sumCents } from "./money";
 import { allDocumentsReady } from "./profile";
 import type {
+  Applicant,
   Availability,
   ContactPerson,
   EmploymentType,
@@ -200,9 +201,17 @@ export function incomeRatioPhrase(request: LetterRequest): string | undefined {
 
 /** Income divided by Kaltmiete in tenths, floored; undefined without rent. */
 export function incomeRatioTenths(request: LetterRequest): number | undefined {
-  const kaltmiete = request.listing.kaltmieteCents;
+  return ratioTenths(request.applicants, request.listing);
+}
+
+/** The one copy of the arithmetic, shared with the analysis request. */
+export function ratioTenths(
+  applicants: Applicant[],
+  listing: Listing,
+): number | undefined {
+  const kaltmiete = listing.kaltmieteCents;
   if (kaltmiete === undefined || kaltmiete <= 0) return undefined;
-  const income = sumCents(request.applicants.map((a) => a.netIncomeCents));
+  const income = sumCents(applicants.map((a) => a.netIncomeCents));
   return Math.floor((income * 10) / kaltmiete);
 }
 
