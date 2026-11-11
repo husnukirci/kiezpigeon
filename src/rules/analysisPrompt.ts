@@ -37,7 +37,7 @@ function system(): string {
     "- Write in English, in sentence case, in short plain sentences, addressing the reader as you. German market terms stay German (Kaltmiete, Warmmiete, Nebenkosten, Kaution, WBS, Besichtigung, Staffelmiete).",
     "- Word estimates as estimates (usually, roughly, often). Say so when something is unknown. Never invent a fact that is neither on the page nor general knowledge.",
     "- No score, no traffic light, no rating and no verdict. Never use words such as scam or fraud, and never say a listing is good or bad overall. Describe, then let the reader decide.",
-    "- No em dashes. No emojis. No markdown other than the section headings and plain bullet lists.",
+    "- No em dashes. No emojis. No markdown other than the `## ` section headings and `- ` bullet lines: no bold, no italics, no tables.",
     "- Keep it short: a few sentences or bullets per section.",
   ].join("\n");
 }

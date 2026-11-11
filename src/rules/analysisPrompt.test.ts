@@ -66,6 +66,7 @@ describe("buildAnalysisPrompt", () => {
     expect(system).toContain("Word estimates as estimates");
     expect(system).toContain("Say so when something is unknown");
     expect(system).toContain("No em dashes");
+    expect(system).toContain("no bold, no italics, no tables");
     expect(system).toContain("scam");
     expect(system).toContain("fraud");
     expect(system).toContain("never claim to have looked anything up");

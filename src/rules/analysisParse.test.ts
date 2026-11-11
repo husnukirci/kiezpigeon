@@ -95,4 +95,18 @@ describe("parseAnalysis", () => {
     expect(sections).toHaveLength(1);
     expect(sections[0]?.text.endsWith("wort…")).toBe(true);
   });
+
+  it("drops inline bold markers and keeps the text", () => {
+    const [section] = parseAnalysis(
+      "## Price\n- **Kaution:** 3 Kaltmieten\nA paragraph with **two** words and __more__.",
+    );
+    expect(section?.text).toBe(
+      "- Kaution: 3 Kaltmieten\nA paragraph with two words and more.",
+    );
+  });
+
+  it("keeps a * bullet marker and a lone * or _ inside a word", () => {
+    const [section] = parseAnalysis("## Price\n* item\nStellplatz_2 and a*b.");
+    expect(section?.text).toBe("* item\nStellplatz_2 and a*b.");
+  });
 });

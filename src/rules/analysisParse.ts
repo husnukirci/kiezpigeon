@@ -37,6 +37,13 @@ function stripHeadingMarkers(line: string): string {
     .replace(/^\*\*(.+)\*\*(:?)$/, "$1$2");
 }
 
+/** Inline bold (`**x**`, `__x__`) loses its markers; a lone * or _ stays. */
+function stripInlineBold(text: string): string {
+  return text
+    .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, "$1")
+    .replace(/(?<!\w)__(?=\S)(.+?)(?<=\S)__(?!\w)/g, "$1");
+}
+
 function replaceEmDashes(text: string): string {
   return text
     .replace(/[ \t]*—[ \t]*/g, ", ")
@@ -85,7 +92,7 @@ export function parseAnalysis(text: string): AnalysisSection[] {
   const sections = raw
     .map((s) => ({
       heading: s.heading,
-      text: replaceEmDashes(s.lines.join("\n").trim()),
+      text: replaceEmDashes(stripInlineBold(s.lines.join("\n").trim())),
     }))
     .filter((s) => s.text !== "");
   return capSections(sections);
