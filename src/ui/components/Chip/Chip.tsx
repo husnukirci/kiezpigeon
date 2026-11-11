@@ -41,7 +41,7 @@ export function FilterChip({ pressed, onToggle, children }: ToggleProps) {
 
 interface DocumentChipProps {
   ready: boolean;
-  onToggle?: () => void;
+  onToggle: () => void;
   children: ReactNode;
 }
 
@@ -57,7 +57,6 @@ export function DocumentChip({ ready, onToggle, children }: DocumentChipProps) {
       {children}
     </>
   );
-  if (!onToggle) return <span className={className}>{content}</span>;
   return (
     <button
       type="button"
