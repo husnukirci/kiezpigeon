@@ -329,6 +329,44 @@ describe("validateLetter", () => {
     ).toEqual([{ code: "pets_invented", text: "Hund" }]);
   });
 
+  it.each([
+    "Unseren Hund haben wir seit acht Jahren und Probleme gab es nicht.",
+    "Unseren Hund haben wir gut erzogen und allein lassen wir ihn nicht.",
+  ])("does not let a nicht in a later clause deny the dog: %s", (sentence) => {
+    expect(petCodes(withSentence(sentence), request)).toEqual([]);
+  });
+
+  it("does not let a nicht in a later clause deny an invented dog", () => {
+    expect(
+      petCodes(
+        withSentence("Einen Hund haben wir seit Mai und bereuen es nicht."),
+        noPetsRequest,
+      ),
+    ).toEqual([{ code: "pets_invented", text: "Hund" }]);
+  });
+
+  it("still reads a list of pets before a clause-final nicht as denied", () => {
+    expect(
+      petCodes(
+        withSentence("Hunde und Katzen haben wir nicht."),
+        noPetsRequest,
+      ),
+    ).toEqual([]);
+  });
+
+  it("marks no specific kind invented for a household with another pet", () => {
+    const otherPetRequest: LetterRequest = {
+      ...request,
+      household: {
+        ...request.household,
+        pets: [{ kind: "other", count: 1 }],
+      },
+    };
+    expect(
+      petCodes(withSentence("Zu uns gehört unser Kaninchen."), otherPetRequest),
+    ).toEqual([{ code: "pets_missing", text: "Haustier" }]);
+  });
+
   it("accepts the general word Haustier for any pet", () => {
     const letter = replaced("unser ruhiger Hund", "unser ruhiges Haustier");
     expect(validateLetter(letter, request)).toEqual([]);
@@ -436,6 +474,23 @@ describe("validateLetter", () => {
       "Wir rauchen nicht, Ehepaar sind wir schon lange.",
     ])("a nicht in another clause denies nothing: %s", (sentence) => {
       expect(marriageCodes(withSentence(sentence))).toHaveLength(1);
+    });
+
+    it.each([
+      "Wir leben in glücklicher Ehe.",
+      "Wir sind nicht nur verheiratet, sondern auch Kollegen.",
+    ])("flags an unmarried couple's claim: %s", (sentence) => {
+      expect(marriageCodes(withSentence(sentence))).toEqual([
+        "relationship_invented",
+      ]);
+    });
+
+    it("does not read the conjunction Ehe after another sentence", () => {
+      expect(
+        marriageCodes(
+          withSentence("Wir sind ruhig. Ehe wir umziehen, streichen wir."),
+        ),
+      ).toEqual([]);
     });
 
     it("reads a nicht with one word between as a denial", () => {
