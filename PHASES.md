@@ -209,7 +209,8 @@ description.` Listing silent → `unknown`, `No WBS mentioned in the listing`.
 - **Relationship** (a validator check that arrived with the ADR 10 work, after
   Phase 4; not a Phase 1 deliverable): unless the household says married, no
   marriage word (Ehepaar, verheiratet, Ehemann, ...) appears. A marriage word
-  counts unless a `nicht` in the same clause denies it (`nicht nur` denies
+  counts unless a `nicht` stands directly before it, with at most one word
+  between and no clause punctuation in the way (`nicht nur` denies
   nothing). A bare `Ehe` counts as the noun (after an article or possessive,
   or capitalised inside a sentence), not as the conjunction (`Ehe wir
 umziehen`).
