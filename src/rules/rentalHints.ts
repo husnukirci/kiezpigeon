@@ -41,7 +41,9 @@ const NEGATIONS = new RegExp(
   [
     // One general negation: a negator directly before a rental term, or a
     // term whose clause says it is not charged. From the 2026-11-10 audit.
-    `\\b(?:keine?[mnrs]?|nicht|ohne|no|not|without)\\s+(?:${RULED_OUT_TERMS})\\w*`,
+    // Spaces or tabs only: a negator at the end of one line never rules out
+    // the next line's term. From the 2026-11-10 final review.
+    `\\b(?:keine?[mnrs]?|nicht|ohne|no|not|without)[ \\t]+(?:${RULED_OUT_TERMS})\\w*`,
     // Only a fee noun directly before the phrase; a term earlier in the sentence stays.
     // From the 2026-11-10 audit review.
     "\\b(?:provision|courtage|maklergebühr|commission)\\w*\\s+(?:fällt nicht an|wird nicht (?:erhoben|verlangt|berechnet))",
@@ -81,22 +83,41 @@ const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
     /keine besichtigung(?!s)(?! ohne\b[^.!?,;]*\b(?:unterlagen|termin|anmeldung|voranmeldung))|ohne besichtigung(?!s)|besichtigung(?:en)? (?:ist |sind |derzeit |leider )*nicht möglich|no viewing(?!s)|without (?:a )?viewing|viewing (?:is )?not possible/i,
   // A payment word and the timing together, in either order; "before the
   // viewing" alone is how a landlord asks for documents.
-  // The payment word is not a Kaltmiete or Warmmiete label (compounds such as
-  // "Monatsmiete" count), the gap stays inside one clause, and a clause about
-  // monthly rent ("monatlich vorab") is the usual rent clause. From the
-  // 2026-11-10 audit and its review.
+  // The gap stays inside one clause (a line break ends one; the points in
+  // "1.500" and "z.B." do not, see withoutInnerPoints). A deposit or other
+  // payment word may sit across a comma from the timing. A rent word is not
+  // a Kaltmiete or Warmmiete label (compounds such as "Monatsmiete" count),
+  // stops at a comma, and a clause about monthly rent ("monatlich vorab") is
+  // the usual rent clause. From the 2026-11-10 audit, its review and the
+  // final review.
   paymentFirst:
-    /(?<![^.!?,;]*\bmonatlich\b[^.!?,;]*)(?:\b(?:kaution|geld|betrag|zahlung|deposit|payment|rent|money)\b|(?<!kalt|warm)miete\b)(?![^.!?,;]*\bmonatlich\b)[^\w.!?,;]+(?:\w+[^\w.!?,;]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;]*\bmonatlich\b[^.!?,;]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?,;]*\bmonatlich\b)\W+(?:\w+\W+){0,4}?(?:überweis\w*|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
+    /\b(?:kaution|geld|betrag|zahlung|deposit|payment|money)\b[^\w.!?;\n]+(?:\w+[^\w.!?;\n]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:\brent\b|(?<!kalt|warm)miete\b)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?,;\n]+(?:\w+[^\w.!?,;\n]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?;\n]+(?:\w+[^\w.!?;\n]+){0,4}?(?:überweis\w*|überwiesen|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
   // The landlord abroad, not applicants from abroad.
   abroad:
     /(?:\bich\b|\bwir\b|vermieter\w*|eigentümer\w*|besitzer\w*)\W+(?:\w+\W+){0,5}?(?:im ausland|nicht in deutschland)|\b(?:i am|i'm|we are|we're|owner is|landlord is)\W+(?:\w+\W+){0,4}?(?:abroad|out of the country|not in germany)/i,
 };
 
+/**
+ * Points and commas that do not end a clause: inside a number ("1.500 €",
+ * "2,5") and in common abbreviations ("z.B.", "ca.", "inkl.", "bzw.").
+ */
+const INNER_POINTS =
+  /(?<=\d)[.,](?=\d)|\b(?:z\.\s?b|d\.\s?h|u\.\s?a|ca|inkl|bzw|ggf|evtl|zzgl|usw|etc)\./gi;
+
+function withoutInnerPoints(text: string): string {
+  return text.replace(INNER_POINTS, (match) => match.replace(/[.,]/g, ""));
+}
+
 export function rentalHints(text: string): RentalHints {
   const cleaned = text.replace(NEGATIONS, " ");
   const hints = { ...NO_HINTS };
   for (const flag of Object.keys(PATTERNS) as (keyof RentalHints)[]) {
-    const source = flag === "wbsMentioned" ? text : cleaned;
+    const source =
+      flag === "wbsMentioned"
+        ? text
+        : flag === "paymentFirst"
+          ? withoutInnerPoints(cleaned)
+          : cleaned;
     hints[flag] = PATTERNS[flag].test(source);
   }
   return hints;
