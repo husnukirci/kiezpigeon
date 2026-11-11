@@ -215,6 +215,8 @@ live page by hand whenever they change.
 
 **Amendment (2026-11-10): one run per pull request.** CI runs on pull requests and on pushes to `main`; a push to a branch without a PR runs nothing, since the working agreement is PR-only. `npm test` typechecks, so there is no separate typecheck step.
 
+**Amendment (2026-11-11): the e2e job runs in Playwright's image.** The job installed system packages and a browser from the network on every run, and an outage of Ubuntu's package servers failed it on `main` and on a pull request before any test started. It now runs in `mcr.microsoft.com/playwright`, tagged with the exact `@playwright/test` version in `package.json`, and installs nothing at run time; `scripts/ci-image.test.ts` fails when the tag and the installed version differ. A Playwright upgrade therefore changes two places, and the job still pulls the image from Microsoft's registry on each run.
+
 ## ADR 6: Single package with lint-enforced folder boundaries
 
 **Status.** Accepted.
