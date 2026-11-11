@@ -259,3 +259,17 @@ describe("parseDepositText in more wordings", () => {
     expect(parseDepositText("drei Monatsmieten", 118000)).toBeUndefined();
   });
 });
+
+describe("parseDepositText small amounts with Euro", () => {
+  it.each([
+    ["12 Euro", 1200],
+    ["30 Euro", 3000],
+    ["45 €", 4500],
+  ] as const)("reads %s as an amount", (text, cents) => {
+    expect(parseDepositText(text, 118000)).toBe(cents);
+  });
+
+  it("still reads no amount from a count of an unknown word", () => {
+    expect(parseDepositText("3 Monatsbeträge", 118000)).toBeUndefined();
+  });
+});

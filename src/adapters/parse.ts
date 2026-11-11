@@ -38,9 +38,9 @@ export function parseFloor(text: string): number | undefined {
 // Kaltmiete`, `3 x Kaltmiete`, `3 Netto-Kaltmieten`, `3 KM`, `3 months' rent`.
 const RENT_COUNT =
   /(\d+(?:[.,]\d+)?)\s*(?:-?fache\s+|[x×]\s*)?(?:(?:Monats)?(?:Netto-?)?Kaltmieten?|(?:Monats|Netto)?Mieten?|MM|NKM|KM|monthly rents?|months?['’]? rents?)(?![\p{L}])/iu;
-// A number written directly against a currency sign or code.
+// A number written directly against a currency sign, code or word.
 const AMOUNT =
-  /(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{1,2})?\s*(?:€|EUR(?![\p{L}]))/u;
+  /(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{1,2})?\s*(?:€|EUR(?![\p{L}])|Euro(?![\p{L}]))/u;
 // An amount times a count: `1.180 € x 3`.
 const AMOUNT_TIMES = new RegExp(
   `(${AMOUNT.source})\\s*[x×]\\s*(\\d+(?:[.,]\\d+)?)(?![\\d\\p{L}])`,
