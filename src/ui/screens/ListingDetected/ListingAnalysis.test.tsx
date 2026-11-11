@@ -49,7 +49,9 @@ describe("ListingAnalysis", () => {
     render(
       <ListingAnalysis state={{ status: "reading" }} onAnalyse={vi.fn()} />,
     );
-    expect(screen.getByRole("status").textContent).toBe("Reading the listing");
+    expect(screen.getByRole("status").textContent).toBe(
+      "Reading the listing. This can take up to a minute.",
+    );
     expect(
       screen
         .getByRole("button", { name: "Analyse this listing" })
@@ -71,6 +73,27 @@ describe("ListingAnalysis", () => {
     expect(
       screen.getByText(/An estimate from the page and what is known/),
     ).toBeDefined();
+  });
+
+  it("shows a bulleted block as a list and keeps single line breaks in a paragraph", () => {
+    render(
+      <ListingAnalysis
+        state={{
+          status: "ready",
+          sections: [
+            {
+              heading: "Price",
+              text: "Intro line\ncontinued.\n\n- Ask about the Kaution\n* Check the fees\n- Read the lease",
+            },
+          ],
+        }}
+        onAnalyse={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getAllByRole("listitem").map((item) => item.textContent),
+    ).toEqual(["Ask about the Kaution", "Check the fees", "Read the lease"]);
+    expect(screen.getByText("Intro line continued.")).toBeDefined();
   });
 
   it("shows a failure as an alert with Try again", () => {

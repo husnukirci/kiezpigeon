@@ -12,6 +12,26 @@ interface ListingAnalysisProps {
   onAnalyse: () => void;
 }
 
+const BULLET = /^\s*[-*]\s+/;
+
+/** A block whose lines are all bullets is a list; any other block is a paragraph. */
+function Block({ block }: { block: string }) {
+  const lines = block
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+  if (lines.length > 0 && lines.every((line) => BULLET.test(line))) {
+    return (
+      <ul className={cx(styles.list, "type-body-sm")}>
+        {lines.map((line, i) => (
+          <li key={i}>{line.replace(BULLET, "")}</li>
+        ))}
+      </ul>
+    );
+  }
+  return <p className={cx(styles.text, "type-body-sm")}>{lines.join(" ")}</p>;
+}
+
 export function ListingAnalysis({ state, onAnalyse }: ListingAnalysisProps) {
   return (
     <Card title="A closer look">
@@ -23,7 +43,7 @@ export function ListingAnalysis({ state, onAnalyse }: ListingAnalysisProps) {
       )}
       {state.status === "reading" && (
         <p role="status" className={cx(styles.text, "type-body-sm")}>
-          Reading the listing
+          Reading the listing. This can take up to a minute.
         </p>
       )}
       {state.status === "failed" && (
@@ -38,10 +58,8 @@ export function ListingAnalysis({ state, onAnalyse }: ListingAnalysisProps) {
               <h3 className={cx(styles.heading, "type-label")}>
                 {section.heading}
               </h3>
-              {section.text.split(/\n\s*\n/).map((paragraph, i) => (
-                <p key={i} className={cx(styles.text, "type-body-sm")}>
-                  {paragraph.trim()}
-                </p>
+              {section.text.split(/\n\s*\n/).map((block, i) => (
+                <Block key={i} block={block} />
               ))}
             </div>
           ))}

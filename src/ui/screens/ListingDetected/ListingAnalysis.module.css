@@ -14,6 +14,12 @@
   color: var(--ink);
 }
 
+.list {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--ink);
+}
+
 .caption {
   margin: 0;
   color: var(--ink-subtle);
