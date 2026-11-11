@@ -189,25 +189,38 @@ const HAVE_VERBS = new Set([
   "gibt",
 ]);
 
+/** Words that, right before a pet word, say the household has that pet. */
+const CLAIMING_WORDS =
+  /^(unser\w*|mein\w*|ein|eine|einen|einer|einem|zwei|drei|vier|\d+)$/;
+
+/** A positively used pet word, and whether it is claimed as the household's. */
+interface PetMention {
+  word: string;
+  claimed: boolean;
+}
+
 /**
  * Pet words the letter uses positively. A word with `kein…`, `ohne` or
  * `weder` among the two words before it is a denial, not a mention, once
  * a list of `und`/`oder`/`noch`/`sowie` words is stepped over ("keine
  * Kinder oder Haustiere", "weder Hund noch Katze"). So is a `kein…` up to
  * three words after it that ends the clause ("Haustiere haben wir
- * keine."), and a clause-final `nicht` after a have-verb ("Haustiere
- * haben wir nicht."), but not a `kein…` that goes on ("Hund hat keine
- * Probleme").
+ * keine."), and a clause-final `nicht` after a have-verb anywhere in the
+ * clause ("Haustiere gibt es bei uns nicht."), but not a `kein…` that
+ * goes on ("Hund hat keine Probleme"). `claimed` is true when a
+ * possessive, an indefinite article or a count stands before the word,
+ * with at most one adjective between.
  */
-function petMentions(text: string): string[] {
-  const raw = text.split(/\s+/).filter((w) => /\p{L}/u.test(w));
+function petMentions(text: string): PetMention[] {
+  const raw = text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w));
   const words = raw.map((w) => w.replace(/[^\p{L}]/gu, ""));
   const lower = words.map((w) => w.toLowerCase());
+  const tokens = raw.map((w) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""));
   const endsClause = (i: number): boolean =>
     i === raw.length - 1 || /[.,;:!?]$/u.test(raw[i] ?? "");
   const deniedAfter = (i: number): boolean => {
-    for (let j = i + 1; j <= i + 3 && j < raw.length; j += 1) {
-      if (NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
+    for (let j = i + 1; j < raw.length; j += 1) {
+      if (j <= i + 3 && NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
       if (lower[j] === "nicht") {
         return (
           endsClause(j) &&
@@ -218,39 +231,52 @@ function petMentions(text: string): string[] {
     }
     return false;
   };
-  return words.filter((_, i) => {
+  const mentions: PetMention[] = [];
+  words.forEach((word, i) => {
     const w = lower[i] ?? "";
-    const isPet = Object.values(PET_WORDS).some((re) => re.test(w));
+    if (!Object.values(PET_WORDS).some((re) => re.test(w))) return;
     let start = i;
     while (start >= 2 && JOINERS.has(lower[start - 1] ?? "")) start -= 2;
     const deniedBefore = lower
       .slice(Math.max(0, start - 2), start)
       .some((before) => NEGATIONS.has(before));
-    return isPet && !deniedBefore && !(!endsClause(i) && deniedAfter(i));
+    if (deniedBefore || (!endsClause(i) && deniedAfter(i))) return;
+    const claimed = [tokens[i - 1], tokens[i - 2]].some((t) =>
+      CLAIMING_WORDS.test(t ?? ""),
+    );
+    mentions.push({ word, claimed });
   });
+  return mentions;
 }
 
 function petProblems(text: string, request: LetterRequest): LetterProblem[] {
   const mentioned = petMentions(text);
-  const mentions = mentioned.map((w) => w.toLowerCase());
+  const mentions = mentioned.map((m) => m.word.toLowerCase());
   const kinds = [
     ...new Set(
       request.household.pets.filter((p) => p.count > 0).map((p) => p.kind),
     ),
   ];
   if (kinds.length === 0) {
-    return [...new Set(mentioned)].map((word) => ({
+    return [...new Set(mentioned.map((m) => m.word))].map((word) => ({
       code: "pets_invented",
       text: word,
     }));
   }
-  const invented: LetterProblem[] = [...new Set(mentioned)]
-    .filter(
-      (word) =>
-        !ANY_PET.test(word.toLowerCase()) &&
-        !kinds.some((kind) => PET_WORDS[kind].test(word.toLowerCase())),
-    )
-    .map((word) => ({ code: "pets_invented", text: word }));
+  // With pets, another kind is invented only when the letter claims it as
+  // the household's; "Unser Hund mag Katzen" is about the dog.
+  const invented: LetterProblem[] = [
+    ...new Set(
+      mentioned
+        .filter(
+          (m) =>
+            m.claimed &&
+            !ANY_PET.test(m.word.toLowerCase()) &&
+            !kinds.some((kind) => PET_WORDS[kind].test(m.word.toLowerCase())),
+        )
+        .map((m) => m.word),
+    ),
+  ].map((word) => ({ code: "pets_invented", text: word }));
   if (mentions.some((w) => ANY_PET.test(w))) return invented;
   const missing: LetterProblem[] = kinds
     .filter((kind) => !mentions.some((w) => PET_WORDS[kind].test(w)))

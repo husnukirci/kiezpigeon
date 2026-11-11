@@ -49,8 +49,12 @@ describe("describeProblem", () => {
     expect(describeProblem({ code: "pets_missing", text: "Hund" })).toBe(
       "The Hund is not mentioned.",
     );
+    // The same wording holds for a household that has a dog but no cat.
+    expect(describeProblem({ code: "pets_invented", text: "Katzen" })).toBe(
+      "Katzen is mentioned, but the household has no such pet.",
+    );
     expect(describeProblem({ code: "pets_invented", text: "Katze" })).toBe(
-      "Katze is mentioned, but the household has no pets.",
+      "Katze is mentioned, but the household has no such pet.",
     );
     expect(
       describeProblem({ code: "relationship_invented", text: "Ehepaar" }),

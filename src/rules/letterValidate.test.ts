@@ -298,6 +298,37 @@ describe("validateLetter", () => {
     expect(petCodes(text, request)).toEqual([]);
   });
 
+  it.each([
+    "Unser Hund verträgt sich gut mit Katzen.",
+    "Unser Hund hat kein Problem mit Katzen.",
+  ])(
+    "lets a dog household mention another animal in passing: %s",
+    (sentence) => {
+      expect(petCodes(withSentence(sentence), request)).toEqual([]);
+    },
+  );
+
+  it("flags another animal the household claims with a count", () => {
+    expect(
+      petCodes(withSentence("Wir haben einen Hund und zwei Katzen."), request),
+    ).toEqual([{ code: "pets_invented", text: "Katzen" }]);
+  });
+
+  it("reads a clause-final nicht after a have-verb as a denial", () => {
+    for (const sentence of [
+      "Haustiere gibt es bei uns nicht.",
+      "Haustiere gibt es nicht.",
+    ]) {
+      expect(petCodes(withSentence(sentence), noPetsRequest)).toEqual([]);
+    }
+    expect(
+      petCodes(
+        withSentence("Wir haben einen Hund, rauchen aber nicht."),
+        noPetsRequest,
+      ),
+    ).toEqual([{ code: "pets_invented", text: "Hund" }]);
+  });
+
   it("accepts the general word Haustier for any pet", () => {
     const letter = replaced("unser ruhiger Hund", "unser ruhiges Haustier");
     expect(validateLetter(letter, request)).toEqual([]);
