@@ -84,7 +84,9 @@ function wbsLine(profile: Profile, listing: Listing): FitLine {
     return {
       rule: "wbs",
       status: "unknown",
-      reason: "No WBS mentioned in the listing",
+      reason: listing.hints?.wbsMentioned
+        ? "The text mentions WBS. Check what it asks for."
+        : "No WBS mentioned in the listing",
     };
   }
   if (!listing.wbsRequired) {

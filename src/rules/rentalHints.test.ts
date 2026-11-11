@@ -43,10 +43,23 @@ describe("rentalHints", () => {
     );
   });
 
-  it("sees WBS, Erstbezug, Staffelmiete and Indexmiete", () => {
+  it("sees WBS required only when the text says so, and a mention apart", () => {
+    const required = { ...NO_HINTS, wbs: true, wbsMentioned: true };
     expect(rentalHints("Wohnberechtigungsschein erforderlich")).toEqual(
-      only("wbs"),
+      required,
     );
+    expect(rentalHints("Nur mit WBS")).toEqual(required);
+    expect(rentalHints("A WBS is required for this flat")).toEqual(required);
+    // A real listing: rented only to households without a WBS entitlement.
+    expect(
+      rentalHints(
+        "Die Wohnung wird ausschließlich an einen 1-2 Personen-Haushalt ohne WBS-Anspruch vermietet. Ob Sie WBS-berechtigt sind, können Sie auf der Webseite prüfen.",
+      ),
+    ).toEqual(only("wbsMentioned"));
+    expect(rentalHints("WBS erwünscht")).toEqual(only("wbsMentioned"));
+  });
+
+  it("sees Erstbezug, Staffelmiete and Indexmiete", () => {
     expect(rentalHints("Erstbezug nach Sanierung")).toEqual(
       only("firstOccupancy"),
     );
@@ -85,11 +98,13 @@ describe("rentalHints", () => {
   });
 
   it("does not take a thing ruled out for a thing named", () => {
+    // A WBS ruled out is still a WBS mentioned.
+    for (const text of ["Kein WBS erforderlich", "WBS nicht erforderlich"]) {
+      expect(rentalHints(text), text).toEqual(only("wbsMentioned"));
+    }
     const quiet = [
       "Unbefristeter Mietvertrag",
       "Der Mietvertrag ist unbefristet",
-      "Kein WBS erforderlich",
-      "WBS nicht erforderlich",
       "Untervermietung ist nicht gestattet",
       "Keine Untervermietung",
       "Nicht für Wohngemeinschaften geeignet",

@@ -12,6 +12,7 @@ export const NO_HINTS: RentalHints = {
   sharedFlat: false,
   cooperative: false,
   wbs: false,
+  wbsMentioned: false,
   firstOccupancy: false,
   staffel: false,
   index: false,
@@ -44,7 +45,12 @@ const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   // The Kosten row is labelled "Kaution o. Genossenschaftsanteile" on every
   // ImmoScout24 page; only the cooperative itself counts.
   cooperative: /genossenschaft(?!s?anteil)|cooperative/i,
-  wbs: /wohnberechtigungsschein|\bwbs\b/i,
+  // Required only with a requirement word nearby: a listing rented "ohne
+  // WBS-Anspruch" or asking whether you are "WBS-berechtigt" mentions a
+  // WBS without asking for one.
+  wbs: /(?:wohnberechtigungsschein|\bwbs\b)[^.]{0,40}?(?:erforderlich|notwendig|nötig|zwingend|voraussetzung|required|needed|necessary)|(?:nur mit|only with)[^.]{0,20}?(?:wohnberechtigungsschein|\bwbs\b)/i,
+  // On the raw text, so a WBS ruled out still counts as mentioned.
+  wbsMentioned: /wohnberechtigungsschein|\bwbs\b/i,
   // The English fixture's condition row: "First-time occupancy after refurbishment".
   firstOccupancy: /erstbezug|first[- ]time occupancy|first occupancy/i,
   staffel: /staffelmiete/i,
@@ -67,7 +73,8 @@ export function rentalHints(text: string): RentalHints {
   const cleaned = text.replace(NEGATIONS, " ");
   const hints = { ...NO_HINTS };
   for (const flag of Object.keys(PATTERNS) as (keyof RentalHints)[]) {
-    hints[flag] = PATTERNS[flag].test(cleaned);
+    const source = flag === "wbsMentioned" ? text : cleaned;
+    hints[flag] = PATTERNS[flag].test(source);
   }
   return hints;
 }

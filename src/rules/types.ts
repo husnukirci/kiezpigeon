@@ -142,7 +142,10 @@ export interface RentalHints {
   furnished: boolean;
   sharedFlat: boolean;
   cooperative: boolean;
+  /** The text says a WBS is required. */
   wbs: boolean;
+  /** The text mentions a WBS at all, required, ruled out or anything else. */
+  wbsMentioned: boolean;
   firstOccupancy: boolean;
   staffel: boolean;
   index: boolean;
