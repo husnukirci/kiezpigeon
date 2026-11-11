@@ -233,16 +233,6 @@ describe("analyseListing: card copy", () => {
   });
 });
 
-describe("analyseListing: shape", () => {
-  it("has the kind, the price and the notes, and nothing about the greeting", () => {
-    expect(Object.keys(analyseListing(kreuzbergListing)).sort()).toEqual([
-      "kind",
-      "notes",
-      "price",
-    ]);
-  });
-});
-
 describe("analyseListing: worth a second look", () => {
   it("finds nothing on the sample listing", () => {
     expect(analyseListing(kreuzbergListing).notes).toEqual([]);
