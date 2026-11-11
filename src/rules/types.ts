@@ -204,7 +204,7 @@ export interface AnalysisRequest {
   /** The listing region's text with the user's own values removed. */
   pageText: string;
   budgetWarmCents?: Cents;
-  household: Household;
+  household: Omit<Household, "relationship">;
   hasWbs: boolean;
   moveIn?: MoveIn;
   employment: EmploymentType[];

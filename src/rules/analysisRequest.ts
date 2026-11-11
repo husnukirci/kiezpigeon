@@ -47,7 +47,12 @@ export function createAnalysisRequest(
     listing,
     pageText: cleaned,
     budgetWarmCents: profile.budgetWarmCents,
-    household: { ...profile.household },
+    household: {
+      adults: profile.household.adults,
+      children: profile.household.children,
+      pets: profile.household.pets.map((pet) => ({ ...pet })),
+      smoker: profile.household.smoker,
+    },
     hasWbs: profile.hasWbs,
     moveIn: profile.moveIn,
     employment: profile.applicants.map((a) => a.employment),

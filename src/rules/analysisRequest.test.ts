@@ -77,6 +77,32 @@ describe("createAnalysisRequest", () => {
     expect(result.pageText).toContain("Schöne Wohnung");
   });
 
+  it("sends the household without the relationship", () => {
+    expect(coupleWithDog.household.relationship).toBe("partners");
+    expect(request.household).toEqual({
+      adults: 2,
+      children: 0,
+      pets: [{ kind: "dog", count: 1 }],
+      smoker: false,
+    });
+    expect("relationship" in request.household).toBe(false);
+    expect(JSON.stringify(request)).not.toContain("partners");
+  });
+
+  it("removes an upper-cased email with a plus tag", () => {
+    const tagged = {
+      ...coupleWithDog,
+      contact: { ...coupleWithDog.contact, email: "mara+wohnung@example.org" },
+    };
+    const result = createAnalysisRequest(
+      tagged,
+      kreuzbergListing,
+      "MARA+WOHNUNG@EXAMPLE.ORG | Schöne Wohnung",
+    );
+    expect(result.pageText).not.toMatch(/wohnung@/i);
+    expect(result.pageText).toContain("Schöne Wohnung");
+  });
+
   it("keeps the listing's own contact and address", () => {
     const listing: Listing = {
       ...kreuzbergListing,
