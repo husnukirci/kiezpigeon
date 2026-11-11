@@ -113,8 +113,16 @@ test("the analysis leaves only on the click and carries no names or email", asyn
   expect(JSON.parse(body)).toMatchObject({ model: "claude-opus-5-5" });
   const lower = body.toLowerCase();
   for (const applicant of coupleWithDog.applicants) {
-    expect(lower).not.toContain(applicant.firstName.toLowerCase());
-    expect(lower).not.toContain(applicant.lastName.toLowerCase());
+    // Whole words: the page names a landlord company that starts with a
+    // surname, and that is the listing's own text.
+    for (const name of [applicant.firstName, applicant.lastName]) {
+      expect(lower).not.toMatch(
+        new RegExp(
+          `(?<![\\p{L}\\p{N}])${name.toLowerCase()}(?![\\p{L}\\p{N}])`,
+          "u",
+        ),
+      );
+    }
   }
   expect(lower).not.toContain(EMAIL.toLowerCase());
   // The header was outside the listing region, so it was never read.
