@@ -42,7 +42,9 @@ const NEGATIONS = new RegExp(
     // One general negation: a negator directly before a rental term, or a
     // term whose clause says it is not charged. From the 2026-11-10 audit.
     `\\b(?:keine?[mnrs]?|nicht|ohne|no|not|without)\\s+(?:${RULED_OUT_TERMS})\\w*`,
-    `\\b(?:${RULED_OUT_TERMS})\\w*[^.!?]{0,40}?(?:fällt nicht an|wird nicht (?:erhoben|verlangt|berechnet))`,
+    // Only a fee noun directly before the phrase; a term earlier in the sentence stays.
+    // From the 2026-11-10 audit review.
+    "\\b(?:provision|courtage|maklergebühr|commission)\\w*\\s+(?:fällt nicht an|wird nicht (?:erhoben|verlangt|berechnet))",
     // "Für Wohngemeinschaften geeignet" is the feature tag, not a WG room.
     // From the 2026-11-10 audit.
     "für (?:eine |)(?:wg|wohngemeinschaft\\w*) geeignet",
@@ -76,14 +78,15 @@ const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   commission: /\bprovision\b|courtage|maklergebühr|\bcommission\b/i,
   // "Besichtigungsanfragen" is a plea, not a refusal: no "s" may follow.
   noViewing:
-    /keine besichtigung(?!s)(?! ohne)|ohne besichtigung(?!s)|besichtigung(?:en)? (?:ist |sind |derzeit |leider )*nicht möglich|no viewing(?!s)|without (?:a )?viewing|viewing (?:is )?not possible/i,
+    /keine besichtigung(?!s)(?! ohne\b[^.!?,;]*\b(?:unterlagen|termin|anmeldung|voranmeldung))|ohne besichtigung(?!s)|besichtigung(?:en)? (?:ist |sind |derzeit |leider )*nicht möglich|no viewing(?!s)|without (?:a )?viewing|viewing (?:is )?not possible/i,
   // A payment word and the timing together, in either order; "before the
   // viewing" alone is how a landlord asks for documents.
-  // The payment word is a whole word ("Kaltmiete" is not "Miete"), the gap
-  // stays inside one sentence, and a sentence about monthly rent ("monatlich
-  // vorab") is the usual rent clause. From the 2026-11-10 audit.
+  // The payment word is not a Kaltmiete or Warmmiete label (compounds such as
+  // "Monatsmiete" count), the gap stays inside one clause, and a clause about
+  // monthly rent ("monatlich vorab") is the usual rent clause. From the
+  // 2026-11-10 audit and its review.
   paymentFirst:
-    /(?<![^.!?]*\bmonatlich\b[^.!?]*)\b(?:kaution|miete|geld|betrag|zahlung|deposit|payment|rent|money)\b(?![^.!?]*\bmonatlich\b)[^\w.!?]+(?:\w+[^\w.!?]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?]*\bmonatlich\b[^.!?]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?]*\bmonatlich\b)\W+(?:\w+\W+){0,4}?(?:überweis\w*|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
+    /(?<![^.!?,;]*\bmonatlich\b[^.!?,;]*)(?:\b(?:kaution|geld|betrag|zahlung|deposit|payment|rent|money)\b|(?<!kalt|warm)miete\b)(?![^.!?,;]*\bmonatlich\b)[^\w.!?,;]+(?:\w+[^\w.!?,;]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;]*\bmonatlich\b[^.!?,;]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?,;]*\bmonatlich\b)\W+(?:\w+\W+){0,4}?(?:überweis\w*|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
   // The landlord abroad, not applicants from abroad.
   abroad:
     /(?:\bich\b|\bwir\b|vermieter\w*|eigentümer\w*|besitzer\w*)\W+(?:\w+\W+){0,5}?(?:im ausland|nicht in deutschland)|\b(?:i am|i'm|we are|we're|owner is|landlord is)\W+(?:\w+\W+){0,4}?(?:abroad|out of the country|not in germany)/i,

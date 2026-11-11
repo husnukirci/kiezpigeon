@@ -200,3 +200,68 @@ describe("rentalHints: what the text rules out or says in passing", () => {
     ).toBe(true);
   });
 });
+
+describe("rentalHints: negations stay inside their own clause", () => {
+  it("does not let a not-charged clause swallow an earlier term", () => {
+    expect(
+      rentalHints("Befristet auf 2 Jahre, Kaution wird nicht erhoben.")
+        .fixedTerm,
+    ).toBe(true);
+    const interim = rentalHints(
+      "Zwischenmiete bis Mai, Provision fällt nicht an.",
+    );
+    expect(interim.interim).toBe(true);
+    expect(interim.commission).toBe(false);
+    const sublet = rentalHints("Untermiete, Maklergebühr wird nicht erhoben.");
+    expect(sublet.sublet).toBe(true);
+    expect(sublet.commission).toBe(false);
+    expect(rentalHints("Provision fällt nicht an.").commission).toBe(false);
+    expect(rentalHints("Es wird keine Courtage erhoben.").commission).toBe(
+      false,
+    );
+  });
+
+  it("scopes the monthly-rent guard to the payment word's own clause", () => {
+    expect(
+      rentalHints("Miete 900 € monatlich, bitte Kaution vorab überweisen.")
+        .paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Kaution vorab überweisen, Miete monatlich.").paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Die Miete ist monatlich im Voraus zu zahlen.").paymentFirst,
+    ).toBe(false);
+    expect(
+      rentalHints("Die Miete ist monatlich vorab zu zahlen.").paymentFirst,
+    ).toBe(false);
+    expect(
+      rentalHints("Kaltmiete 900 €. Bitte senden Sie vorab Ihre Unterlagen.")
+        .paymentFirst,
+    ).toBe(false);
+  });
+
+  it("sees a compound rent word, not a Kaltmiete label", () => {
+    expect(
+      rentalHints("Bitte überweisen Sie die erste Monatsmiete vorab.")
+        .paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Zahlen Sie die Monatsmiete vor der Besichtigung.")
+        .paymentFirst,
+    ).toBe(true);
+    expect(
+      rentalHints("Nettokaltmiete 900 €, vorab Unterlagen senden.")
+        .paymentFirst,
+    ).toBe(false);
+  });
+
+  it("lets keine Besichtigung ohne Terminvereinbarung stand", () => {
+    expect(
+      rentalHints("Keine Besichtigung ohne Terminvereinbarung.").noViewing,
+    ).toBe(false);
+    expect(
+      rentalHints("Keine Besichtigung ohne vollständige Unterlagen.").noViewing,
+    ).toBe(false);
+  });
+});
