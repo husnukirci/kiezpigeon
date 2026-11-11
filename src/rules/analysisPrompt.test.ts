@@ -43,6 +43,23 @@ describe("buildAnalysisPrompt", () => {
     expect(user).toContain("income to Kaltmiete: not given");
   });
 
+  it("leaves out the contact line when the contact has no name", () => {
+    const { user } = buildAnalysisPrompt({
+      ...request,
+      listing: {
+        ...request.listing,
+        contactPerson: { lastName: "" },
+      },
+    });
+    expect(user).not.toContain("Kontakt");
+  });
+
+  it("names the Kaution once", () => {
+    const { system } = buildAnalysisPrompt(request);
+    expect(system).not.toContain("the Kaution, the deposit");
+    expect(system).toContain("the Kaution");
+  });
+
   it("sets the rules", () => {
     const { system } = buildAnalysisPrompt(request);
     expect(system).toContain("Write in English");

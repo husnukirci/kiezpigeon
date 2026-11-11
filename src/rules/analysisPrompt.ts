@@ -31,7 +31,7 @@ function system(): string {
     "- Price: how the Kaltmiete and the extra costs read against the page and the usual range; never a figure the page does not support.",
     "- Heating and energy: what the page says about heating, energy source and energy certificate, and what that usually means for the running costs.",
     "- For you: how the listing fits the profile facts below. Name what the profile does not say instead of guessing it.",
-    "- What to watch for: points to ask about or check, such as the lease type, the Kaution, the deposit, fees, unclear wording.",
+    "- What to watch for: points to ask about or check, such as the lease type, the Kaution, fees, unclear wording.",
     "",
     "Rules:",
     "- Write in English, in sentence case, in short plain sentences, addressing the reader as you. German market terms stay German (Kaltmiete, Warmmiete, Nebenkosten, Kaution, WBS, Besichtigung, Staffelmiete).",
@@ -78,13 +78,12 @@ function factsBlock(request: AnalysisRequest): string {
 function listingBlock(request: AnalysisRequest): string {
   const { listing } = request;
   const contact = listing.contactPerson;
+  const contactName = [contact?.salutation, contact?.lastName]
+    .filter(Boolean)
+    .join(" ");
   const extra = [
     ...(listing.address === undefined ? [] : [`- Adresse: ${listing.address}`]),
-    ...(contact === undefined
-      ? []
-      : [
-          `- Kontakt: ${[contact.salutation, contact.lastName].filter(Boolean).join(" ")}`,
-        ]),
+    ...(contactName === "" ? [] : [`- Kontakt: ${contactName}`]),
   ];
   const lines = listingLines(listing);
   if (lines.length === 0 && extra.length > 0)
