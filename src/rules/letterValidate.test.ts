@@ -247,6 +247,42 @@ describe("validateLetter", () => {
     expect(validateLetter(withDog, request)).toEqual([]);
   });
 
+  const petCodes = (text: string, req: LetterRequest) =>
+    validateLetter(text, req).filter((p) => p.code.startsWith("pets"));
+  const withSentence = (sentence: string) =>
+    replaced(
+      "Offen möchten wir Ihnen sagen, dass unser ruhiger Hund mit einziehen würde.",
+      sentence,
+    );
+
+  it.each([
+    "Wir haben weder Hund noch Katze.",
+    "Wir haben keine Kinder oder Haustiere.",
+    "Haustiere haben wir nicht.",
+    "Wir sind ein Nichtraucherhaushalt ohne Kinder und Haustiere.",
+    "Wir haben keinerlei Haustiere.",
+  ])("lets a pet-free household say: %s", (sentence) => {
+    expect(petCodes(withSentence(sentence), noPetsRequest)).toEqual([]);
+  });
+
+  it("flags a kind of pet the household does not have", () => {
+    const text = replaced(
+      "unser ruhiger Hund",
+      "unser ruhiger Hund und unsere Katze",
+    );
+    expect(
+      validateLetter(text, request).filter((p) => p.code.startsWith("pets")),
+    ).toEqual([{ code: "pets_invented", text: "Katze" }]);
+  });
+
+  it("still counts a pet mentioned after an unrelated ohne", () => {
+    const text = replaced(
+      "dass unser ruhiger Hund mit einziehen würde",
+      "dass wir ohne Probleme mit unserem Hund einziehen würden",
+    );
+    expect(petCodes(text, request)).toEqual([]);
+  });
+
   it("accepts the general word Haustier for any pet", () => {
     const letter = replaced("unser ruhiger Hund", "unser ruhiges Haustier");
     expect(validateLetter(letter, request)).toEqual([]);

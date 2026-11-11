@@ -176,14 +176,32 @@ const NEGATIONS = new Set([
   "keinem",
   "keiner",
   "keines",
+  "keinerlei",
   "ohne",
+  "weder",
+]);
+/** Words that join pets or other nouns into one denied list. */
+const JOINERS = new Set(["und", "oder", "noch", "sowie"]);
+/** Verbs that make a clause-final `nicht` a denial of the pet before it. */
+const HAVE_VERBS = new Set([
+  "haben",
+  "habe",
+  "besitzen",
+  "besitze",
+  "halten",
+  "halte",
+  "gibt",
 ]);
 
 /**
- * Pet words the letter uses positively. A word with `kein…` or `ohne`
- * among the two words before it is a denial, not a mention; so is a
- * `kein…` up to three words after it that ends the clause ("Haustiere
- * haben wir keine."), but not one that goes on ("Hund hat keine Probleme").
+ * Pet words the letter uses positively. A word with `kein…`, `ohne` or
+ * `weder` among the two words before it is a denial, not a mention, once
+ * a list of `und`/`oder`/`noch`/`sowie` words is stepped over ("keine
+ * Kinder oder Haustiere", "weder Hund noch Katze"). So is a `kein…` up to
+ * three words after it that ends the clause ("Haustiere haben wir
+ * keine."), and a clause-final `nicht` after a have-verb ("Haustiere
+ * haben wir nicht."), but not a `kein…` that goes on ("Hund hat keine
+ * Probleme").
  */
 function petMentions(text: string): string[] {
   const raw = text.split(/\s+/).filter((w) => /\p{L}/u.test(w));
@@ -194,6 +212,12 @@ function petMentions(text: string): string[] {
   const deniedAfter = (i: number): boolean => {
     for (let j = i + 1; j <= i + 3 && j < raw.length; j += 1) {
       if (NEGATIONS.has(lower[j] ?? "")) return endsClause(j);
+      if (lower[j] === "nicht") {
+        return (
+          endsClause(j) &&
+          lower.slice(i + 1, j).some((between) => HAVE_VERBS.has(between))
+        );
+      }
       if (endsClause(j)) return false;
     }
     return false;
@@ -201,8 +225,10 @@ function petMentions(text: string): string[] {
   return words.filter((_, i) => {
     const w = lower[i] ?? "";
     const isPet = Object.values(PET_WORDS).some((re) => re.test(w));
+    let start = i;
+    while (start >= 2 && JOINERS.has(lower[start - 1] ?? "")) start -= 2;
     const deniedBefore = lower
-      .slice(Math.max(0, i - 2), i)
+      .slice(Math.max(0, start - 2), start)
       .some((before) => NEGATIONS.has(before));
     return isPet && !deniedBefore && !(!endsClause(i) && deniedAfter(i));
   });
@@ -222,10 +248,18 @@ function petProblems(text: string, request: LetterRequest): LetterProblem[] {
       text: word,
     }));
   }
-  if (mentions.some((w) => ANY_PET.test(w))) return [];
-  return kinds
+  const invented: LetterProblem[] = [...new Set(mentioned)]
+    .filter(
+      (word) =>
+        !ANY_PET.test(word.toLowerCase()) &&
+        !kinds.some((kind) => PET_WORDS[kind].test(word.toLowerCase())),
+    )
+    .map((word) => ({ code: "pets_invented", text: word }));
+  if (mentions.some((w) => ANY_PET.test(w))) return invented;
+  const missing: LetterProblem[] = kinds
     .filter((kind) => !mentions.some((w) => PET_WORDS[kind].test(w)))
     .map((kind) => ({ code: "pets_missing", text: PET_NOUNS[kind][0] }));
+  return [...invented, ...missing];
 }
 
 // Words that say the applicants are married. Compounds match anywhere in
