@@ -20,6 +20,7 @@ import type {
   PetKind,
   PetPolicy,
   Profile,
+  Prompt,
   Relationship,
   Tone,
 } from "./types";
@@ -215,11 +216,11 @@ export function ratioTenths(
   return Math.floor((income * 10) / kaltmiete);
 }
 
-function hasPets(household: Household): boolean {
+export function hasPets(household: Household): boolean {
   return household.pets.some((pet) => pet.count > 0);
 }
 
-function petsPhrase(household: Household): string {
+export function petsPhrase(household: Household): string {
   return household.pets
     .filter((pet) => pet.count > 0)
     .map((pet) => {
@@ -278,7 +279,7 @@ function freeFrom(availability: Availability | undefined): string | undefined {
   }
 }
 
-function listingLines(listing: Listing): string[] {
+export function listingLines(listing: Listing): string[] {
   const facts: [string, string | undefined][] = [
     ["Bezirk", listing.district],
     [
@@ -423,10 +424,7 @@ function factsBlock(request: LetterRequest): string {
 }
 
 /** What the model gets: the rules as the system prompt, the facts as the user turn. */
-export interface LetterPrompt {
-  system: string;
-  user: string;
-}
+export type LetterPrompt = Prompt;
 
 /** One rule per applicant who is looking for work. */
 function jobSearchRules(request: LetterRequest): string[] {

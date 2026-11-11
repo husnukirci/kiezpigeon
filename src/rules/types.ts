@@ -199,6 +199,12 @@ export interface FitLine {
   reason: string;
 }
 
+/** What a call gets: the rules as the system prompt, the facts as the user turn. */
+export interface Prompt {
+  system: string;
+  user: string;
+}
+
 export interface AnalysisRequest {
   listing: Listing;
   /** The listing region's text with the user's own values removed. */
