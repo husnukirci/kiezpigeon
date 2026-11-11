@@ -58,7 +58,7 @@ const PET_KINDS: readonly PetKind[] = [
 ];
 const TONES: readonly Tone[] = ["warm", "formal", "short"];
 const LANGUAGES: readonly Language[] = ["de", "en"];
-export const DOCUMENT_TYPES: readonly DocumentType[] = [
+const DOCUMENT_TYPES: readonly DocumentType[] = [
   "schufa",
   "mietschuldenfreiheit",
   "incomeProof",
