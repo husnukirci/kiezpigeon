@@ -824,7 +824,8 @@ sent: names, contact data, job, raw net income, letter defaults, documents.
 Every value of the applicants' names, email, phone and street is removed
 from the page text before the request leaves the panel. The listing's own
 address, district and contact person are sent. The answer has six fixed
-headings, is labelled as an estimate, is shown once and is not stored. It
+headings, is labelled as an estimate, is kept per listing URL while the panel stays open (shown again on Back) and
+is not stored. It
 has no validator, since it is advice and not text sent in the user's name.
 Errors have their own neutral messages, one per error code. Known sites only.
 No permission, host or stored field is added.

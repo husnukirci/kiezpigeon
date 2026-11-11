@@ -11,7 +11,8 @@ export default defineBackground(() => {
   void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
   void browser.sidePanel.setOptions({ enabled: false });
   browser.action.onClicked.addListener(openPanelOn);
-  // Letters and analyses are requested here only, so the API key never leaves the worker.
+  // Letters and analyses are requested here only, so the API key never
+  // leaves the worker.
   handle({
     generateLetter: (message) => generateLetter(message.request),
     analyseListing: (message) => analyseListing(message.request),
