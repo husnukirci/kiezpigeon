@@ -387,6 +387,25 @@ describe("validateLetter", () => {
         (p) => p.code === "relationship_invented",
       );
 
+    const marriageCodes = (text: string) =>
+      validateLetter(text, request)
+        .filter((p) => p.code === "relationship_invented")
+        .map((p) => p.code);
+
+    it.each([
+      "Ehe wir umziehen, renovieren wir die alte Wohnung.",
+      "Wir sind nicht verheiratet.",
+    ])("does not read a marriage into: %s", (sentence) => {
+      expect(marriageCodes(withSentence(sentence))).toEqual([]);
+    });
+
+    it.each(["Unsere Ehe ist stabil.", "Wir sind verheiratet."])(
+      "still flags: %s",
+      (sentence) => {
+        expect(marriageCodes(withSentence(sentence))).toHaveLength(1);
+      },
+    );
+
     it.each([
       ["Wir sind ein Ehepaar.", "partners", ["Ehepaar"]],
       ["verheiratete Bewerber", undefined, ["verheiratete"]],

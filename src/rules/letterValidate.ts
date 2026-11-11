@@ -261,20 +261,37 @@ function petProblems(text: string, request: LetterRequest): LetterProblem[] {
 // Words that say the applicants are married. Compounds match anywhere in
 // the word (Akademikerehepaar, Lehrer-Ehepaar once hyphens are stripped);
 // the rest only as a whole word or its start, so mehr, eher, ehemalig,
-// ehrlich, eheähnlich and unverheiratet stay clean.
+// ehrlich, eheähnlich and unverheiratet stay clean. The bare noun `Ehe`
+// counts only after an article or possessive: "Ehe wir umziehen" is the
+// conjunction. Directly after `nicht` nothing is a claim.
 const MARRIED =
-  /ehe(paar|leute|mann|männer|frau|partner|gatt)|^ehe$|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
+  /ehe(paar|leute|mann|männer|frau|partner|gatt)|^verheirat|^geheirat|^hochzeit|^gatt(e|in)/;
+
+const EHE_DETERMINERS = new Set([
+  "die",
+  "der",
+  "unsere",
+  "unserer",
+  "meine",
+  "meiner",
+  "eine",
+  "einer",
+]);
 
 function relationshipProblems(
   text: string,
   request: LetterRequest,
 ): LetterProblem[] {
   if (request.household.relationship === "married") return [];
-  const words = text
-    .split(/\s+/)
-    .map((w) => w.replace(/[^\p{L}]/gu, ""))
-    .filter((w) => MARRIED.test(w.toLowerCase()));
-  return [...new Set(words)].map((word) => ({
+  const words = text.split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, ""));
+  const claimed = words.filter((word, i) => {
+    const lower = word.toLowerCase();
+    const before = (words[i - 1] ?? "").toLowerCase();
+    const isClaim =
+      MARRIED.test(lower) || (lower === "ehe" && EHE_DETERMINERS.has(before));
+    return isClaim && before !== "nicht";
+  });
+  return [...new Set(claimed)].map((word) => ({
     code: "relationship_invented",
     text: word,
   }));
