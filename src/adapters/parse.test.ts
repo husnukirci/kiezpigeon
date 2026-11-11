@@ -165,11 +165,11 @@ describe("parseDepositText", () => {
     "3 Kaltmieten (3.540 €)",
     "3 Nettokaltmieten, max. 3.540 EUR",
     "3.540,00 EUR",
-  ])("takes the stated amount over the count: %s", (text) => {
+  ])("takes the larger of the count and the stated amount: %s", (text) => {
     expect(parseDepositText(text, 118000)).toBe(354000);
   });
   it("reads an amount followed by a count", () => {
-    expect(parseDepositText("1.180 € x 3", 118000)).toBe(118000);
+    expect(parseDepositText("1.180 € x 3", 118000)).toBe(354000);
   });
   it.each(["3 x Kaltmiete", "3 × Kaltmiete"])("reads %s", (text) => {
     expect(parseDepositText(text, 118000)).toBe(354000);
@@ -206,5 +206,56 @@ describe("parseContactName companies", () => {
       salutation: "Herr",
       lastName: "Ag",
     });
+  });
+});
+
+describe("parseContactName legal forms in any case", () => {
+  it.each(["MUSTER BAU GMBH", "Muster Gmbh", "Muster Ohg", "Muster Bau Ag"])(
+    "greets no company by name: %s",
+    (name) => {
+      expect(parseContactName(name)).toBeUndefined();
+    },
+  );
+});
+
+describe("parseDepositText in more wordings", () => {
+  it.each(["2.5 monthly rents", "2.5 Kaltmieten"])(
+    "reads a point decimal count: %s",
+    (text) => {
+      expect(parseDepositText(text, 118000)).toBe(295000);
+    },
+  );
+
+  it.each([
+    "3-fache Kaltmiete",
+    "3fache Nettokaltmiete",
+    "3 Netto-Kaltmieten",
+    "3 Monatsnettokaltmieten",
+    "3 KM",
+    "3 Mieten",
+    "3 Nettomieten",
+    "3 months' rent",
+  ])("reads %s as three rents", (text) => {
+    expect(parseDepositText(text, 118000)).toBe(354000);
+  });
+
+  it.each([
+    "3 Kaltmieten à 1.180 €",
+    "3 NKM zzgl. 100 € Schlüsselpfand",
+    "3 Kaltmieten (3.540 €)",
+  ])("takes the larger of count and amount: %s", (text) => {
+    expect(parseDepositText(text, 118000)).toBe(354000);
+  });
+
+  it("uses the stated amount alone when the Kaltmiete is not known", () => {
+    expect(parseDepositText("3 Kaltmieten (3.540 €)", undefined)).toBe(354000);
+  });
+
+  it("never reads a small count of an unknown word as euros", () => {
+    expect(parseDepositText("3 Monatsbeträge", 118000)).toBeUndefined();
+    expect(parseDepositText("1000", 118000)).toBe(100000);
+    expect(parseDepositText("1.500 Euro", 118000)).toBe(150000);
+    expect(parseDepositText("3.540 €", 118000)).toBe(354000);
+    expect(parseDepositText("drei Monatsmieten", 118000)).toBeUndefined();
   });
 });

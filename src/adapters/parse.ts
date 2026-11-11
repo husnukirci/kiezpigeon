@@ -34,27 +34,58 @@ export function parseFloor(text: string): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
+// A count of rents: `3 Kaltmieten`, `2.5 monthly rents`, `3-fache
+// Kaltmiete`, `3 x Kaltmiete`, `3 Netto-Kaltmieten`, `3 KM`, `3 months' rent`.
 const RENT_COUNT =
-  /(\d+(?:,\d+)?)\s*(?:[x×]\s*)?(?:Nettokaltmieten?|Monatskaltmieten?|Kaltmieten?|Monatsmieten?|MM|NKM|monthly rents?)(?![\p{L}])/iu;
+  /(\d+(?:[.,]\d+)?)\s*(?:-?fache\s+|[x×]\s*)?(?:(?:Monats)?(?:Netto-?)?Kaltmieten?|(?:Monats|Netto)?Mieten?|MM|NKM|KM|monthly rents?|months?['’]? rents?)(?![\p{L}])/iu;
 // A number written directly against a currency sign or code.
-const STATED_AMOUNT =
+const AMOUNT =
   /(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{1,2})?\s*(?:€|EUR(?![\p{L}]))/u;
+// An amount times a count: `1.180 € x 3`.
+const AMOUNT_TIMES = new RegExp(
+  `(${AMOUNT.source})\\s*[x×]\\s*(\\d+(?:[.,]\\d+)?)(?![\\d\\p{L}])`,
+  "u",
+);
+// A small bare number followed by a word: a count of something unknown.
+// A grouped number ("1.500 Euro") is not one.
+const UNKNOWN_COUNT = /^\D*?(\d{1,2})(?:[.,]\d{1,2})?\s*\p{L}/u;
+
+function countOf(digits: string): number {
+  return Number(digits.replace(",", "."));
+}
 
 /**
  * `3.540 €`, `1000` → cents; `3 Kaltmieten`, `2,5 NKM` → that many of the
- * listing's Kaltmiete, or undefined when the Kaltmiete is not known. A stated
- * amount wins over a count: `3 Kaltmieten (3.540 €)` is 3.540 €.
+ * listing's Kaltmiete, or undefined when the Kaltmiete is not known. With
+ * both a count and a stated amount the larger wins: `3 NKM zzgl. 100 €
+ * Schlüsselpfand` is three rents, `3 Kaltmieten (3.540 €)` is 3.540 €. A
+ * small number before a word the parser does not know is never euros.
  */
 export function parseDepositText(
   text: string,
   kaltmieteCents: Cents | undefined,
 ): Cents | undefined {
-  const stated = STATED_AMOUNT.exec(text)?.[0];
-  if (stated !== undefined) return parseEuroText(stated);
+  const times = AMOUNT_TIMES.exec(text);
+  if (times) {
+    const amount = parseEuroText(times[1] ?? "");
+    const factor = countOf(times[2] ?? "");
+    if (amount !== undefined) return Math.round(amount * factor);
+  }
+  const statedText = AMOUNT.exec(text)?.[0];
+  const stated =
+    statedText === undefined ? undefined : parseEuroText(statedText);
   const count = RENT_COUNT.exec(text)?.[1];
-  if (count === undefined) return parseEuroText(text);
-  if (kaltmieteCents === undefined) return undefined;
-  return Math.round(Number(count.replace(",", ".")) * kaltmieteCents);
+  const counted =
+    count === undefined || kaltmieteCents === undefined
+      ? undefined
+      : Math.round(countOf(count) * kaltmieteCents);
+  if (stated !== undefined || counted !== undefined) {
+    return Math.max(stated ?? 0, counted ?? 0);
+  }
+  if (count !== undefined) return undefined;
+  const unknown = UNKNOWN_COUNT.exec(text)?.[1];
+  if (unknown !== undefined && Number(unknown) < 50) return undefined;
+  return parseEuroText(text);
 }
 
 /** `44 m²`, `62,5 m²`, `2,5` → a number. */
@@ -124,21 +155,39 @@ export function parseAvailability(text: string): Availability | undefined {
 
 const SALUTATIONS = new Set(["Frau", "Herr"]);
 const TITLES = /^(Dr\.|Prof\.|Dipl\.-\w+\.?)$/;
-// A company is not a person to greet by name. Legal forms are whole tokens
-// and case-sensitive, so a short surname ("Se", "Ag") is not one; trade words
-// count inside a word ("Musterhausverwaltung") whatever the case.
-const LEGAL_FORM =
-  /(?<![\p{L}.])(GmbH|mbH|AG|SE|KG|OHG|eG|e\.\s?G\.|GbR|UG)(?![\p{L}])/u;
+// A company is not a person to greet by name. GmbH, mbH, OHG, GbR and KG
+// are whole tokens in any case. The short forms AG, SE, UG, eG and e.G. are
+// case-sensitive, so a short surname ("Frau Se", "Herr Ag") is not one,
+// unless, in any case, it ends a name of two or more words with no Frau or
+// Herr before it ("Muster Bau Ag"). Trade words count inside a word
+// ("Musterhausverwaltung") whatever the case.
+const LEGAL_FORM_ANY_CASE = /(?<![\p{L}.])(GmbH|mbH|OHG|GbR|KG)(?![\p{L}])/iu;
+const SHORT_LEGAL_FORM = /(?<![\p{L}.])(AG|SE|UG|eG|e\.\s?G\.)(?![\p{L}])/u;
+const SHORT_LEGAL_FORM_WORD = /^(AG|SE|UG|EG|E\.G\.)$/i;
 const TRADE_WORD =
   /immobilien|verwaltung|wohnungsbau|genossenschaft|vermietung|makler|kundenservice|team(?![\p{L}])|(?<![\p{L}])wohnen(?![\p{L}])/iu;
-const COMPANY = {
-  test: (name: string) => LEGAL_FORM.test(name) || TRADE_WORD.test(name),
-};
+
+function isCompany(name: string): boolean {
+  if (
+    LEGAL_FORM_ANY_CASE.test(name) ||
+    SHORT_LEGAL_FORM.test(name) ||
+    TRADE_WORD.test(name)
+  ) {
+    return true;
+  }
+  const words = name.split(" ");
+  const first = words[0] ?? "";
+  return (
+    words.length >= 2 &&
+    !SALUTATIONS.has(first) &&
+    SHORT_LEGAL_FORM_WORD.test(words.at(-1) ?? "")
+  );
+}
 
 /** `Frau Dr. Anna Weber` → salutation, first name and surname. */
 export function parseContactName(text: string): ContactPerson | undefined {
   const name = text.replace(/\s+/g, " ").trim();
-  if (name === "" || COMPANY.test(name)) return undefined;
+  if (name === "" || isCompany(name)) return undefined;
   const words = name.split(" ").filter((word) => !TITLES.test(word));
   const salutation = words[0];
   const hasSalutation = salutation !== undefined && SALUTATIONS.has(salutation);
