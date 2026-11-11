@@ -30,6 +30,12 @@ jobs:
   e2e:
     # The never-submit run against the built extension (PLAN.md section 5).
     runs-on: ubuntu-latest
+    # The browser and its system libraries come with this image, so the job
+    # installs nothing at run time. The tag must equal the installed
+    # @playwright/test version; scripts/ci-image.test.ts checks it.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -37,7 +43,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v5
         if: failure()
