@@ -55,7 +55,7 @@ describe("checkFit", () => {
       {
         rule: "wbs",
         status: "unknown",
-        reason: "No WBS mentioned in the listing",
+        reason: "I could not read this page's description.",
       },
       {
         rule: "moveIn",
@@ -299,6 +299,20 @@ describe("WBS line", () => {
       rule: "wbs",
       status: "unknown",
       reason: "No WBS mentioned in the listing",
+    });
+  });
+
+  it("does not call an unread description silent on WBS", () => {
+    expect(
+      line(
+        coupleWithDog,
+        listingWith({ wbsRequired: undefined, hints: undefined }),
+        "wbs",
+      ),
+    ).toEqual({
+      rule: "wbs",
+      status: "unknown",
+      reason: "I could not read this page's description.",
     });
   });
 });

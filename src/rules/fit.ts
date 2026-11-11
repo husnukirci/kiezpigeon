@@ -92,9 +92,13 @@ function wbsLine(profile: Profile, listing: Listing): FitLine {
     return {
       rule: "wbs",
       status: "unknown",
-      reason: listing.hints?.wbsMentioned
-        ? "The text mentions WBS. Check what it asks for."
-        : "No WBS mentioned in the listing",
+      // A description that could not be read is not one silent on WBS.
+      reason:
+        listing.hints === undefined
+          ? "I could not read this page's description."
+          : listing.hints.wbsMentioned
+            ? "The text mentions WBS. Check what it asks for."
+            : "No WBS mentioned in the listing",
     };
   }
   if (!required) {
