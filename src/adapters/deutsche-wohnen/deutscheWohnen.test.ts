@@ -2,6 +2,7 @@
 // exact Listing the adapter returns for it.
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
+import { coupleWithDog } from "../../../test-support/sample-profiles";
 import { NO_HINTS } from "../../rules/rentalHints";
 import { visibleText } from "../dom";
 import { deutscheWohnen } from "./deutscheWohnen";
@@ -213,14 +214,21 @@ describe("deutscheWohnen.readContactForm", () => {
 });
 
 describe("deutscheWohnen.listingRoot", () => {
-  it("holds the listing's title and Kaltmiete", () => {
-    const root = deutscheWohnen.listingRoot(
-      loadFixture("deutsche-wohnen", "listing-complete.html"),
+  it("holds the listing's title and Kaltmiete, not a header outside it", () => {
+    const page = loadFixture("deutsche-wohnen", "listing-complete.html");
+    const email = coupleWithDog.contact.email;
+    page.body.insertAdjacentHTML(
+      "afterbegin",
+      `<header>Angemeldet als ${email}</header>`,
     );
+    // Positive control: the header is in the page, just not in the root.
+    expect(page.body.textContent).toContain(email);
+    const root = deutscheWohnen.listingRoot(page);
     expect(root).toBeDefined();
     const text = visibleText(root as Element);
     expect(text).toContain("Ruhige 3-Zimmer-Wohnung mit Aufzug");
     expect(text).toContain("876,54 €");
+    expect(text).not.toContain(email);
   });
 
   it("finds no listing region on a search page", () => {

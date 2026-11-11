@@ -416,15 +416,21 @@ describe("immoscout24 contact form on the English page", () => {
 });
 
 describe("immoscout24.listingRoot", () => {
-  it("holds the listing's title and Kaltmiete, not the site header", () => {
-    const root = immoscout24.listingRoot(
-      loadFixture("immoscout24", "listing-complete.html"),
+  it("holds the listing's title and Kaltmiete, not a header outside it", () => {
+    const page = loadFixture("immoscout24", "listing-complete.html");
+    const email = coupleWithDog.contact.email;
+    page.body.insertAdjacentHTML(
+      "afterbegin",
+      `<header>Angemeldet als ${email}</header>`,
     );
+    // Positive control: the header is in the page, just not in the root.
+    expect(page.body.textContent).toContain(email);
+    const root = immoscout24.listingRoot(page);
     expect(root).toBeDefined();
     const text = visibleText(root as Element);
     expect(text).toContain("Singlewohnung!");
     expect(text).toContain("1.028,29 €");
-    expect(text).not.toContain("zur Miete Reinickendorf");
+    expect(text).not.toContain(email);
   });
 
   it("finds no listing region on a search page", () => {

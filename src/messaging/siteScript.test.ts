@@ -108,6 +108,24 @@ describe("answerAs getPageText", () => {
     });
   });
 
+  it("waits for a page the site is still drawing", async () => {
+    const listingRoot = vi.fn(() => document.body);
+    document.body.innerHTML = "Wohnung";
+    answerAs(
+      adapter({
+        listingRoot,
+        isReady: (page) => page.querySelector("h1") !== null,
+      }),
+    );
+    const answer = send({ type: "getPageText" });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(listingRoot).not.toHaveBeenCalled();
+    document.body.append(document.createElement("h1"));
+    expect(await answer).toMatchObject({ kind: "text" });
+    expect(listingRoot).toHaveBeenCalledTimes(1);
+    document.body.innerHTML = "";
+  });
+
   it("answers no_text on a page with no listing region", async () => {
     answerAs(adapter({ listingRoot: () => undefined }));
     expect(await send({ type: "getPageText" })).toEqual({ kind: "no_text" });

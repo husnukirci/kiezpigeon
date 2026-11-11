@@ -20,18 +20,37 @@ export function map<T, U>(
   return value === undefined ? undefined : f(value);
 }
 
+const SKIPPED = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]);
+
+function isHidden(element: Element): boolean {
+  return (
+    SKIPPED.has(element.tagName) ||
+    element.hasAttribute("hidden") ||
+    element.getAttribute("aria-hidden") === "true"
+  );
+}
+
 /**
  * The text a person reads inside `root`: no script, style, noscript or
- * template content, whitespace collapsed. The page itself is left alone.
+ * template content and nothing hidden, whitespace collapsed. Element
+ * boundaries and `<br>` separate words, so `<dt>Kaltmiete</dt><dd>1 €</dd>`
+ * reads "Kaltmiete 1 €". The page itself is left alone.
  */
 export function visibleText(root: Element): string {
-  const copy = root.cloneNode(true) as Element;
-  for (const hidden of copy.querySelectorAll(
-    "script, style, noscript, template",
-  )) {
-    hidden.remove();
-  }
-  return copy.textContent.replace(/\s+/g, " ").trim();
+  const parts: string[] = [];
+  const visit = (node: Node): void => {
+    if (node.nodeType === 3) {
+      parts.push(node.textContent ?? "");
+    } else if (node.nodeType === 1) {
+      const element = node as Element;
+      if (isHidden(element)) return;
+      parts.push(" ");
+      for (const child of element.childNodes) visit(child);
+      parts.push(" ");
+    }
+  };
+  visit(root);
+  return parts.join("").replace(/\s+/g, " ").trim();
 }
 
 /** The fields of a contact form, or none when the page has no form. */

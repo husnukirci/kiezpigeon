@@ -2,6 +2,7 @@
 // exact Listing the adapter returns for it.
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
+import { coupleWithDog } from "../../../test-support/sample-profiles";
 import { NO_HINTS } from "../../rules/rentalHints";
 import { visibleText } from "../dom";
 import { vonovia } from "./vonovia";
@@ -132,15 +133,21 @@ describe("vonovia.readContactForm", () => {
 });
 
 describe("vonovia.listingRoot", () => {
-  it("holds the listing's title and Kaltmiete, not the site header", () => {
-    const root = vonovia.listingRoot(
-      loadFixture("vonovia", "listing-complete.html"),
+  it("holds the listing's title and Kaltmiete, not a header outside it", () => {
+    const page = loadFixture("vonovia", "listing-complete.html");
+    const email = coupleWithDog.contact.email;
+    page.body.insertAdjacentHTML(
+      "afterbegin",
+      `<header>Angemeldet als ${email}</header>`,
     );
+    // Positive control: the header is in the page, just not in the root.
+    expect(page.body.textContent).toContain(email);
+    const root = vonovia.listingRoot(page);
     expect(root).toBeDefined();
     const text = visibleText(root as Element);
     expect(text).toContain("Helle 3-Zimmer-Wohnung mit Balkon");
     expect(text).toContain("987,65 €");
-    expect(text).not.toContain("Zum Hauptinhalt springen");
+    expect(text).not.toContain(email);
   });
 
   it("finds no listing region on a search page", () => {
