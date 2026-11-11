@@ -116,6 +116,43 @@ describe("validateLetter", () => {
     expect(validateLetter(letter, request)).toEqual([]);
   });
 
+  const unknownNumbers = (text: string) =>
+    validateLetter(text, request)
+      .filter((p) => p.code === "unknown_number")
+      .map((p) => p.text);
+
+  it("flags a date that is not the move-in or the free-from date", () => {
+    expect(unknownNumbers(replaced("01.03.2027", "03.01.2027"))).toEqual([
+      "03.01.2027",
+    ]);
+    expect(unknownNumbers(replaced("01.03.2027", "02.03.2027"))).toEqual([
+      "02.03.2027",
+    ]);
+    expect(unknownNumbers(replaced("zum 01.03.2027", "zum 2.2."))).toEqual([
+      "2.2",
+    ]);
+  });
+
+  it("accepts the move-in date in its usual spellings", () => {
+    for (const date of [
+      "01.03.2027",
+      "1.3.2027",
+      "01.03.27",
+      "01.03.",
+      "1.3.",
+    ]) {
+      expect(unknownNumbers(replaced("01.03.2027", date))).toEqual([]);
+    }
+  });
+
+  it("reads a point decimal that is a fact as that fact, not as a date", () => {
+    const rooms = { ...request, listing: { ...request.listing, rooms: 2.5 } };
+    const text = replaced("2-Zimmer-Wohnung", "2.5-Zimmer-Wohnung");
+    expect(
+      validateLetter(text, rooms).filter((p) => p.code === "unknown_number"),
+    ).toEqual([]);
+  });
+
   it("accepts the rounded income and the rent it is compared with", () => {
     const letter = replaced(
       "Kaltmiete von 1.180 €.",

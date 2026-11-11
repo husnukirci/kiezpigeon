@@ -45,9 +45,6 @@ function key(value: number): number {
 
 /** The numeric values one written number stands for. */
 function valuesOf(token: string): number[] {
-  if (/^\d{1,2}\.\d{1,2}(\.\d{2,4})?$/.test(token)) {
-    return token.split(".").map(Number);
-  }
   if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(token)) {
     return [Number(token.replaceAll(".", "").replace(",", "."))];
   }
@@ -57,8 +54,24 @@ function valuesOf(token: string): number[] {
   return token.split(/[.,]/).map(Number);
 }
 
+// `d.m`, `d.m.yy` and `d.m.yyyy` (a trailing point is not part of a token).
+const DATE_TOKEN = /^(\d{1,2})\.(\d{1,2})(?:\.(\d{2}|\d{4}))?$/;
+
+/** The year, month and day of an ISO date as plain numbers. */
 function dateParts(iso: string | undefined): number[] {
   return iso === undefined ? [] : iso.split("-").map(Number);
+}
+
+/** Whether a written date names the ISO date: day and month equal, and the
+ * year too when it is written (two digits compare with its last two). */
+function sameDate(token: string, iso: string | undefined): boolean {
+  const match = DATE_TOKEN.exec(token);
+  if (match === null || iso === undefined) return false;
+  const [year, month, day] = dateParts(iso);
+  const [, d, m, y] = match;
+  if (Number(d) !== day || Number(m) !== month) return false;
+  if (y === undefined) return true;
+  return y.length === 2 ? Number(y) === (year ?? 0) % 100 : Number(y) === year;
 }
 
 function digitRuns(text: string): number[] {
@@ -106,11 +119,28 @@ function allowedNumbers(request: LetterRequest): Set<number> {
   return new Set(values.flatMap((v) => (v === undefined ? [] : [key(v)])));
 }
 
+/** A date-shaped token is a date: it must be the move-in or the free-from
+ * date, unless it reads as an allowed point decimal ("2.5 Zimmer"). */
+function numberIsKnown(
+  token: string,
+  allowed: Set<number>,
+  request: LetterRequest,
+): boolean {
+  if (!DATE_TOKEN.test(token)) {
+    return valuesOf(token).every((v) => allowed.has(key(v)));
+  }
+  return (
+    sameDate(token, moveInDateOf(request.moveIn)) ||
+    sameDate(token, availableDateOf(request.listing.availability)) ||
+    allowed.has(key(Number(token)))
+  );
+}
+
 function numberProblems(text: string, request: LetterRequest): LetterProblem[] {
   const allowed = allowedNumbers(request);
   const unknown = new Set<string>();
   for (const [token] of text.matchAll(/\d+(?:[.,]\d+)*/g)) {
-    if (valuesOf(token).some((v) => !allowed.has(key(v)))) unknown.add(token);
+    if (!numberIsKnown(token, allowed, request)) unknown.add(token);
   }
   return [...unknown].map((token) => ({ code: "unknown_number", text: token }));
 }
