@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
 import { NO_HINTS } from "../../rules/rentalHints";
+import { visibleText } from "../dom";
 import { vonovia } from "./vonovia";
 
 const URL =
@@ -127,5 +128,24 @@ describe("vonovia.readContactForm", () => {
       "monatliches_nettoeinkommen",
       "message",
     ]);
+  });
+});
+
+describe("vonovia.listingRoot", () => {
+  it("holds the listing's title and Kaltmiete, not the site header", () => {
+    const root = vonovia.listingRoot(
+      loadFixture("vonovia", "listing-complete.html"),
+    );
+    expect(root).toBeDefined();
+    const text = visibleText(root as Element);
+    expect(text).toContain("Helle 3-Zimmer-Wohnung mit Balkon");
+    expect(text).toContain("987,65 €");
+    expect(text).not.toContain("Zum Hauptinhalt springen");
+  });
+
+  it("finds no listing region on a search page", () => {
+    expect(
+      vonovia.listingRoot(loadFixture("vonovia", "search-results.html")),
+    ).toBeUndefined();
   });
 });

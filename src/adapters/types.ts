@@ -18,6 +18,8 @@ export interface SiteAdapter {
   readListing(document: Document, url: string): Listing | undefined;
   /** The open contact form, the root that filling works inside. */
   contactForm(document: Document): HTMLFormElement | undefined;
+  /** The element holding the listing itself, without the site's header or account menu. */
+  listingRoot(document: Document): Element | undefined;
   /** Its fields as plain data; empty while no form is open. */
   readContactForm(document: Document): FormField[];
 }

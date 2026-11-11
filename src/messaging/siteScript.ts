@@ -4,6 +4,7 @@
 import type { SiteAdapter } from "../adapters/types";
 import { fillPlanned } from "../fill/fill";
 import { PAGE_ANSWERED } from "./fallback";
+import { visibleText } from "../adapters/dom";
 import { handle } from "./messaging";
 
 /** How long a slow page may keep the panel waiting for its answer. */
@@ -47,6 +48,12 @@ export function answerAs(adapter: SiteAdapter): void {
     getContactForm: () => {
       const fields = adapter.readContactForm(document);
       return fields.length > 0 ? { kind: "form", fields } : { kind: "no_form" };
+    },
+    getPageText: async () => {
+      await untilReady(adapter);
+      const root = adapter.listingRoot(document);
+      const text = root ? visibleText(root) : "";
+      return text ? { kind: "text", text } : { kind: "no_text" };
     },
     fillForm: (message) => {
       const form = adapter.contactForm(document);

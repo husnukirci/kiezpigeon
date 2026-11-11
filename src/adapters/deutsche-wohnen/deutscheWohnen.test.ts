@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "../../../test-support/fixtures";
 import { NO_HINTS } from "../../rules/rentalHints";
+import { visibleText } from "../dom";
 import { deutscheWohnen } from "./deutscheWohnen";
 
 const SEARCH = "https://www.deutsche-wohnen.com/mieten/zuhause-mieten";
@@ -208,5 +209,25 @@ describe("deutscheWohnen.readContactForm", () => {
     closed.classList.remove("active");
     open.before(closed);
     expect(deutscheWohnen.contactForm(page)?.closest(".active")).toBe(open);
+  });
+});
+
+describe("deutscheWohnen.listingRoot", () => {
+  it("holds the listing's title and Kaltmiete", () => {
+    const root = deutscheWohnen.listingRoot(
+      loadFixture("deutsche-wohnen", "listing-complete.html"),
+    );
+    expect(root).toBeDefined();
+    const text = visibleText(root as Element);
+    expect(text).toContain("Ruhige 3-Zimmer-Wohnung mit Aufzug");
+    expect(text).toContain("876,54 €");
+  });
+
+  it("finds no listing region on a search page", () => {
+    expect(
+      deutscheWohnen.listingRoot(
+        loadFixture("deutsche-wohnen", "search-results.html"),
+      ),
+    ).toBeUndefined();
   });
 });

@@ -21,6 +21,10 @@ type FillResult =
   | { kind: "changed" }
   | { kind: "no_form" };
 
+/** The listing region's visible text, or none when the page has no listing region. */
+export type PageTextResult =
+  { kind: "text"; text: string } | { kind: "no_text" };
+
 export type LetterResult =
   | { kind: "letter"; draft: LetterDraft }
   | { kind: "error"; code: ClaudeErrorCode; message: string };
@@ -31,6 +35,8 @@ interface Messages {
     request: { type: "getContactForm" };
     response: ContactFormResult;
   };
+  /** The visible text of the listing region only, never the site's header. */
+  getPageText: { request: { type: "getPageText" }; response: PageTextResult };
   /**
    * Panel to content script, on the user's click only. Never submits.
    * `formKeys` are the keys of the form as the panel last read it.
@@ -64,6 +70,7 @@ type Envelope = { ok: true; value: unknown } | { ok: false; error: string };
 const HANDLED: Record<MessageType, true> = {
   getListing: true,
   getContactForm: true,
+  getPageText: true,
   fillForm: true,
   generateLetter: true,
 };

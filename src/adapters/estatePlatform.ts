@@ -174,12 +174,22 @@ function contactForm(document: Document): HTMLFormElement | undefined {
   );
 }
 
+/**
+ * The page's detail frame, which holds the hero (title, address, key figures)
+ * and the content cards. The `main` around it is not used: on Deutsche Wohnen
+ * the hero sits before the `main`, and on Vonovia the `main` is wider.
+ */
+function listingRoot(document: Document): Element | undefined {
+  return document.querySelector(".estate-detail-page") ?? undefined;
+}
+
 export function estatePlatformAdapter(site: EstatePlatformSite): SiteAdapter {
   return {
     id: site.id,
     siteName: site.siteName,
     isReady,
     readListing,
+    listingRoot,
     contactForm,
     readContactForm: (document) => readFormFields(contactForm(document)),
   };

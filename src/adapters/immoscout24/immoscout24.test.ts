@@ -8,6 +8,7 @@ import {
 } from "../../../test-support/sample-profiles";
 import { mapFields } from "../../rules/fieldMatch";
 import { NO_HINTS } from "../../rules/rentalHints";
+import { visibleText } from "../dom";
 import { immoscout24 } from "./immoscout24";
 
 const URL = "https://www.immobilienscout24.de/expose/100000003";
@@ -411,5 +412,26 @@ describe("immoscout24 contact form on the English page", () => {
       "name:sendUserProfile",
       "id:is24-checkbox-isRelocationOfferChecked-input",
     ]);
+  });
+});
+
+describe("immoscout24.listingRoot", () => {
+  it("holds the listing's title and Kaltmiete, not the site header", () => {
+    const root = immoscout24.listingRoot(
+      loadFixture("immoscout24", "listing-complete.html"),
+    );
+    expect(root).toBeDefined();
+    const text = visibleText(root as Element);
+    expect(text).toContain("Singlewohnung!");
+    expect(text).toContain("1.028,29 €");
+    expect(text).not.toContain("zur Miete Reinickendorf");
+  });
+
+  it("finds no listing region on a search page", () => {
+    expect(
+      immoscout24.listingRoot(
+        loadFixture("immoscout24", "search-results.html"),
+      ),
+    ).toBeUndefined();
   });
 });
