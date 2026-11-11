@@ -4,16 +4,11 @@
 // and writes `docs/screenshots/*.png`. Claude is answered locally.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  chromium,
-  expect,
-  test,
-  type BrowserContext,
-  type Page,
-} from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import type { browser } from "wxt/browser";
 import type { Application } from "../src/rules/types";
 import { coupleWithDog } from "../test-support/sample-profiles";
+import { launchExtension, openPanel } from "./support";
 
 // Inside the extension's service worker, where `worker.evaluate` runs,
 // `chrome` is the API that WXT wraps as `browser`.
@@ -22,7 +17,6 @@ declare const chrome: typeof browser;
 test.skip(!process.env.SCREENSHOTS, "run with npm run screenshots");
 
 const ROOT = join(import.meta.dirname, "..");
-const EXTENSION = join(ROOT, ".output", "chrome-mv3");
 const OUT = join(ROOT, "docs", "screenshots");
 const EXPOSE = "https://www.immobilienscout24.de/expose/100000003";
 const FIXTURE = readFileSync(
@@ -72,26 +66,12 @@ async function store(data: Record<string, unknown>): Promise<void> {
   await worker?.evaluate((d) => chrome.storage.local.set(d), data);
 }
 
-async function openPanel(tabId?: number): Promise<Page> {
-  const panel = await context.newPage();
-  await panel.setViewportSize(PANEL);
-  const query = tabId === undefined ? "" : `?tabId=${tabId}`;
-  await panel.goto(`chrome-extension://${extensionId}/sidepanel.html${query}`);
-  return panel;
-}
-
 async function shoot(panel: Page, name: string): Promise<void> {
   await panel.screenshot({ path: join(OUT, `${name}.png`), fullPage: true });
 }
 
 test.beforeAll(async () => {
-  context = await chromium.launchPersistentContext("", {
-    channel: "chromium",
-    args: [
-      `--disable-extensions-except=${EXTENSION}`,
-      `--load-extension=${EXTENSION}`,
-    ],
-  });
+  ({ context, extensionId } = await launchExtension());
   await context.route(`${EXPOSE}**`, (route) =>
     route.fulfill({ contentType: "text/html", body: FIXTURE }),
   );
@@ -110,10 +90,6 @@ test.beforeAll(async () => {
       }),
     }),
   );
-  const worker =
-    context.serviceWorkers()[0] ??
-    (await context.waitForEvent("serviceworker"));
-  extensionId = new URL(worker.url()).host;
 });
 
 test.afterAll(async () => {
@@ -121,7 +97,7 @@ test.afterAll(async () => {
 });
 
 test("the four screens", async () => {
-  const onboarding = await openPanel();
+  const onboarding = await openPanel(context, extensionId, { viewport: PANEL });
   await expect(onboarding.getByRole("heading").first()).toBeVisible();
   await shoot(onboarding, "1-onboarding");
   await onboarding.close();
@@ -137,7 +113,10 @@ test("the four screens", async () => {
     .serviceWorkers()[0]
     ?.evaluate(async () => (await chrome.tabs.query({ active: true }))[0]?.id);
 
-  const panel = await openPanel(tabId);
+  const panel = await openPanel(context, extensionId, {
+    tabId,
+    viewport: PANEL,
+  });
   await expect(panel.getByText(/Listing detected/)).toBeVisible();
   // The screen picks the first two highlights itself: Balkon and Keller.
   await shoot(panel, "2-listing-detected");
