@@ -66,8 +66,8 @@ Kiezpigeon can read it.
 
 - **What is stored:** your profile (applicants, income, household, move-in,
   contact details, budget, documents checklist), your settings (model), the
-  applications you marked as sent (listing title and address, the letter,
-  status, dates), and your API key.
+  letters you filled into a form and the applications you marked as sent
+  (the listing's title, web address, district and Warmmiete, the letter, the status and its dates), and your API key.
 - **Where:** in Chrome's local extension storage on this computer
   (`chrome.storage.local`). Nothing is synced to your Google account and
   there is no Kiezpigeon server.
@@ -121,7 +121,7 @@ request. Read in this order:
 
 - [PLAN.md](PLAN.md): goals, tiers, test tiers, definition of done
 - [CLAUDE.md](CLAUDE.md): the working agreement and product invariants
-- [docs/decisions.md](docs/decisions.md): thirteen ADRs
+- [docs/decisions.md](docs/decisions.md): fourteen ADRs
 - [docs/ai-workflow.md](docs/ai-workflow.md): every place the AI got it
   wrong, and a narrative per phase
 - [PHASES.md](PHASES.md): the phase specs

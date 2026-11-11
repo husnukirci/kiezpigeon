@@ -68,8 +68,8 @@ when ADRs 1 to 7 were accepted. Paths follow the folder map in ADR 6.
 - Ids are strings: applications `app_<random>`, applicants `a1`, `a2`.
 - Money is integer cents; sizes in m² are numbers with up to one decimal;
   dates are ISO `YYYY-MM-DD` strings in data, German `DD.MM.YYYY` in the UI.
-- Fixtures: saved listing HTML lives in `fixtures/immoscout24/` and
-  `fixtures/generic/`, one file per case, each starting with a comment
+- Fixtures: saved listing HTML lives in `fixtures/immoscout24/`,
+  `fixtures/generic/`, `fixtures/vonovia/` and `fixtures/deutsche-wohnen/`, one file per case, each starting with a comment
   `<!-- scrubbed: names, phones, emails, addresses, ids replaced -->`.
 - Sample profiles: invented people from `test-support/sample-profiles.ts`,
   used by every test and screenshot.
@@ -136,8 +136,8 @@ design/tokens.json, do not edit */`. `scripts/build-tokens.test.ts`
    first real test; `wxt build`.
 8. Git hygiene: husky + lint-staged (Prettier, ESLint, stylelint on staged
    files), commitlint with `@commitlint/config-conventional`.
-9. CI in `.github/workflows/ci.yml`: on push and PR, Node 24, `npm ci`,
-   `lint`, `typecheck`, `test`, `build`; upload `.output/chrome-mv3/` as a
+9. CI in `.github/workflows/ci.yml`: on PRs and pushes to `main`, Node 24,
+   `npm ci`, `lint`, `test` (typechecks first), `build`; upload `.output/chrome-mv3/` as a
    workflow artifact. The Playwright job is added in Phase 5.
 10. `README.md` stub: one-liner, "build and load unpacked" steps, links to
     PLAN.md and PHASES.md, the "never submits" and "data stays on your
@@ -194,7 +194,18 @@ ask for 3 ×.` Never `no`: landlords decide, not Kiezpigeon.
 - **WBS line:** listing requires WBS: profile has WBS → `ok`, `You have a
 WBS`; else `no`, `This flat needs a WBS`. Listing says not required → `ok`,
   `No WBS needed`. Listing silent → `unknown`, `No WBS mentioned in the listing`.
-- The fit check returns the four lines in that order. It never blocks
+- **Move-in line** (arrived with the ADR 10 work, after Phase 4; not a Phase 1
+  deliverable): listing does not say when it is free → `unknown`. Profile has
+  no move-in → `unknown`. Free by arrangement → `ok`. Free immediately: a
+  fixed move-in date → `warn` (check the landlord can wait), else `ok`. Free
+  from a date: move-in as soon as possible or flexible → `ok`; on that date
+  or up to 31 days after → `ok`; before it, or more than 31 days after →
+  `warn`. Never `no`.
+- **Relationship** (a validator check that arrived with the ADR 10 work, after
+  Phase 4; not a Phase 1 deliverable): unless the household says married, no
+  marriage word (Ehepaar, verheiratet, Ehemann, ...) appears.
+- The fit check returns the five lines in that order (`budget`, `income`, `pets`,
+  `wbs`, `moveIn`). It never blocks
   writing a letter.
 - **Letter word count:** a word is a maximal run of non-whitespace that
   contains at least one letter or digit. The whole letter counts,
@@ -256,15 +267,15 @@ und Herren,`.
    Tests: every branch of every line, including the 10% edge and the 3.0
    edge.
 5. `letterPrompt`: `buildLetterPrompt(request): { system: string; user:
-string }`. Facts only, signal order, tone instruction, word range, no em
+string }`. Facts only, signal order, tone instruction, word limit, no em
    dash instruction, contact person, chosen features, pets sentence when
    present. Tests assert the facts block exactly and that no profile field
    absent from the request appears.
 6. `letterValidate`: `validateLetter(text, request): LetterProblem[]` with
-   problem codes `too_short`, `too_long`, `em_dash`, `unknown_number`,
+   problem codes `too_long`, `em_dash`, `unknown_number`,
    `wrong_salutation`, `pets_missing`, `pets_invented`, `feature_missing`,
-   each carrying the offending text. Tests: one passing 150-word fixture
-   letter, then one failing case per code.
+   `relationship_invented`, each carrying the offending text. Tests: one passing fixture
+   letter under the limit, then one failing case per code.
 7. `fieldMatch`: `classifyField(descriptor): FieldKind` from `name`, `id`,
    `autocomplete`, label text and placeholder against a German and English
    keyword table; `mapFields(descriptors, profile, letter): { mappings,
@@ -928,7 +939,7 @@ plan in `docs/superpowers/plans/2026-11-06-listing-analysis.md`.
 
 **Objective:** an "About this listing" card, from the page alone, that
 informs and never judges: the kind of rental, the Kaltmiete per m² against
-the band the page itself prints, how the letter will greet the contact,
+the band the page itself prints,
 and what is worth a second look.
 
 **In scope**

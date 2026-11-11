@@ -1,14 +1,18 @@
 node_modules/
 .output/
 .wxt/
-stats.html
 *.log
 .DS_Store
+
+# Raw saved pages before scrubbing; never committed (CLAUDE.md rule 6).
+kp-fixtures/
 
 # Local secrets such as a test API key; never committed.
 .env
 .env.*
 
+# Local working files of the planning tool; never committed.
+.superpowers/
+
 # Playwright output
 test-results/
-playwright-report/
