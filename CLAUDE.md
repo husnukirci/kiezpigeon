@@ -61,9 +61,9 @@ Optimize for legibility over cleverness.
   `ready | pending` per document type. No file is ever read, stored or
   uploaded.
 - **Data stays on the device.** Profile, letters and tracker live in local
-  extension storage. The only network request the extension makes is the
-  letter generation call (destination fixed by ADR 4), on an explicit user
-  action. No analytics, no telemetry, no remote logging. Settings offer
+  extension storage. The extension makes two kinds of network request,
+  both to the destination fixed by ADR 4 and both on an explicit user
+  action: generating a letter and analysing a listing. No analytics, no telemetry, no remote logging. Settings offer
   export, import and "delete all data".
 - **Read only what the user is looking at.** The extension reads the DOM of
   the active tab when the user opens the panel on it. No background fetches

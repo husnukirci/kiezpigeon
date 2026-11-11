@@ -4,7 +4,13 @@
 import { browser } from "wxt/browser";
 import type { ClaudeErrorCode } from "../claude/claude";
 import type { FillReport, FillStep } from "../fill/fill";
-import type { FormField, LetterRequest, Listing } from "../rules/types";
+import type { AnalysisSection } from "../rules/analysisParse";
+import type {
+  AnalysisRequest,
+  FormField,
+  LetterRequest,
+  Listing,
+} from "../rules/types";
 import type { LetterDraft } from "../rules/writeLetter";
 
 export type ListingResult =
@@ -29,6 +35,10 @@ export type LetterResult =
   | { kind: "letter"; draft: LetterDraft }
   | { kind: "error"; code: ClaudeErrorCode; message: string };
 
+export type AnalysisResult =
+  | { kind: "analysis"; sections: AnalysisSection[] }
+  | { kind: "error"; code: ClaudeErrorCode; message: string };
+
 interface Messages {
   getListing: { request: { type: "getListing" }; response: ListingResult };
   getContactForm: {
@@ -49,6 +59,11 @@ interface Messages {
   generateLetter: {
     request: { type: "generateLetter"; request: LetterRequest };
     response: LetterResult;
+  };
+  /** Panel to service worker, on the user's click only (ADR 14). */
+  analyseListing: {
+    request: { type: "analyseListing"; request: AnalysisRequest };
+    response: AnalysisResult;
   };
 }
 
@@ -73,6 +88,7 @@ const HANDLED: Record<MessageType, true> = {
   getPageText: true,
   fillForm: true,
   generateLetter: true,
+  analyseListing: true,
 };
 const TYPES: readonly string[] = Object.keys(HANDLED);
 

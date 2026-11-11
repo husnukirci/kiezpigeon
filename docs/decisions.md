@@ -804,3 +804,34 @@ gestattet") is removed before scanning, and that list is kept with one test
 per phrasing found on a real page, because an over-flag would put a wrong
 claim on the card; the page's own WBS row outranks the text. The running probes are
 `src/rules/analysis.test.ts` and `src/rules/rentalHints.test.ts`.
+
+**Amendment (2026-11-11): a separate, requested analysis may use the network.**
+
+_Status._ Accepted (Phase 14). The card above is unchanged.
+
+_Context._ The card reads the page only and cannot say how a Kaltmiete
+compares or what the description implies for this household. The user wants
+that on request, and only a reader of the whole page text can say it.
+
+_Decision._ An "Analyse this listing" button, separate from the card and
+pressed by the user, sends the listing region's text and a subset of the
+profile to the destination fixed by ADR 4, from the service worker through
+`src/claude/`. The call runs on `claude-opus-5-5` whatever `settings.model`
+says, at the letter call's effort. Sent from the profile: `budgetWarmCents`,
+household (adults, children, pets, smoker), `hasWbs`, `moveIn`, each
+applicant's employment type and the income-to-rent ratio in tenths. Never
+sent: names, contact data, job, raw net income, letter defaults, documents.
+Every value of the applicants' names, email, phone and street is removed
+from the page text before the request leaves the panel. The listing's own
+address, district and contact person are sent. The answer has six fixed
+headings, is labelled as an estimate, is shown once and is not stored. It
+has no validator, since it is advice and not text sent in the user's name.
+Errors have their own neutral messages, one per error code. Known sites only.
+No permission, host or stored field is added.
+
+_Consequences._ A second kind of request leaves the device, always on a click.
+A user whose key cannot run Opus 5.5 gets a neutral "cannot run the analysis"
+message and the letter flow is unaffected. The running probes are
+`src/rules/analysisRequest.test.ts` (what is sent and removed),
+`src/rules/analysisPrompt.test.ts` (the prompt) and
+`src/claude/analysisService.test.ts` (key, fixed model, error copy).
