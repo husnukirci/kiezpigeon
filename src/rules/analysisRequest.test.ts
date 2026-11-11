@@ -77,6 +77,23 @@ describe("createAnalysisRequest", () => {
     expect(result.pageText).toContain("Schöne Wohnung");
   });
 
+  it("removes a name only as a whole word", () => {
+    const ben = {
+      ...coupleWithDog,
+      applicants: coupleWithDog.applicants.map((a, i) =>
+        i === 0 ? { ...a, firstName: "Ben" } : a,
+      ),
+    };
+    const result = createAnalysisRequest(
+      ben,
+      kreuzbergListing,
+      "Nebenkosten 120 € | Ben | Angemeldet als BEN, Schöne Wohnung",
+    );
+    expect(result.pageText).toContain("Nebenkosten");
+    expect(result.pageText).not.toMatch(/\bben\b/i);
+    expect(result.pageText).toContain("Schöne Wohnung");
+  });
+
   it("sends the household without the relationship", () => {
     expect(coupleWithDog.household.relationship).toBe("partners");
     expect(request.household).toEqual({

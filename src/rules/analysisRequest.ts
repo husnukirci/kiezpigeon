@@ -28,7 +28,9 @@ function ownValues(profile: Profile): string[] {
 
 function removeValue(text: string, value: string): string {
   const parts = value.split(/\s+/).map(escapeRegExp);
-  return text.replace(new RegExp(parts.join("\\s+"), "gi"), MARK);
+  // Whole words only, so "Ben" does not cut "Nebenkosten".
+  const pattern = `(?<![\\p{L}\\p{N}])${parts.join("\\s+")}(?![\\p{L}\\p{N}])`;
+  return text.replace(new RegExp(pattern, "giu"), MARK);
 }
 
 export function createAnalysisRequest(
