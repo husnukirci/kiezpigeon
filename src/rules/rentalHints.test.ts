@@ -294,3 +294,19 @@ describe("rentalHints: the advance-payment hint reads amounts, line breaks and d
     );
   });
 });
+
+describe("rentalHints: a deposit named beside vorab is not a deposit asked for vorab", () => {
+  it.each([
+    "Kaution 2.000 €, Besichtigung vorab nach Terminvereinbarung möglich.",
+    "Kaution 3 KM, vorab bitte Selbstauskunft und SCHUFA.",
+    "Kaution: 2.400 €, vorab Besichtigung vereinbaren.",
+    "Kaution 3 Nettokaltmieten, Unterlagen bitte vorab per Mail.",
+    "Die Kaution beträgt ca. 3.000 €, vorab bitte Gehaltsnachweise senden.",
+    "Kaution: 3 Monatsmieten, Mietschuldenfreiheit vorab einreichen.",
+    "Kaution 3 MM inkl. Garage, vorab Termin.",
+    "Kaution 2.000 € – Besichtigung vorab nach Absprache",
+    "Zahlung der Kaution in drei Raten, Besichtigung vorab möglich.",
+  ])("does not flag %j", (text) => {
+    expect(rentalHints(text).paymentFirst).toBe(false);
+  });
+});

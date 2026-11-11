@@ -55,6 +55,38 @@ const NEGATIONS = new RegExp(
   "gi",
 );
 
+const TIMING = "(?:vor der besichtigung|vorab|before (?:the |a )?viewing)";
+const DEPOSIT_WORD =
+  "\\b(?:kaution|geld|betrag|zahlung|deposit|payment|money)\\b";
+/** Words that make a "vorab" about a viewing or documents, not a payment. */
+const NOT_PAYMENT =
+  "(?:besichtigung|unterlagen|selbstauskunft|termin|nachweis|schufa|mietschuldenfreiheit|viewing|documents?)";
+/** A word between the deposit and the timing that names no viewing or document. */
+const GAP_WORD = `(?![a-zäöüß]*${NOT_PAYMENT})\\w+`;
+/** A payment verb or noun after the timing, in its clause. */
+const PAYS_AFTER =
+  "(?=[^.!?,;\\n]*?(?:überweis|überwies|zahl|leisten|fällig|hinterleg))";
+const NO_DOCUMENT_AFTER = `(?![^.!?,;\\n]*${NOT_PAYMENT})`;
+
+/**
+ * A deposit or other payment word asked for before the viewing. Inside one
+ * comma- and dash-free stretch any words may sit between ("Die Kaution von
+ * 1.500 € muss vorab"). Across a comma or dash only when a payment verb
+ * follows the timing ("Die Kaution, also 1000 €, ist vorab fällig") or when
+ * only an amount sits between and the timing ends the clause ("Kaution,
+ * 1.500 €, vorab."). A viewing or document word between or after means the
+ * vorab is about those ("Kaution 2.000 €, Besichtigung vorab möglich").
+ * From the 2026-11-10 final review and its re-review.
+ */
+const DEPOSIT_FIRST = new RegExp(
+  [
+    `${DEPOSIT_WORD}[^\\w.!?,;\\n\\-–—]+(?:${GAP_WORD}[^\\w.!?,;\\n\\-–—]+){0,6}?${TIMING}${NO_DOCUMENT_AFTER}`,
+    `${DEPOSIT_WORD}[^\\w.!?;\\n]+(?:${GAP_WORD}[^\\w.!?;\\n]+){0,6}?${TIMING}${PAYS_AFTER}${NO_DOCUMENT_AFTER}`,
+    `${DEPOSIT_WORD}(?:[^\\w.!?;\\n]+(?:\\d+|also|von|ca|eur|euro))*[^\\w.!?;\\n]+${TIMING}\\s*(?:[.!?;,\\n]|$)`,
+  ].join("|"),
+  "i",
+);
+
 const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   sublet: /untermiete|untervermiet|\bsublet/i,
   interim: /zwischenmiete|interim (?:let|rent|tenancy)/i,
@@ -85,13 +117,16 @@ const PATTERNS: Readonly<Record<keyof RentalHints, RegExp>> = {
   // viewing" alone is how a landlord asks for documents.
   // The gap stays inside one clause (a line break ends one; the points in
   // "1.500" and "z.B." do not, see withoutInnerPoints). A deposit or other
-  // payment word may sit across a comma from the timing. A rent word is not
+  // payment word follows DEPOSIT_FIRST. A rent word is not
   // a Kaltmiete or Warmmiete label (compounds such as "Monatsmiete" count),
   // stops at a comma, and a clause about monthly rent ("monatlich vorab") is
   // the usual rent clause. From the 2026-11-10 audit, its review and the
   // final review.
-  paymentFirst:
-    /\b(?:kaution|geld|betrag|zahlung|deposit|payment|money)\b[^\w.!?;\n]+(?:\w+[^\w.!?;\n]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:\brent\b|(?<!kalt|warm)miete\b)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?,;\n]+(?:\w+[^\w.!?,;\n]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?;\n]+(?:\w+[^\w.!?;\n]+){0,4}?(?:überweis\w*|überwiesen|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram/i,
+  paymentFirst: new RegExp(
+    `${DEPOSIT_FIRST.source}|` +
+      String.raw`(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:\brent\b|(?<!kalt|warm)miete\b)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?,;\n]+(?:\w+[^\w.!?,;\n]+){0,6}?(?:vor der besichtigung|vorab|before (?:the |a )?viewing)|(?<![^.!?,;\n]*\bmonatlich\b[^.!?,;\n]*)(?:vor der besichtigung|vorab|before (?:the |a )?viewing)(?![^.!?,;\n]*\bmonatlich\b)[^\w.!?;\n]+(?:\w+[^\w.!?;\n]+){0,4}?(?:überweis\w*|überwiesen|zahlen|bezahlen|paid|pay|transfer\w*)|vorkasse|western union|moneygram`,
+    "i",
+  ),
   // The landlord abroad, not applicants from abroad.
   abroad:
     /(?:\bich\b|\bwir\b|vermieter\w*|eigentümer\w*|besitzer\w*)\W+(?:\w+\W+){0,5}?(?:im ausland|nicht in deutschland)|\b(?:i am|i'm|we are|we're|owner is|landlord is)\W+(?:\w+\W+){0,4}?(?:abroad|out of the country|not in germany)/i,
