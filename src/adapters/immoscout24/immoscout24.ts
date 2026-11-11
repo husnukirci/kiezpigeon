@@ -14,10 +14,12 @@ import type {
 import { assembleListing, type ListingFields } from "../listing";
 import {
   parseContactName,
+  parseDepositText,
   parseEnglishAvailability,
   parseEnglishEuro,
   parseEnglishNumber,
   parseEuroText,
+  parseFloor,
   parseAvailability,
   parseNumberText,
 } from "../parse";
@@ -72,14 +74,6 @@ function districtOf(address: string): string | undefined {
   if (postcodeIndex < 1 || district === undefined) return undefined;
   if (/\d/.test(district)) return undefined;
   return district.replace(/\s*\(.*\)$/, "") || undefined;
-}
-
-/** `1 von 5` → 1, `EG` → 0, `UG` → -1; `3 of 5`, `Ground floor`, `Basement`. */
-function floorOf(text: string): number | undefined {
-  if (/^(EG|Erdgeschoss|Ground floor)\b/i.test(text)) return 0;
-  if (/^(UG|Untergeschoss|Souterrain|Basement)\b/i.test(text)) return -1;
-  const match = /^-?\d+/.exec(text);
-  return match ? Number(match[0]) : undefined;
 }
 
 function petPolicyOf(text: string): PetPolicy | undefined {
@@ -233,13 +227,14 @@ function readListing(document: Document, url: string): Listing | undefined {
   // An exposé always has a title and a rent block; a search page has
   // neither.
   if (title === undefined && kaltText === undefined) return undefined;
+  const kaltmiete = map(kaltText, euro);
 
   const address = textOf(document, '[data-qa="is24-expose-address"]');
   const found: ListingFields = {
     title,
     address,
     district: map(address, districtOf),
-    kaltmieteCents: map(kaltText, euro),
+    kaltmieteCents: kaltmiete,
     nebenkostenCents: map(
       firstText(document, ".is24qa-nebenkosten", ".is24qa-additional-costs"),
       euro,
@@ -271,7 +266,10 @@ function readListing(document: Document, url: string): Listing | undefined {
       ),
       number,
     ),
-    floor: map(firstText(document, ".is24qa-etage", ".is24qa-floor"), floorOf),
+    floor: map(
+      firstText(document, ".is24qa-etage", ".is24qa-floor"),
+      parseFloor,
+    ),
     availability: map(
       firstText(document, ".is24qa-bezugsfrei-ab", ".is24qa-available-from"),
       availability,
@@ -302,7 +300,7 @@ function readListing(document: Document, url: string): Listing | undefined {
         ".is24qa-kaution-o-genossenschaftsanteile",
         ".is24qa-deposit",
       ) ?? rowByLabel(document, /kaution|deposit/i),
-      parseEuroText,
+      (text) => parseDepositText(text, kaltmiete),
     ),
     offeredBy: offeredByOf(document),
     priceComparison: priceComparisonOf(document),

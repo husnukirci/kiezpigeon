@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   parseAvailability,
   parseContactName,
+  parseDepositText,
   parseEnglishAvailability,
   parseEnglishEuro,
   parseEnglishNumber,
   parseEuroText,
+  parseFloor,
   parseGermanDate,
   parseNumberText,
 } from "./parse";
@@ -114,5 +116,73 @@ describe("the English page's text", () => {
       kind: "by_arrangement",
     });
     expect(parseEnglishAvailability("soon")).toBeUndefined();
+  });
+});
+
+describe("parseFloor", () => {
+  it.each<[string, number]>([
+    ["EG", 0],
+    ["Erdgeschoss", 0],
+    ["Erdgeschoß", 0],
+    ["Ground floor", 0],
+    ["UG", -1],
+    ["Untergeschoß", -1],
+    ["1. Untergeschoss", -1],
+    ["Souterrain", -1],
+    ["Basement", -1],
+    ["2. Obergeschoß", 2],
+    ["3. OG", 3],
+    ["1 von 5", 1],
+    ["3 of 5", 3],
+    ["4", 4],
+  ])("reads %s as %d", (text, floor) => {
+    expect(parseFloor(text)).toBe(floor);
+  });
+  it("returns undefined for other text", () => {
+    expect(parseFloor("Hochparterre")).toBeUndefined();
+  });
+});
+
+describe("parseDepositText", () => {
+  it("reads an amount as cents", () => {
+    expect(parseDepositText("3.540 €", 118000)).toBe(354000);
+    expect(parseDepositText("1000", 118000)).toBe(100000);
+  });
+  it.each([
+    "3 Nettokaltmieten",
+    "3 Kaltmieten",
+    "3 Monatsmieten",
+    "3 MM",
+    "3 NKM",
+    "3 monthly rents",
+  ])("reads %s as three rents", (text) => {
+    expect(parseDepositText(text, 118000)).toBe(354000);
+    expect(parseDepositText(text, undefined)).toBeUndefined();
+  });
+  it("reads a half rent", () => {
+    expect(parseDepositText("2,5 Kaltmieten", 100000)).toBe(250000);
+  });
+});
+
+describe("parseContactName companies", () => {
+  it.each([
+    "Wohnungsbaugenossenschaft Muster e.G.",
+    "Musterhausverwaltung",
+    "Vermietungsteam Berlin",
+    "Muster Immobilien GmbH",
+    "Muster Wohnen Service",
+  ])("greets no company by name: %s", (name) => {
+    expect(parseContactName(name)).toBeUndefined();
+  });
+
+  it("does not take a short surname for a legal form", () => {
+    expect(parseContactName("Frau Se")).toEqual({
+      salutation: "Frau",
+      lastName: "Se",
+    });
+    expect(parseContactName("Herr Ag")).toEqual({
+      salutation: "Herr",
+      lastName: "Ag",
+    });
   });
 });

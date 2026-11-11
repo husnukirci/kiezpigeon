@@ -19,6 +19,38 @@ export function parseEuroText(text: string): Cents | undefined {
   );
 }
 
+/** `Erdgeschoss`, `2. OG`, `1 von 5`, `Souterrain`, `Basement` → the floor. */
+export function parseFloor(text: string): number | undefined {
+  const t = text.trim();
+  if (/^(EG|Erdgescho(ss|ß)|Ground floor)(?![\p{L}])/iu.test(t)) return 0;
+  if (
+    /^(\d+\.?\s*)?(UG|Untergescho(ss|ß)|Souterrain|Basement)(?![\p{L}])/iu.test(
+      t,
+    )
+  ) {
+    return -1;
+  }
+  const match = /^(-?\d+)(?!\d)/.exec(t);
+  return match ? Number(match[1]) : undefined;
+}
+
+const RENT_COUNT =
+  /(\d+(?:,\d+)?)\s*(?:Nettokaltmieten?|Kaltmieten?|Monatsmieten?|MM|NKM|monthly rents?)(?![\p{L}])/iu;
+
+/**
+ * `3.540 €`, `1000` → cents; `3 Kaltmieten`, `2,5 NKM` → that many of the
+ * listing's Kaltmiete, or undefined when the Kaltmiete is not known.
+ */
+export function parseDepositText(
+  text: string,
+  kaltmieteCents: Cents | undefined,
+): Cents | undefined {
+  const count = !text.includes("€") ? RENT_COUNT.exec(text)?.[1] : undefined;
+  if (count === undefined) return parseEuroText(text);
+  if (kaltmieteCents === undefined) return undefined;
+  return Math.round(Number(count.replace(",", ".")) * kaltmieteCents);
+}
+
 /** `44 m²`, `62,5 m²`, `2,5` → a number. */
 export function parseNumberText(text: string): number | undefined {
   const match = /(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?/.exec(text);
@@ -86,9 +118,16 @@ export function parseAvailability(text: string): Availability | undefined {
 
 const SALUTATIONS = new Set(["Frau", "Herr"]);
 const TITLES = /^(Dr\.|Prof\.|Dipl\.-\w+\.?)$/;
-// A company is not a person to greet by name.
-const COMPANY =
-  /\b(GmbH|mbH|AG|SE|KG|OHG|eG|e\.\s?G\.|GbR|UG|Immobilien|Verwaltung|Hausverwaltung|Wohnen|Wohnungsbau|Genossenschaft|Makler|Team|Kundenservice)\b/i;
+// A company is not a person to greet by name. Legal forms are whole tokens
+// and case-sensitive, so a short surname ("Se", "Ag") is not one; trade words
+// count inside a word ("Musterhausverwaltung") whatever the case.
+const LEGAL_FORM =
+  /(?<![\p{L}.])(GmbH|mbH|AG|SE|KG|OHG|eG|e\.\s?G\.|GbR|UG)(?![\p{L}])/u;
+const TRADE_WORD =
+  /immobilien|verwaltung|wohnungsbau|genossenschaft|vermietung|makler|kundenservice|team(?![\p{L}])|(?<![\p{L}])wohnen(?![\p{L}])/iu;
+const COMPANY = {
+  test: (name: string) => LEGAL_FORM.test(name) || TRADE_WORD.test(name),
+};
 
 /** `Frau Dr. Anna Weber` → salutation, first name and surname. */
 export function parseContactName(text: string): ContactPerson | undefined {
