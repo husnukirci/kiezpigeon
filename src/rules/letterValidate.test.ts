@@ -187,6 +187,21 @@ describe("validateLetter", () => {
     ]);
   });
 
+  it("needs the exact salutation for a named contact", () => {
+    for (const line of [
+      "Hey Weber!",
+      "Sehr geehrter Herr Weber,",
+      "Sehr geehrte Frau Weber",
+    ]) {
+      expect(
+        validateLetter(replaced("Sehr geehrte Frau Weber,", line), request),
+      ).toContainEqual({
+        code: "wrong_salutation",
+        text: line,
+      });
+    }
+  });
+
   it("needs the general salutation when no contact person is known", () => {
     const anonymousRequest = {
       ...request,

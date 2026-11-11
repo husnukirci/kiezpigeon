@@ -9,7 +9,6 @@ import {
   incomePhrase,
   incomeRatioTenths,
   moveInDateOf,
-  namedContact,
   salutationFor,
 } from "./letterPrompt";
 import { sumCents } from "./money";
@@ -150,10 +149,7 @@ function salutationProblems(
   request: LetterRequest,
 ): LetterProblem[] {
   const firstLine = (text.trim().split(/\r?\n/)[0] ?? "").trim();
-  const person = namedContact(request.listing.contactPerson);
-  const ok = person
-    ? firstLine.includes(person.lastName)
-    : firstLine === salutationFor(undefined);
+  const ok = firstLine === salutationFor(request.listing.contactPerson);
   return ok ? [] : [{ code: "wrong_salutation", text: firstLine }];
 }
 
