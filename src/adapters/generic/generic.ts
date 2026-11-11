@@ -2,7 +2,8 @@
 // contact form among its visible forms and reads it with the shared
 // describer. It reads no listing facts; the user types those in the panel.
 import type { FormField } from "../../rules/types";
-import { describeFields, isVisible } from "../../fill/describe";
+import { isVisible } from "../../fill/describe";
+import { readFormFields } from "../dom";
 
 /** A form with fewer fields and no message box is a search or a newsletter. */
 const MIN_FIELDS_WITHOUT_MESSAGE = 3;
@@ -42,8 +43,6 @@ function contactForm(document: Document): HTMLFormElement | undefined {
 
 export const generic = {
   contactForm,
-  readContactForm: (document: Document): FormField[] => {
-    const form = contactForm(document);
-    return form ? describeFields(form) : [];
-  },
+  readContactForm: (document: Document): FormField[] =>
+    readFormFields(contactForm(document)),
 };

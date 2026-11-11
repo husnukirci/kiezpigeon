@@ -2,9 +2,9 @@
 // so this reads the visible rows and key figures by their German labels, then
 // parses the text beside them. The JSON the page also carries is never read
 // (ADR 8). A site differs only by its id, its name and its listing address.
-import { describeFields } from "../fill/describe";
 import type { Feature, Listing, RentalHints } from "../rules/types";
 import { rentalHints } from "../rules/rentalHints";
+import { map, readFormFields, textOf } from "./dom";
 import { assembleListing } from "./listing";
 import {
   parseAvailability,
@@ -30,10 +30,6 @@ const HOME_TYPES = new Set(["Wohnung", "Haus"]);
 
 function clean(text: string | null | undefined): string | undefined {
   return text?.replace(/\s+/g, " ").trim() || undefined;
-}
-
-function textOf(document: Document, selector: string): string | undefined {
-  return clean(document.querySelector(selector)?.textContent);
 }
 
 function titleOf(document: Document): string | undefined {
@@ -84,10 +80,6 @@ function figure(document: Document, label: string): string | undefined {
     return clean(subline.previousElementSibling?.textContent);
   }
   return undefined;
-}
-
-function map<T, U>(value: T | undefined, f: (value: T) => U): U | undefined {
-  return value === undefined ? undefined : f(value);
 }
 
 /** `Musterstr. 12 - 10999 Berlin OT Kreuzberg`, the street sometimes left out. */
@@ -189,9 +181,6 @@ export function estatePlatformAdapter(site: EstatePlatformSite): SiteAdapter {
     isReady,
     readListing,
     contactForm,
-    readContactForm: (document) => {
-      const form = contactForm(document);
-      return form ? describeFields(form) : [];
-    },
+    readContactForm: (document) => readFormFields(contactForm(document)),
   };
 }
