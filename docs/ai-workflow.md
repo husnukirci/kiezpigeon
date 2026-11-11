@@ -240,6 +240,7 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - P14 | Plan: the plan typed the analysis request's household as the full Household, which would have sent the applicants' relationship, outside the spec's list. | The request takes adults, children, pets and smoker only, tested first.
 - P14 | Name removal, final review: removing the user's first name as a plain substring would have cut ordinary words such as Nebenkosten for a user named Ben. | Values are removed only as whole words, tested with that name, test first.
 - P14 | Analysis display, final review: bullet lists the prompt allows rendered as one run-on paragraph. | Bullet blocks render as lists, with a smoke test.
+- P14 | Live QA: the model wrote inline bold labels such as "**Kaution:**" and the panel showed the asterisks; no test answer had used bold. | The parser strips inline bold and the prompt asks for headings and bullets only, test first.
 
 ## Per-phase narrative
 
