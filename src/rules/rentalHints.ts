@@ -1,7 +1,7 @@
 // What a listing's free text says about the kind of rental (Phase 13):
 // German or English page text in, flags out. The analysis rule reads only
 // these flags, never the text. Each pattern notes where it was seen.
-import type { RentalHints } from "./types";
+import type { Listing, RentalHints } from "./types";
 
 /** Every flag off: plain text that names no special form of rental. */
 export const NO_HINTS: RentalHints = {
@@ -97,4 +97,16 @@ export function rentalHints(text: string): RentalHints {
     hints[flag] = PATTERNS[flag].test(source);
   }
   return hints;
+}
+
+/**
+ * Whether the flat needs a WBS: the page's own row when it has one, else
+ * what its text asks for, else unknown. The card and the fit check both
+ * read WBS only through this.
+ */
+export function wbsRequiredOf(
+  listing: Pick<Listing, "wbsRequired" | "hints">,
+): boolean | undefined {
+  if (listing.wbsRequired !== undefined) return listing.wbsRequired;
+  return listing.hints?.wbs ? true : undefined;
 }

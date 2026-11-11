@@ -3,6 +3,7 @@
 import { CLOSE_DAYS, daysBetween } from "./dates";
 import { formatAvailability, formatDate, formatEuro } from "./format";
 import { sumCents } from "./money";
+import { wbsRequiredOf } from "./rentalHints";
 import type { Cents, FitLine, Listing, Profile } from "./types";
 
 function rentOf(listing: Listing): Cents | undefined {
@@ -80,7 +81,8 @@ function petsLine(profile: Profile, listing: Listing): FitLine {
 }
 
 function wbsLine(profile: Profile, listing: Listing): FitLine {
-  if (listing.wbsRequired === undefined) {
+  const required = wbsRequiredOf(listing);
+  if (required === undefined) {
     return {
       rule: "wbs",
       status: "unknown",
@@ -89,7 +91,7 @@ function wbsLine(profile: Profile, listing: Listing): FitLine {
         : "No WBS mentioned in the listing",
     };
   }
-  if (!listing.wbsRequired) {
+  if (!required) {
     return { rule: "wbs", status: "ok", reason: "No WBS needed" };
   }
   return profile.hasWbs

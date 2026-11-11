@@ -21,14 +21,40 @@ describe("centsPerM2", () => {
 });
 
 describe("analyseListing: kind", () => {
-  it("says so when the description could not be read", () => {
+  it("says so when the description could not be read, after the facts the page gave", () => {
     expect(
       analyseListing({ ...kreuzbergListing, hints: undefined }).kind,
     ).toEqual({
       id: "kind",
       status: "unknown",
-      text: "I could not read this page's description.",
+      text: "Etagenwohnung, offered by a company. I could not read this page's description.",
     });
+  });
+
+  it("keeps the facts the page gave when its description could not be read", () => {
+    const { kind } = analyseListing({
+      ...kreuzbergListing,
+      hints: undefined,
+      wbsRequired: true,
+      flatType: "Etagenwohnung",
+      offeredBy: undefined,
+    });
+    expect(kind).toEqual({
+      id: "kind",
+      status: "unknown",
+      text: "Etagenwohnung, WBS required. I could not read this page's description.",
+    });
+  });
+
+  it("says nothing but that when the page gave no fact either", () => {
+    const { kind } = analyseListing({
+      ...kreuzbergListing,
+      hints: undefined,
+      wbsRequired: undefined,
+      flatType: undefined,
+      offeredBy: undefined,
+    });
+    expect(kind.text).toBe("I could not read this page's description.");
   });
 
   it("names no special form of rental on plain text", () => {

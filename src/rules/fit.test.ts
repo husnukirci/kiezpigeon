@@ -278,6 +278,19 @@ describe("WBS line", () => {
     });
   });
 
+  it("takes a requirement from the text when the page has no WBS row", () => {
+    const listing = listingWith({
+      wbsRequired: undefined,
+      hints: { ...NO_HINTS, wbs: true, wbsMentioned: true },
+    });
+    expect(line(coupleWithDog, listing, "wbs")).toEqual({
+      rule: "wbs",
+      status: "no",
+      reason: "This flat needs a WBS",
+    });
+    expect(line(soloStudent, listing, "wbs").status).toBe("ok"); // soloStudent has a WBS
+  });
+
   it("is unknown when the listing is silent", () => {
     expect(
       line(coupleWithDog, listingWith({ wbsRequired: undefined }), "wbs"),

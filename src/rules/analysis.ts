@@ -3,6 +3,7 @@
 // prints, and what is worth a second look. It informs; it never blocks writing a letter and never claims more
 // than the page shows. Every line is UI copy.
 import { formatEuro, formatEuroPerM2 } from "./format";
+import { wbsRequiredOf } from "./rentalHints";
 import type {
   Analysis,
   AnalysisLine,
@@ -48,16 +49,9 @@ export function centsPerM2(
 
 function kindLine(listing: Listing): AnalysisLine {
   const { hints, flatType, offeredBy } = listing;
-  if (hints === undefined) {
-    return {
-      id: "kind",
-      status: "unknown",
-      text: "I could not read this page's description.",
-    };
-  }
   // The page's own WBS row outranks a mention of WBS in its text.
   const parts = KIND_PARTS.filter(([flag]) =>
-    flag === "wbs" ? (listing.wbsRequired ?? hints.wbs) : hints[flag],
+    flag === "wbs" ? wbsRequiredOf(listing) === true : hints?.[flag] === true,
   ).map(([, word]) => word);
   const offered =
     offeredBy === "private"
@@ -69,6 +63,14 @@ function kindLine(listing: Listing): AnalysisLine {
     (part): part is string => part !== undefined,
   );
   const sentence = facts.join(", ").replace(/^./, (c) => c.toUpperCase());
+  if (hints === undefined) {
+    const unread = "I could not read this page's description.";
+    return {
+      id: "kind",
+      status: "unknown",
+      text: facts.length > 0 ? `${sentence}. ${unread}` : unread,
+    };
+  }
   const text =
     parts.length > 0
       ? `${sentence}.`
