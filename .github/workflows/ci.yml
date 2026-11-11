@@ -37,7 +37,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # No --with-deps: the runner image already has Chromium's libraries, and the
+      # apt step fails the job whenever Ubuntu's package servers cannot be reached.
+      - run: npx playwright install chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v5
         if: failure()
