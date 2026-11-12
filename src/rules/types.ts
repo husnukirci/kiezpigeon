@@ -199,6 +199,25 @@ export interface FitLine {
   reason: string;
 }
 
+/** What a call gets: the rules as the system prompt, the facts as the user turn. */
+export interface Prompt {
+  system: string;
+  user: string;
+}
+
+export interface AnalysisRequest {
+  listing: Listing;
+  /** The listing region's text with the user's own values removed. */
+  pageText: string;
+  budgetWarmCents?: Cents;
+  household: Omit<Household, "relationship">;
+  hasWbs: boolean;
+  moveIn?: MoveIn;
+  employment: EmploymentType[];
+  /** Combined net income / Kaltmiete in tenths, floored; absent without rent. */
+  incomeRatioTenths?: number;
+}
+
 /**
  * The facts a letter may use. Built from the profile and the listing; the
  * budget and the WBS flag are deliberately not part of it.

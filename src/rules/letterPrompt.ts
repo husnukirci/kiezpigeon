@@ -7,6 +7,7 @@ import { formatArea, formatDate, formatEuro, formatNumber } from "./format";
 import { sumCents } from "./money";
 import { allDocumentsReady } from "./profile";
 import type {
+  Applicant,
   Availability,
   ContactPerson,
   EmploymentType,
@@ -19,6 +20,7 @@ import type {
   PetKind,
   PetPolicy,
   Profile,
+  Prompt,
   Relationship,
   Tone,
 } from "./types";
@@ -200,17 +202,25 @@ export function incomeRatioPhrase(request: LetterRequest): string | undefined {
 
 /** Income divided by Kaltmiete in tenths, floored; undefined without rent. */
 export function incomeRatioTenths(request: LetterRequest): number | undefined {
-  const kaltmiete = request.listing.kaltmieteCents;
+  return ratioTenths(request.applicants, request.listing);
+}
+
+/** The one copy of the arithmetic, shared with the analysis request. */
+export function ratioTenths(
+  applicants: Applicant[],
+  listing: Listing,
+): number | undefined {
+  const kaltmiete = listing.kaltmieteCents;
   if (kaltmiete === undefined || kaltmiete <= 0) return undefined;
-  const income = sumCents(request.applicants.map((a) => a.netIncomeCents));
+  const income = sumCents(applicants.map((a) => a.netIncomeCents));
   return Math.floor((income * 10) / kaltmiete);
 }
 
-function hasPets(household: Household): boolean {
+export function hasPets(household: Household): boolean {
   return household.pets.some((pet) => pet.count > 0);
 }
 
-function petsPhrase(household: Household): string {
+export function petsPhrase(household: Household): string {
   return household.pets
     .filter((pet) => pet.count > 0)
     .map((pet) => {
@@ -269,7 +279,7 @@ function freeFrom(availability: Availability | undefined): string | undefined {
   }
 }
 
-function listingLines(listing: Listing): string[] {
+export function listingLines(listing: Listing): string[] {
   const facts: [string, string | undefined][] = [
     ["Bezirk", listing.district],
     [
@@ -414,10 +424,7 @@ function factsBlock(request: LetterRequest): string {
 }
 
 /** What the model gets: the rules as the system prompt, the facts as the user turn. */
-export interface LetterPrompt {
-  system: string;
-  user: string;
-}
+export type LetterPrompt = Prompt;
 
 /** One rule per applicant who is looking for work. */
 function jobSearchRules(request: LetterRequest): string[] {

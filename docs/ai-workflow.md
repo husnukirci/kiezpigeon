@@ -234,6 +234,13 @@ Format: `- <phase> | <what happened> | <what changed as a result>`.
 - Audit 5 | Comments: the audit called the income comment wrong ("must fix before the profile is saved" on an advisory message), but that problem does block saving, so the comment was right. | Comment left as it was; the commit body says why.
 - Audit 5 | E2e helpers: the plan gave a shared `openPanel` the parameters of the two `app()` copies, which build tracker records and open no panel, and gave `recordSendAttempts` a page-taking signature none of the copies had. | The helpers follow the existing copies, as the plan's own rule says; the two record builders stay, since they differ.
 - Audit 5 | UI: the plan assumed `FieldNote` and `FieldError` were one component twice; one is a `role="status"` live region without an id, the other an `aria-describedby` target without a role. | Both kept; merging them is a design decision for the author.
+- P14 | Adapters, review: the generated test that the site header is left out of the listing text checked a string that only appears in the page <title>, so it would have passed with the whole body. | Each adapter test now inserts a header with an invented email outside the listing root, checks the body contains it and the listing text does not.
+- P14 | Adapters, review: the first visibleText joined the text of adjacent elements without a space ("Kaltmiete876 €") and kept hidden elements. | It walks text nodes with element boundaries and <br> as separators and skips hidden and aria-hidden elements, tested with each case.
+- P14 | Plan: the plan's listing root for Vonovia and Deutsche Wohnen (the main element containing the hero) matched neither site's fixture. | .estate-detail-page, checked against every listing and search fixture; live pages are checked by hand.
+- P14 | Plan: the plan typed the analysis request's household as the full Household, which would have sent the applicants' relationship, outside the spec's list. | The request takes adults, children, pets and smoker only, tested first.
+- P14 | Name removal, final review: removing the user's first name as a plain substring would have cut ordinary words such as Nebenkosten for a user named Ben. | Values are removed only as whole words, tested with that name, test first.
+- P14 | Analysis display, final review: bullet lists the prompt allows rendered as one run-on paragraph. | Bullet blocks render as lists, with a smoke test.
+- P14 | Live QA: the model wrote inline bold labels such as "**Kaution:**" and the panel showed the asterisks; no test answer had used bold. | The parser strips inline bold and the prompt asks for headings and bullets only, test first.
 
 ## Per-phase narrative
 

@@ -4,8 +4,7 @@
 // here, so nothing the SDK or the API says (and never the key) reaches the
 // panel.
 import Anthropic from "@anthropic-ai/sdk";
-import type { LetterPrompt } from "../rules/letterPrompt";
-import type { ClaudeModel } from "../rules/types";
+import type { ClaudeModel, Prompt } from "../rules/types";
 
 const API_ORIGIN = "https://api.anthropic.com";
 
@@ -58,7 +57,7 @@ interface GenerateOptions {
 }
 
 export interface ClaudeClient {
-  generate(prompt: LetterPrompt, options: GenerateOptions): Promise<string>;
+  generate(prompt: Prompt, options: GenerateOptions): Promise<string>;
 }
 
 interface ClientOptions {

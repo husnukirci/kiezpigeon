@@ -9,6 +9,7 @@ const adapter = (overrides: Partial<SiteAdapter>): SiteAdapter => ({
   id: "site",
   siteName: "Site",
   readListing: () => undefined,
+  listingRoot: () => document.body,
   contactForm: () => undefined,
   readContactForm: () => [],
   ...overrides,
@@ -92,5 +93,49 @@ describe("answerAs", () => {
     expect(await send({ type: "fillForm", steps: [], formKeys: [] })).toEqual({
       kind: "no_form",
     });
+  });
+});
+
+describe("answerAs getPageText", () => {
+  it("answers with the listing region's visible text", async () => {
+    document.body.innerHTML = `<header>Mara Account</header><main id="m">Helle  Wohnung<script>x()</script></main>`;
+    answerAs(
+      adapter({ listingRoot: (page) => page.querySelector("#m") ?? undefined }),
+    );
+    expect(await send({ type: "getPageText" })).toEqual({
+      kind: "text",
+      text: "Helle Wohnung",
+    });
+  });
+
+  it("waits for a page the site is still drawing", async () => {
+    const listingRoot = vi.fn(() => document.body);
+    document.body.innerHTML = "Wohnung";
+    answerAs(
+      adapter({
+        listingRoot,
+        isReady: (page) => page.querySelector("h1") !== null,
+      }),
+    );
+    const answer = send({ type: "getPageText" });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(listingRoot).not.toHaveBeenCalled();
+    document.body.append(document.createElement("h1"));
+    expect(await answer).toMatchObject({ kind: "text" });
+    expect(listingRoot).toHaveBeenCalledTimes(1);
+    document.body.innerHTML = "";
+  });
+
+  it("answers no_text on a page with no listing region", async () => {
+    answerAs(adapter({ listingRoot: () => undefined }));
+    expect(await send({ type: "getPageText" })).toEqual({ kind: "no_text" });
+  });
+
+  it("answers no_text when the region has no text", async () => {
+    document.body.innerHTML = `<main id="m">  <script>x()</script></main>`;
+    answerAs(
+      adapter({ listingRoot: (page) => page.querySelector("#m") ?? undefined }),
+    );
+    expect(await send({ type: "getPageText" })).toEqual({ kind: "no_text" });
   });
 });

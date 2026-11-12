@@ -125,6 +125,8 @@ use), and how two applicants are related (so the letter stops guessing).
 - [x] An "About this listing" card: kind of rental, price against the
       page's own band, things worth a second
       look (Phase 13)
+- [ ] "Analyse this listing": a read of the area, price, heating and fit,
+      on the user's click only (Phase 14)
 - [ ] English letters as a first-class option with their own validator
       rules (German stays the default)
 - [ ] Letter history per listing and "start from my last letter"
@@ -164,6 +166,7 @@ merges, then starts the next phase in a fresh session.
 | P11   | Deutsche Wohnen, on Vonovia's platform                                                                               | feat(adapters)  |
 | P12   | Filled pigeons                                                                                                       | feat(tracker)   |
 | P13   | About this listing                                                                                                   | feat(listing)   |
+| P14   | Analyse this listing                                                                                                 | feat(listing)   |
 
 Each phase lands green (tests, typecheck, lint, build, manual check in
 Chrome where the phase is user-visible) before the next starts.

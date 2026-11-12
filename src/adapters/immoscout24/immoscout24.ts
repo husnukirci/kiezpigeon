@@ -308,10 +308,16 @@ function contactForm(document: Document): HTMLFormElement | undefined {
   );
 }
 
+/** The exposé's own column: the site's header and account menu sit outside it. */
+function listingRoot(document: Document): Element | undefined {
+  return document.querySelector("#is24-content") ?? undefined;
+}
+
 export const immoscout24: SiteAdapter = {
   id: "immoscout24",
   siteName: "ImmoScout24",
   readListing,
+  listingRoot,
   contactForm,
   readContactForm: (document) => readFormFields(contactForm(document)),
 };

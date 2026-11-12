@@ -995,3 +995,83 @@ the letter flow is untouched; rules stay pure; `missing` names every
 field a page lacks.
 
 **PR:** `feat(listing): the about-this-listing card`
+
+---
+
+## Phase 14: Analyse this listing
+
+**Context for a fresh session:** Phase 13 is merged. The "About this
+listing" card reads the page alone and cannot say what the area is like,
+whether the price is fair, what the heating means for the bills, or how the
+flat fits this household. The design is in
+`docs/superpowers/specs/2026-11-11-analyse-this-listing-design.md`; it
+amends ADR 14 and the "Data stays on the device" invariant, both recorded
+in this phase.
+
+**Objective:** one secondary button, "Analyse this listing", on the Listing
+detected screen of the three known sites. On the user's click, and only
+then, the panel shows a short analysis under six headings, in this order:
+What this is, The area, Price, Heating and energy, For you, What to watch
+for. Estimates read as estimates; what the page does not say is said to be
+unknown.
+
+**In scope**
+
+1. Rules (strict tier). A pure prompt builder from the page text, the
+   `Listing` and a profile subset: Warmmiete budget, household (adults,
+   children, pets, smoker), WBS, move-in, each applicant's employment and
+   the income-to-rent ratio in tenths. Never names, contact, job titles,
+   raw income, letter settings or documents. Every profile value of the
+   names, email, phone and street is removed from the page text first
+   (any case, extra whitespace), one test per field; text over the cap is
+   cut, not refused. A parser splits the answer by the six headings: an
+   answer with none is kept whole under one section, unknown headings fold
+   into the section before. ADR 14 amendment and the CLAUDE.md invariant
+   in the same commit.
+2. Adapters (tests after). Each known site reads the text of its listing
+   region (not the whole body, so a signed-in header is left out) when the
+   panel asks, through the content script that already serves
+   `getListing`.
+3. Service worker (tests after). `analyseListing` in `src/claude/`, with
+   the user's key, `claude-opus-5-5` whatever `settings.model` says, effort
+   `low`. Its own provider-neutral error copy per error code, including a
+   neutral message when the key cannot use the model.
+4. Side panel (smoke test). The button on the Listing detected screen,
+   secondary, hidden when typed facts are in use; a "Reading the listing"
+   state; the six sections; a caption that says it is an estimate. Held in
+   panel memory by listing URL: a late answer is kept for the listing it
+   was asked for and never shown on another. Nothing is stored.
+5. End to end. In Chromium, the ImmoScout24 fixture with the user's email
+   in a header outside the listing region: one request, only after the
+   click, naming `claude-opus-5-5`, with no applicant name or email in the
+   body.
+6. README, PLAN.md, this spec, the friction log.
+
+**Out of scope:** running automatically or on opening the panel; storing or
+caching the analysis; changing the "About this listing" card, the fit check
+or the letter flow; a validator for the analysis; the unknown-site
+fallback; a provider picker; any change to existing copy (Settings,
+Onboarding and the letter errors keep naming Claude and Anthropic); a new
+permission or host.
+
+**Acceptance:** on a saved fixture and on one live listing per known site,
+one click shows six sections and one request leaves, nothing before; a page
+header with the user's email is not in the request; the built manifest is
+identical to the one on `main`.
+
+**Phase review checklist:** no new copy names Claude, Anthropic, AI, a
+model or an assistant; "Write my letter" stays the one teal button; no
+estimate is stated as a fact, a score or a traffic light; no copy claims
+something was sent for the user; nothing is written to `chrome.storage`;
+`src/rules/` stays pure and the import boundaries hold; the key never
+reaches a content script, log or message.
+
+- [x] Rules, adapters, service worker and side panel built and tested
+- [x] ADR 14 amendment and the "Data stays on the device" invariant
+- [x] End-to-end test: one request, on the click, no names or email
+- [x] Built manifest identical to `main`
+- [ ] Manual QA in Chrome with a real key: a saved fixture and one live
+      listing per known site; service worker, panel and content script
+      consoles clean
+
+**PR:** `feat(listing): analyse this listing on request`

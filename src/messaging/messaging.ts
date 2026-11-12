@@ -4,7 +4,13 @@
 import { browser } from "wxt/browser";
 import type { ClaudeErrorCode } from "../claude/claude";
 import type { FillReport, FillStep } from "../fill/fill";
-import type { FormField, LetterRequest, Listing } from "../rules/types";
+import type { AnalysisSection } from "../rules/analysisParse";
+import type {
+  AnalysisRequest,
+  FormField,
+  LetterRequest,
+  Listing,
+} from "../rules/types";
 import type { LetterDraft } from "../rules/writeLetter";
 
 export type ListingResult =
@@ -21,8 +27,16 @@ type FillResult =
   | { kind: "changed" }
   | { kind: "no_form" };
 
+/** The listing region's visible text, or none when the page has no listing region. */
+export type PageTextResult =
+  { kind: "text"; text: string } | { kind: "no_text" };
+
 export type LetterResult =
   | { kind: "letter"; draft: LetterDraft }
+  | { kind: "error"; code: ClaudeErrorCode; message: string };
+
+export type AnalysisResult =
+  | { kind: "analysis"; sections: AnalysisSection[] }
   | { kind: "error"; code: ClaudeErrorCode; message: string };
 
 interface Messages {
@@ -31,6 +45,8 @@ interface Messages {
     request: { type: "getContactForm" };
     response: ContactFormResult;
   };
+  /** The visible text of the listing region only, never the site's header. */
+  getPageText: { request: { type: "getPageText" }; response: PageTextResult };
   /**
    * Panel to content script, on the user's click only. Never submits.
    * `formKeys` are the keys of the form as the panel last read it.
@@ -43,6 +59,11 @@ interface Messages {
   generateLetter: {
     request: { type: "generateLetter"; request: LetterRequest };
     response: LetterResult;
+  };
+  /** Panel to service worker, on the user's click only (ADR 14). */
+  analyseListing: {
+    request: { type: "analyseListing"; request: AnalysisRequest };
+    response: AnalysisResult;
   };
 }
 
@@ -64,8 +85,10 @@ type Envelope = { ok: true; value: unknown } | { ok: false; error: string };
 const HANDLED: Record<MessageType, true> = {
   getListing: true,
   getContactForm: true,
+  getPageText: true,
   fillForm: true,
   generateLetter: true,
+  analyseListing: true,
 };
 const TYPES: readonly string[] = Object.keys(HANDLED);
 

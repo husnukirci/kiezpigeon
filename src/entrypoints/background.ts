@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
+import { analyseListing } from "../claude/analysisService";
 import { generateLetter } from "../claude/letterService";
 import { handle } from "../messaging/messaging";
 import { openPanelOn } from "../messaging/panel";
@@ -10,8 +11,10 @@ export default defineBackground(() => {
   void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
   void browser.sidePanel.setOptions({ enabled: false });
   browser.action.onClicked.addListener(openPanelOn);
-  // Letters are written here only, so the API key never leaves the worker.
+  // Letters and analyses are requested here only, so the API key never
+  // leaves the worker.
   handle({
     generateLetter: (message) => generateLetter(message.request),
+    analyseListing: (message) => analyseListing(message.request),
   });
 });
